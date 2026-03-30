@@ -377,25 +377,79 @@ formInvoice?.addEventListener("submit", async (e) => {
 
 // --- Invoices list / send / payment ---
 let invoicesCache = [];
+/** list | customers | payment */
+let invoiceViewMode = "list";
 
 async function loadInvoices() {
   const filter = document.getElementById("invoice-filter")?.value || "";
   try {
-    invoicesCache = asArray(await api(`/api/invoices?status=${encodeURIComponent(filter)}`));
-    renderInvoices();
+    if (invoiceViewMode === "customers" || invoiceViewMode === "payment") {
+      invoicesCache = asArray(await api(`/api/invoices?status=`));
+    } else {
+      invoicesCache = asArray(await api(`/api/invoices?status=${encodeURIComponent(filter)}`));
+    }
+    if (invoiceViewMode === "customers") {
+      renderCustomersList();
+    } else {
+      renderInvoices();
+    }
   } catch (e) {
     console.error(e);
     alert("加载发票失败: " + e.message);
   }
 }
 
+function renderCustomersList() {
+  const ul = document.getElementById("invoices-customers-list");
+  const hint = document.getElementById("invoices-customers-hint");
+  if (!ul) return;
+  const names = new Set();
+  for (const inv of asArray(invoicesCache)) {
+    const n = (inv.billToName || "").trim();
+    if (n) names.add(n);
+  }
+  const sorted = [...names].sort((a, b) => a.localeCompare(b));
+  ul.innerHTML = "";
+  for (const name of sorted) {
+    const li = document.createElement("li");
+    li.textContent = name;
+    ul.appendChild(li);
+  }
+  if (hint) {
+    hint.textContent = sorted.length
+      ? `共 ${sorted.length} 个客户（Bill To）。`
+      : "暂无客户数据，请先在「发票列表」中创建发票。";
+  }
+}
+
+async function setInvoiceView(mode) {
+  invoiceViewMode = mode;
+  const listEl = document.getElementById("invoices-view-list");
+  const custEl = document.getElementById("invoices-view-customers");
+  const payEl = document.getElementById("invoices-view-payment");
+  document.querySelectorAll(".invoices-nav-btn").forEach((btn) => {
+    const v = btn.dataset.view;
+    btn.classList.toggle("active", v === mode && mode !== "list");
+  });
+  if (listEl) listEl.hidden = mode !== "list";
+  if (custEl) custEl.hidden = mode !== "customers";
+  if (payEl) payEl.hidden = mode !== "payment";
+  await loadInvoices();
+}
+
 function renderInvoices() {
-  const body = document.getElementById("invoices-body");
-  const sum = document.getElementById("invoices-summary");
+  const mode = invoiceViewMode;
+  const bodyId = mode === "payment" ? "invoices-body-payment" : "invoices-body";
+  const body = document.getElementById(bodyId);
+  const sum = document.getElementById(mode === "payment" ? "invoices-payment-summary" : "invoices-summary");
   if (!body || !sum) return;
   body.innerHTML = "";
-  const invs = asArray(invoicesCache);
-  sum.textContent = `共 ${invs.length} 条发票。`;
+  let invs = asArray(invoicesCache);
+  if (mode === "payment") {
+    invs = invs.filter((inv) => Number(inv.balanceDue) > 0);
+  }
+  sum.textContent =
+    mode === "payment" ? `共 ${invs.length} 条待收款。` : `共 ${invs.length} 条发票。`;
   for (const inv of invs) {
     const tr = document.createElement("tr");
     tr.innerHTML = `
@@ -431,6 +485,62 @@ function fmtMoneySimple(v, c) {
 
 document.getElementById("btn-invoices-load")?.addEventListener("click", () => loadInvoices());
 document.getElementById("invoice-filter")?.addEventListener("change", () => loadInvoices());
+
+document.querySelectorAll(".invoices-nav-btn").forEach((btn) => {
+  btn.addEventListener("click", () => {
+    if (btn.dataset.action === "new-invoice") {
+      openNewInvoiceFromMenu();
+      return;
+    }
+    const v = btn.dataset.view;
+    if (v === "customers" || v === "payment") {
+      setInvoiceView(v);
+    }
+  });
+});
+
+document.getElementById("btn-invoices-back-customers")?.addEventListener("click", () => setInvoiceView("list"));
+document.getElementById("btn-invoices-back-payment")?.addEventListener("click", () => setInvoiceView("list"));
+
+const dlgPickTask = document.getElementById("dlg-pick-task");
+const formPickTask = document.getElementById("form-pick-task");
+
+async function openNewInvoiceFromMenu() {
+  try {
+    await loadTasks();
+  } catch {
+    /* loadTasks already alerts */
+  }
+  const sel = document.getElementById("pick-task-id");
+  if (!sel || !dlgPickTask) return;
+  const tasks = asArray(tasksCache);
+  sel.innerHTML = "";
+  if (tasks.length === 0) {
+    alert("暂无任务，请先在「任务」页创建任务。");
+    return;
+  }
+  for (const t of tasks) {
+    const opt = document.createElement("option");
+    opt.value = t.id;
+    opt.textContent = `${t.id} — ${t.companyName || ""}`;
+    sel.appendChild(opt);
+  }
+  dlgPickTask.showModal();
+}
+
+document.getElementById("pick-task-cancel")?.addEventListener("click", () => dlgPickTask?.close());
+
+formPickTask?.addEventListener("submit", (e) => {
+  e.preventDefault();
+  const id = document.getElementById("pick-task-id")?.value;
+  const task = asArray(tasksCache).find((t) => t.id === id);
+  if (!task) {
+    alert("请选择任务");
+    return;
+  }
+  dlgPickTask?.close();
+  openInvoiceDialog(task);
+});
 
 async function openSendInvoice(id) {
   const to = prompt("发送到邮箱（Bill To Email）：");
@@ -698,6 +808,24 @@ document.getElementById("btn-report-export")?.addEventListener("click", () => ex
   if (me.authEnabled && !me.authenticated) {
     window.location.href = "/login.html";
     return;
+  }
+  try {
+    const pub = await fetch("/api/settings/public").then((r) => r.json());
+    const title = document.getElementById("app-title");
+    if (pub.companyName && title) title.textContent = pub.companyName;
+    if (pub.logoDataUrl) {
+      const logo = document.getElementById("app-header-logo");
+      if (logo) {
+        logo.innerHTML = "";
+        const img = document.createElement("img");
+        img.src = pub.logoDataUrl;
+        img.alt = "";
+        logo.appendChild(img);
+        logo.hidden = false;
+      }
+    }
+  } catch {
+    /* ignore */
   }
   const rm = document.getElementById("report-month");
   if (rm) rm.value = currentMonthISO();

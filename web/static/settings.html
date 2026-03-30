@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Settings — TaskTracker</title>
+  <link rel="stylesheet" href="/style.css" />
+</head>
+<body>
+  <header class="top">
+    <div class="top-inner">
+      <h1>Settings</h1>
+      <div class="top-actions">
+        <a href="/" class="ghost">← 返回</a>
+        <button type="button" id="btn-logout" class="ghost" hidden>退出登录</button>
+      </div>
+    </div>
+  </header>
+  <main class="settings-page">
+    <section class="settings-card">
+      <h2>公司与展示</h2>
+      <label>公司名称 <input id="set-company" type="text" placeholder="显示在登录页等" /></label>
+      <label>访问域名（对外链接）
+        <input id="set-baseurl" type="url" placeholder="https://invoice.example.com" />
+      </label>
+      <p class="hint">邮件中发票链接、回调地址等会优先使用此处；不填则使用环境变量 BASE_URL 或当前访问主机。</p>
+      <label>Logo（PNG/JPG，建议正方形）
+        <input id="set-logo-file" type="file" accept="image/png,image/jpeg,image/webp,image/gif" />
+      </label>
+      <div id="set-logo-preview" class="settings-logo-preview" hidden></div>
+      <button type="button" class="ghost small" id="set-logo-clear" hidden>清除 Logo</button>
+    </section>
+
+    <section class="settings-card">
+      <h2>邮件 SMTP</h2>
+      <p class="hint">若下方填写 SMTP 主机，将<strong>优先于</strong>服务器环境变量。留空密码表示不修改已保存的密码。</p>
+      <p class="hint" id="set-env-hint"></p>
+      <label>SMTP Host <input id="set-smtp-host" type="text" placeholder="smtp.example.com" /></label>
+      <label>端口 <input id="set-smtp-port" type="number" min="1" max="65535" value="587" /></label>
+      <label>用户名 <input id="set-smtp-user" type="text" autocomplete="off" /></label>
+      <label>密码 <input id="set-smtp-pass" type="password" autocomplete="new-password" placeholder="留空则不修改" /></label>
+      <label>发件人 From <input id="set-smtp-from" type="email" placeholder="默认与用户名相同" /></label>
+      <label class="inline-check"><input type="checkbox" id="set-smtp-starttls" checked /> STARTTLS（常见 587）</label>
+      <label class="inline-check"><input type="checkbox" id="set-smtp-tls" /> 隐式 TLS / SMTPS（常见 465）</label>
+    </section>
+
+    <section class="settings-card">
+      <h2>修改密码</h2>
+      <label>当前密码 <input id="pwd-old" type="password" autocomplete="current-password" /></label>
+      <label>新密码 <input id="pwd-new" type="password" autocomplete="new-password" minlength="6" /></label>
+      <label>确认新密码 <input id="pwd-new2" type="password" autocomplete="new-password" minlength="6" /></label>
+      <button type="button" class="primary" id="btn-save-password">更新密码</button>
+      <p id="pwd-msg" class="login-err" hidden></p>
+    </section>
+
+    <div class="settings-actions">
+      <button type="button" class="primary" id="btn-save-settings">保存设置</button>
+      <span id="save-msg" class="hint"></span>
+    </div>
+  </main>
+  <script src="/settings.js"></script>
+</body>
+</html>

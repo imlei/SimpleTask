@@ -262,11 +262,42 @@ func writeJSON(w http.ResponseWriter, status int, v any) {
 }
 
 // Register 登录、注册、会话
+// HandleChangePassword POST /api/auth/password
+func (c *Config) HandleChangePassword(w http.ResponseWriter, r *http.Request) {
+	if c.Disabled || c.Store == nil {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "auth disabled"})
+		return
+	}
+	if r.Method != http.MethodPost {
+		w.WriteHeader(http.StatusMethodNotAllowed)
+		return
+	}
+	if !c.ValidSession(r) {
+		writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "unauthorized"})
+		return
+	}
+	var body struct {
+		OldPassword string `json:"oldPassword"`
+		NewPassword string `json:"newPassword"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	if err := c.Store.ChangePassword(body.OldPassword, body.NewPassword); err != nil {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": err.Error()})
+		return
+	}
+	setSessionCookie(c, w)
+	writeJSON(w, http.StatusOK, map[string]bool{"ok": true})
+}
+
 func Register(mux *http.ServeMux, c *Config) {
 	mux.HandleFunc("/api/login", c.HandleLogin)
 	mux.HandleFunc("/api/setup", c.HandleSetup)
 	mux.HandleFunc("/api/logout", c.HandleLogout)
 	mux.HandleFunc("/api/me", c.HandleMe)
+	mux.HandleFunc("/api/auth/password", c.HandleChangePassword)
 }
 
 func isPublicPath(c *Config, path string, r *http.Request) bool {
@@ -284,6 +315,9 @@ func isPublicPath(c *Config, path string, r *http.Request) bool {
 		if path == "/api/me" && r.Method == http.MethodGet {
 			return true
 		}
+		if path == "/api/settings/public" && r.Method == http.MethodGet {
+			return true
+		}
 		return false
 	}
 	switch path {
@@ -297,6 +331,9 @@ func isPublicPath(c *Config, path string, r *http.Request) bool {
 		return true
 	}
 	if path == "/api/me" && r.Method == http.MethodGet {
+		return true
+	}
+	if path == "/api/settings/public" && r.Method == http.MethodGet {
 		return true
 	}
 	return false

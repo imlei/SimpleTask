@@ -200,7 +200,8 @@ func (s *Server) handleInvoiceSend(w http.ResponseWriter, r *http.Request, id st
 		w.WriteHeader(http.StatusMethodNotAllowed)
 		return
 	}
-	if s.Mail == nil {
+	mailer := s.effectiveMailer()
+	if mailer == nil {
 		http.Error(w, "mail not configured", http.StatusBadRequest)
 		return
 	}
@@ -225,16 +226,13 @@ func (s *Server) handleInvoiceSend(w http.ResponseWriter, r *http.Request, id st
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	link := s.BaseURL
-	if link == "" {
-		link = "http://" + r.Host
-	}
+	link := s.publicBaseURL(r)
 	url := link + "/invoice.html?id=" + inv.ID
 	subject := "Invoice " + inv.InvoiceNo
 	html := "<p>Invoice: <strong>" + inv.InvoiceNo + "</strong></p>" +
 		"<p>Amount: <strong>" + inv.Currency + " " + fmtMoney(inv.Total) + "</strong></p>" +
 		"<p>View/Print: <a href=\"" + url + "\">" + url + "</a></p>"
-	if err := s.Mail.SendInvoice(to, subject, html); err != nil {
+	if err := mailer.SendInvoice(to, subject, html); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -324,6 +322,8 @@ func completedAtInMonth(completedAt, month string) bool {
 }
 
 func Register(mux *http.ServeMux, s *Server) {
+	mux.HandleFunc("/api/settings/public", s.handleSettingsPublic)
+	mux.HandleFunc("/api/settings", s.handleSettings)
 	mux.HandleFunc("/api/tasks", s.handleTasks)
 	mux.HandleFunc("/api/tasks/", s.handleTaskByID)
 	mux.HandleFunc("/api/prices", s.handlePrices)

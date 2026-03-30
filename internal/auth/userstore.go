@@ -138,3 +138,30 @@ func (u *UserStore) Username() string {
 	_ = u.db.QueryRow(`SELECT username FROM app_user WHERE id=1`).Scan(&name)
 	return name
 }
+
+// ChangePassword 验证旧密码后更新密码并轮换 session_secret（使其它端会话失效）
+func (u *UserStore) ChangePassword(oldPassword, newPassword string) error {
+	if len(newPassword) < 6 {
+		return errors.New("新密码至少 6 位")
+	}
+	u.mu.Lock()
+	defer u.mu.Unlock()
+	name, hash, _, err := u.loadLocked()
+	if err != nil || name == "" {
+		return errors.New("no user")
+	}
+	if bcrypt.CompareHashAndPassword([]byte(hash), []byte(oldPassword)) != nil {
+		return errors.New("当前密码错误")
+	}
+	newHash, err := bcrypt.GenerateFromPassword([]byte(newPassword), bcrypt.DefaultCost)
+	if err != nil {
+		return err
+	}
+	sec := make([]byte, 32)
+	if _, err := rand.Read(sec); err != nil {
+		return err
+	}
+	secret := hex.EncodeToString(sec)
+	_, err = u.db.Exec(`UPDATE app_user SET password_hash=?, session_secret=? WHERE id=1`, string(newHash), secret)
+	return err
+}

@@ -103,11 +103,35 @@ func Open(dir string) (*sql.DB, error) {
 		_ = db.Close()
 		return nil, err
 	}
+	if err := ensureAppSettings(db); err != nil {
+		_ = db.Close()
+		return nil, err
+	}
 	if err := migrateLegacyJSON(dir, db); err != nil {
 		_ = db.Close()
 		return nil, err
 	}
 	return db, nil
+}
+
+func ensureAppSettings(db *sql.DB) error {
+	_, err := db.Exec(`
+CREATE TABLE IF NOT EXISTS app_settings (
+  id INTEGER PRIMARY KEY CHECK (id = 1),
+  company_name TEXT NOT NULL DEFAULT '',
+  logo_data_url TEXT NOT NULL DEFAULT '',
+  base_url TEXT NOT NULL DEFAULT '',
+  smtp_host TEXT NOT NULL DEFAULT '',
+  smtp_port INTEGER NOT NULL DEFAULT 587,
+  smtp_user TEXT NOT NULL DEFAULT '',
+  smtp_pass TEXT NOT NULL DEFAULT '',
+  smtp_from TEXT NOT NULL DEFAULT '',
+  smtp_starttls INTEGER NOT NULL DEFAULT 1,
+  smtp_tls INTEGER NOT NULL DEFAULT 0
+);
+INSERT OR IGNORE INTO app_settings (id) VALUES (1);
+`)
+	return err
 }
 
 func ensureInvoiceColumns(db *sql.DB) error {

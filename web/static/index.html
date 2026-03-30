@@ -9,8 +9,14 @@
 <body>
   <header class="top">
     <div class="top-inner">
-      <h1>TaskTracker</h1>
-      <button type="button" id="btn-logout" class="ghost" hidden>退出登录</button>
+      <div class="top-brand">
+        <div id="app-header-logo" class="app-header-logo" hidden></div>
+        <h1 id="app-title">TaskTracker</h1>
+      </div>
+      <div class="top-actions">
+        <a href="/settings.html" class="ghost" id="link-settings">Settings</a>
+        <button type="button" id="btn-logout" class="ghost" hidden>退出登录</button>
+      </div>
     </div>
     <nav class="tabs">
       <button type="button" class="tab active" data-tab="tasks">任务 Task</button>
@@ -103,37 +109,83 @@
     </section>
 
     <section id="panel-invoices" class="panel">
-      <div class="toolbar report-toolbar">
-        <label>状态
-          <select id="invoice-filter">
-            <option value="">全部</option>
-            <option value="Draft">Draft</option>
-            <option value="Sent">Sent</option>
-            <option value="Paid">Paid</option>
-          </select>
-        </label>
-        <button type="button" id="btn-invoices-load" class="primary">刷新</button>
-      </div>
-      <p class="report-summary" id="invoices-summary">已发送/已收款发票列表。</p>
-      <div class="table-wrap">
-        <table class="data">
-          <thead>
-            <tr>
-              <th>Invoice</th>
-              <th>Task</th>
-              <th>Bill To</th>
-              <th>日期</th>
-              <th>到期</th>
-              <th>状态</th>
-              <th>总额</th>
-              <th>已收</th>
-              <th>未收</th>
-              <th>发送时间</th>
-              <th></th>
-            </tr>
-          </thead>
-          <tbody id="invoices-body"></tbody>
-        </table>
+      <div class="invoices-layout">
+        <aside class="invoices-sidebar" aria-label="Invoices menu">
+          <button type="button" class="invoices-nav-btn" data-view="customers">Customers</button>
+          <button type="button" class="invoices-nav-btn" data-action="new-invoice">New Invoice</button>
+          <button type="button" class="invoices-nav-btn" data-view="payment">Received Payment</button>
+        </aside>
+        <div class="invoices-main">
+          <div id="invoices-view-list" class="invoices-view">
+            <div class="toolbar report-toolbar" id="invoices-toolbar">
+              <label>状态
+                <select id="invoice-filter">
+                  <option value="">全部</option>
+                  <option value="Draft">Draft</option>
+                  <option value="Sent">Sent</option>
+                  <option value="Paid">Paid</option>
+                </select>
+              </label>
+              <button type="button" id="btn-invoices-load" class="primary">刷新</button>
+            </div>
+            <p class="report-summary" id="invoices-summary">已发送/已收款发票列表。</p>
+            <div class="table-wrap">
+              <table class="data">
+                <thead>
+                  <tr>
+                    <th>Invoice</th>
+                    <th>Task</th>
+                    <th>Bill To</th>
+                    <th>日期</th>
+                    <th>到期</th>
+                    <th>状态</th>
+                    <th>总额</th>
+                    <th>已收</th>
+                    <th>未收</th>
+                    <th>发送时间</th>
+                    <th></th>
+                  </tr>
+                </thead>
+                <tbody id="invoices-body"></tbody>
+              </table>
+            </div>
+          </div>
+          <div id="invoices-view-customers" class="invoices-view" hidden>
+            <div class="invoices-subhead">
+              <h3 class="invoices-subtitle">Customers</h3>
+              <button type="button" class="ghost small" id="btn-invoices-back-customers">← 发票列表</button>
+            </div>
+            <p class="report-summary" id="invoices-customers-hint">由已加载发票汇总的 Bill To 名称。</p>
+            <ul class="invoices-customers-list" id="invoices-customers-list"></ul>
+          </div>
+          <div id="invoices-view-payment" class="invoices-view" hidden>
+            <div class="invoices-subhead">
+              <h3 class="invoices-subtitle">Received Payment</h3>
+              <button type="button" class="ghost small" id="btn-invoices-back-payment">← 发票列表</button>
+            </div>
+            <p class="report-summary" id="invoices-payment-summary">尚有未收金额的发票，可在行内点击「收款」。</p>
+            <div class="table-wrap">
+              <table class="data">
+                <thead>
+                  <tr>
+                    <th>Invoice</th>
+                    <th>Task</th>
+                    <th>Bill To</th>
+                    <th>日期</th>
+                    <th>到期</th>
+                    <th>状态</th>
+                    <th>总额</th>
+                    <th>已收</th>
+                    <th>未收</th>
+                    <th>发送时间</th>
+                    <th></th>
+                  </tr>
+                </thead>
+                <tbody id="invoices-body-payment"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
       </div>
     </section>
   </main>
@@ -213,6 +265,18 @@
       <div class="dlg-actions">
         <button type="submit" class="primary">生成并打开</button>
         <button type="button" id="invoice-cancel">取消</button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog id="dlg-pick-task" class="dlg-task-wide">
+    <form id="form-pick-task">
+      <h2>New Invoice</h2>
+      <p class="hint">选择要生成发票的任务。</p>
+      <label>任务 <select id="pick-task-id" required></select></label>
+      <div class="dlg-actions">
+        <button type="submit" class="primary">继续</button>
+        <button type="button" id="pick-task-cancel">取消</button>
       </div>
     </form>
   </dialog>

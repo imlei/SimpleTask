@@ -1,5 +1,25 @@
 (async function boot() {
   try {
+    const pub = await fetch("/api/settings/public").then((r) => r.json());
+    const lt = document.getElementById("login-title");
+    if (pub.companyName && lt) {
+      lt.textContent = pub.companyName;
+      document.title = "登录 — " + pub.companyName;
+    }
+    if (pub.logoDataUrl) {
+      const box = document.getElementById("login-brand-logo");
+      if (box) {
+        const img = document.createElement("img");
+        img.src = pub.logoDataUrl;
+        img.alt = "";
+        box.appendChild(img);
+        box.hidden = false;
+      }
+    }
+  } catch {
+    /* ignore */
+  }
+  try {
     const me = await fetch("/api/me", { credentials: "same-origin" }).then((r) => r.json());
     if (!me.authEnabled) {
       window.location.replace("/");
