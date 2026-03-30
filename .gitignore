@@ -1,4 +1,5 @@
 /data/
+/tasktracker
 *.exe
 .env
 .DS_Store
