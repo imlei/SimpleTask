@@ -31,6 +31,11 @@ async function api(path, opts = {}) {
   return text ? JSON.parse(text) : null;
 }
 
+/** 列表接口：后端空切片曾可能序列化为 JSON null，解析后需当数组使用 */
+function asArray(v) {
+  return Array.isArray(v) ? v : [];
+}
+
 // --- Tabs ---
 document.querySelectorAll(".tab").forEach((btn) => {
   btn.addEventListener("click", () => {
@@ -70,7 +75,7 @@ function taskToPayload(t) {
 
 async function loadTasks() {
   try {
-    tasksCache = await api("/api/tasks");
+    tasksCache = asArray(await api("/api/tasks"));
     renderTasks();
   } catch (e) {
     console.error(e);
@@ -82,7 +87,7 @@ function renderTasks() {
   const filter = $("#filter-status").value;
   const body = $("#tasks-body");
   body.innerHTML = "";
-  const rows = tasksCache.filter((t) => !filter || t.status === filter);
+  const rows = asArray(tasksCache).filter((t) => !filter || t.status === filter);
   for (const t of rows) {
     const tr = document.createElement("tr");
     const done = t.status === "Done";
@@ -130,9 +135,9 @@ $("#task-price-clear").addEventListener("click", () => {
 });
 
 async function ensurePricesLoaded() {
-  if (pricesCache.length) return;
+  if (asArray(pricesCache).length) return;
   try {
-    pricesCache = await api("/api/prices");
+    pricesCache = asArray(await api("/api/prices"));
   } catch (e) {
     console.error(e);
     alert("加载价目表失败，无法多选: " + e.message);
@@ -142,7 +147,7 @@ async function ensurePricesLoaded() {
 function renderPriceCheckboxes(selectedIds) {
   const sel = new Set(selectedIds || []);
   taskPricePicks.innerHTML = "";
-  const sorted = [...pricesCache].sort((a, b) => a.id.localeCompare(b.id));
+  const sorted = [...asArray(pricesCache)].sort((a, b) => a.id.localeCompare(b.id));
   for (const p of sorted) {
     const label = document.createElement("label");
     label.className = "price-pick-row";
@@ -188,15 +193,16 @@ function applyTaskPriceSelection() {
     preview.textContent = "";
     return;
   }
+  const pc = asArray(pricesCache);
   const items = ids
-    .map((id) => pricesCache.find((x) => x.id === id))
+    .map((id) => pc.find((x) => x.id === id))
     .filter(Boolean);
   $("#task-s1").value = items.map((p) => p.serviceName).join("；");
 
   const byCur = {};
   const curOrder = [];
   for (const id of ids) {
-    const p = pricesCache.find((x) => x.id === id);
+    const p = pc.find((x) => x.id === id);
     if (!p || p.amount == null || p.amount === undefined) continue;
     const c = p.currency || "CNY";
     if (byCur[c] === undefined) {
@@ -375,7 +381,7 @@ let invoicesCache = [];
 async function loadInvoices() {
   const filter = document.getElementById("invoice-filter")?.value || "";
   try {
-    invoicesCache = await api(`/api/invoices?status=${encodeURIComponent(filter)}`);
+    invoicesCache = asArray(await api(`/api/invoices?status=${encodeURIComponent(filter)}`));
     renderInvoices();
   } catch (e) {
     console.error(e);
@@ -388,8 +394,9 @@ function renderInvoices() {
   const sum = document.getElementById("invoices-summary");
   if (!body || !sum) return;
   body.innerHTML = "";
-  sum.textContent = `共 ${invoicesCache.length} 条发票。`;
-  for (const inv of invoicesCache) {
+  const invs = asArray(invoicesCache);
+  sum.textContent = `共 ${invs.length} 条发票。`;
+  for (const inv of invs) {
     const tr = document.createElement("tr");
     tr.innerHTML = `
       <td>${escapeHtml(inv.invoiceNo || "")}</td>
@@ -474,7 +481,7 @@ let pricesCache = [];
 
 async function loadPrices() {
   try {
-    pricesCache = await api("/api/prices");
+    pricesCache = asArray(await api("/api/prices"));
     renderPrices();
   } catch (e) {
     console.error(e);
@@ -492,7 +499,7 @@ function curLabel(c) {
 function renderPrices() {
   const body = $("#prices-body");
   body.innerHTML = "";
-  for (const p of pricesCache) {
+  for (const p of asArray(pricesCache)) {
     const tr = document.createElement("tr");
     const amt =
       p.amount != null && p.amount !== undefined
@@ -596,7 +603,7 @@ async function loadReport() {
     return;
   }
   try {
-    reportRows = await api(`/api/reports/completed?month=${encodeURIComponent(month)}`);
+    reportRows = asArray(await api(`/api/reports/completed?month=${encodeURIComponent(month)}`));
     sumEl.textContent = `${month} 共完成 ${reportRows.length} 条任务（状态为 Done，且完成日期在该月内）。`;
     bodyEl.innerHTML = "";
     for (const t of reportRows) {
@@ -631,13 +638,14 @@ function exportReportCSV() {
     alert("请先选择月份并查询。");
     return;
   }
-  if (reportRows.length === 0) {
+  const rows = asArray(reportRows);
+  if (rows.length === 0) {
     alert("当前没有可导出的数据，请先查询。");
     return;
   }
   const headers = ["No.", "公司名", "日期", "业务一", "价格一", "状态", "完成日期", "备注"];
   const lines = [headers.join(",")];
-  for (const t of reportRows) {
+  for (const t of rows) {
     lines.push(
       [
         csvEscape(t.id),

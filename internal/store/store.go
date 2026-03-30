@@ -111,7 +111,7 @@ func (s *Store) ListTasks() []models.Task {
 		return nil
 	}
 	defer rows.Close()
-	var out []models.Task
+	out := make([]models.Task, 0)
 	for rows.Next() {
 		t, err := scanTask(rows)
 		if err != nil {
@@ -196,7 +196,7 @@ func (s *Store) ListPrices() []models.PriceItem {
 		return nil
 	}
 	defer rows.Close()
-	var out []models.PriceItem
+	out := make([]models.PriceItem, 0)
 	for rows.Next() {
 		p, err := scanPrice(rows)
 		if err != nil {
@@ -355,7 +355,7 @@ func (s *Store) ListInvoices(status string) ([]models.Invoice, error) {
 		return nil, err
 	}
 	defer rows.Close()
-	var out []models.Invoice
+	out := make([]models.Invoice, 0)
 	for rows.Next() {
 		var inv models.Invoice
 		if err := rows.Scan(&inv.ID, &inv.InvoiceNo, &inv.TaskID, &inv.InvoiceDate, &inv.DueDate, &inv.BillToName, &inv.Currency, &inv.Total, &inv.BalanceDue, &inv.Status, &inv.SentAt, &inv.PaidAmount, &inv.PaidAt); err != nil {

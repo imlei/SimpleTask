@@ -46,6 +46,26 @@ sudo ./install.sh
 
 脚本会在 **Go 版本低于 1.22.2 或未安装** 时从官方下载并安装到 `/usr/local/go`，随后编译、将二进制安装到 `/opt/tasktracker`、创建 `tasktracker` 用户并启用 **systemd** 服务。非 root 执行时**仅**在当前目录执行 `go build`（需本机已有 **Go 1.22.2+**，不校验发行版）。完整参数见 `./install.sh --help`。
 
+### 后续更新 /「自己升级」（推荐流程）
+
+程序本身**不会**在运行时从互联网拉取新版本二进制；要在有新提交时自动或半自动更新，请在服务器上**保留一份 Git 克隆**（例如 `/opt/tasktracker/TaskTracker`），使用仓库里的 **`upgrade.sh`**：
+
+```bash
+cd /path/to/TaskTracker   # 与首次 git clone 的目录一致
+chmod +x upgrade.sh
+sudo ./upgrade.sh
+```
+
+脚本会：`git fetch` / `git pull`（默认 `origin main`）→ 按 `go.mod` 编译 → 将 `tasktracker` 安装到 **`PREFIX`**（默认 `/opt/tasktracker`）→ **`systemctl restart tasktracker`**（若已启用该服务）。环境变量 **`GIT_BRANCH`**、**`GIT_REMOTE`**、**`GOTOOLCHAIN`**、**`PREFIX`** 可覆盖默认行为；仅编译不装服务时可用普通用户执行，脚本会提示 `sudo` 命令。
+
+**定时检查更新（示例）**：用 root 的 crontab 每周拉一次 main（生产环境请谨慎：**直接跟踪 main 可能引入未充分测试的提交**，更稳妥的是打 **Git tag**、在 CI 里发布再部署，或只拉指定 tag/分支）：
+
+```cron
+0 4 * * 0 cd /opt/tasktracker/TaskTracker && sudo ./upgrade.sh >>/var/log/tasktracker-upgrade.log 2>&1
+```
+
+也可用 **systemd timer** 调用同一脚本，思路与 cron 相同。
+
 ### 1. 安装 Go（用于在服务器上编译）
 
 **不要**只依赖 `apt install golang-go`（版本可能低于 1.22.2）。在 [go.dev/dl](https://go.dev/dl/) 下载 **Linux** 对应架构的 **1.22.2 或更高** 的 `.tar.gz`，然后安装到 `/usr/local/go`，例如：
