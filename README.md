@@ -1,5 +1,7 @@
 # TaskTracker
 
+当前版本：**0.0.1**（Git 标签 `v0.0.1`；程序启动日志中也会打印版本号）。
+
 Go 实现的业务任务与价目表管理，单二进制 + 内嵌 Web，便于部署在服务器上。
 
 **编译要求：Go 1.22.2 或更高**（`go version` 查看；`go.mod` 中 `toolchain go1.22.2`）。**生产部署以 Ubuntu 24.04 LTS 为准**（见下文）。若仅用 `apt install golang-go` 且版本偏旧，请从 [Go 官方下载页](https://go.dev/dl/) 安装 **1.22.2+**，并把 `/usr/local/go/bin` 放在 `PATH` 最前（或卸载/忽略系统自带的旧 `go`）。

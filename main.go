@@ -61,11 +61,11 @@ func main() {
 	}
 	switch {
 	case authCfg.Disabled:
-		log.Printf("TaskTracker listening on %s (DATA_DIR=%s, auth disabled via AUTH_DISABLE)", addr, dataDir)
+		log.Printf("TaskTracker %s listening on %s (DATA_DIR=%s, auth disabled via AUTH_DISABLE)", Version, addr, dataDir)
 	case authCfg.NeedsSetup():
-		log.Printf("TaskTracker listening on %s (DATA_DIR=%s) — no user yet, open /setup.html to create admin", addr, dataDir)
+		log.Printf("TaskTracker %s listening on %s (DATA_DIR=%s) — no user yet, open /setup.html to create admin", Version, addr, dataDir)
 	default:
-		log.Printf("TaskTracker listening on %s (DATA_DIR=%s, user=%s)", addr, dataDir, authCfg.Store.Username())
+		log.Printf("TaskTracker %s listening on %s (DATA_DIR=%s, user=%s)", Version, addr, dataDir, authCfg.Store.Username())
 	}
 	if err := http.ListenAndServe(addr, handler); err != nil {
 		log.Fatal(err)

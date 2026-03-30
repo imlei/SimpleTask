@@ -1,11 +1,14 @@
 :root {
   --bg: #0f1419;
   --surface: #1a2332;
+  --header-bg: #1a1f2c;
   --border: #2d3a4d;
   --text: #e8edf4;
   --muted: #8b9cb3;
   --accent: #3d8bfd;
   --accent-dim: #2563c4;
+  --link-accent: #7e5bef;
+  --link-accent-hover: #9b7fff;
   --danger: #f87171;
 }
 
@@ -128,13 +131,14 @@ body.login-page {
 }
 
 .invoices-nav-btn:hover {
-  background: rgba(61, 139, 253, 0.12);
+  background: rgba(126, 91, 239, 0.1);
   border-color: var(--border);
+  color: var(--text);
 }
 
 .invoices-nav-btn.active {
-  background: rgba(61, 139, 253, 0.22);
-  border-color: var(--accent);
+  background: rgba(126, 91, 239, 0.2);
+  border-color: var(--link-accent);
   color: #fff;
 }
 
@@ -190,7 +194,30 @@ button.ghost.small {
 .top {
   padding: 1rem 1.25rem;
   border-bottom: 1px solid var(--border);
-  background: var(--surface);
+  background: var(--header-bg);
+}
+
+/* 顶栏文字链接（与「退出登录」ghost 按钮并列，紫色下划线） */
+.top-actions a.top-nav-link {
+  color: var(--link-accent);
+  text-decoration: underline;
+  text-underline-offset: 0.18em;
+  font-size: 0.95rem;
+  padding: 0.35rem 0.5rem;
+  border-radius: 4px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  font: inherit;
+}
+
+.top-actions a.top-nav-link:hover {
+  color: var(--link-accent-hover);
+}
+
+.top-actions a.top-nav-link:focus-visible {
+  outline: 2px solid var(--link-accent);
+  outline-offset: 2px;
 }
 
 .top-inner {
@@ -285,6 +312,24 @@ button.ghost.small {
   gap: 1rem;
   flex-wrap: wrap;
   margin-top: 0.5rem;
+}
+
+.settings-card input[type="text"],
+.settings-card input[type="url"],
+.settings-card input[type="number"],
+.settings-card input[type="password"],
+.settings-card input[type="email"] {
+  padding: 0.5rem 0.55rem;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  color: var(--text);
+  border-radius: 4px;
+  font: inherit;
+}
+
+.settings-card input[type="file"] {
+  font-size: 0.88rem;
+  color: var(--muted);
 }
 
 .top h1 {
@@ -562,14 +607,26 @@ button.small {
 
 .price-pick-row {
   display: flex;
+  flex-direction: row;
   align-items: flex-start;
   gap: 0.5rem;
   font-size: 0.86rem;
   line-height: 1.35;
 }
 
+/* dialog label 默认为纵向，需显式覆盖价目多选行 */
+dialog label.price-pick-row {
+  flex-direction: row;
+  align-items: flex-start;
+}
+
+dialog label.price-pick-row > span {
+  flex: 1;
+  min-width: 0;
+}
+
 .price-pick-row input {
-  margin-top: 0.2rem;
+  margin-top: 0.15rem;
   flex-shrink: 0;
 }
 
