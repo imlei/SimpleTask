@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>登录 — 业务追踪</title>
+  <link rel="stylesheet" href="/style.css" />
+</head>
+<body class="login-page">
+  <main class="login-card">
+    <h1>业务追踪</h1>
+    <p class="login-sub">请登录后继续</p>
+    <form id="form-login">
+      <label>用户名 <input id="login-user" name="username" autocomplete="username" required /></label>
+      <label>密码 <input id="login-pass" name="password" type="password" autocomplete="current-password" required /></label>
+      <p id="login-err" class="login-err" hidden></p>
+      <div class="dlg-actions login-actions">
+        <button type="submit" class="primary">登录</button>
+      </div>
+    </form>
+  </main>
+  <script src="/login.js"></script>
+</body>
+</html>

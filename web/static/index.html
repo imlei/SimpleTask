@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>业务追踪</title>
+  <link rel="stylesheet" href="/style.css" />
+</head>
+<body>
+  <header class="top">
+    <div class="top-inner">
+      <h1>业务追踪</h1>
+      <button type="button" id="btn-logout" class="ghost" hidden>退出登录</button>
+    </div>
+    <nav class="tabs">
+      <button type="button" class="tab active" data-tab="tasks">任务 Task</button>
+      <button type="button" class="tab" data-tab="prices">价目表 Price list</button>
+      <button type="button" class="tab" data-tab="report">报表 Report</button>
+    </nav>
+  </header>
+
+  <main>
+    <section id="panel-tasks" class="panel active">
+      <div class="toolbar">
+        <label>状态筛选
+          <select id="filter-status">
+            <option value="">全部</option>
+            <option value="Pending">Pending</option>
+            <option value="Done">Done</option>
+          </select>
+        </label>
+        <button type="button" id="btn-new-task" class="primary">新建任务</button>
+      </div>
+      <div class="table-wrap">
+        <table class="data">
+          <thead>
+            <tr>
+              <th>No.</th>
+              <th>公司名</th>
+              <th>日期</th>
+              <th>业务一</th>
+              <th>价格一</th>
+              <th>状态</th>
+              <th>完成日期</th>
+              <th>备注</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="tasks-body"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section id="panel-report" class="panel">
+      <div class="toolbar report-toolbar">
+        <label>完成月份
+          <input type="month" id="report-month" />
+        </label>
+        <button type="button" id="btn-report-load" class="primary">查询</button>
+        <button type="button" id="btn-report-export" class="ghost">导出 CSV</button>
+      </div>
+      <p class="report-summary" id="report-summary">请选择月份并查询。</p>
+      <div class="table-wrap">
+        <table class="data">
+          <thead>
+            <tr>
+              <th>No.</th>
+              <th>公司名</th>
+              <th>日期</th>
+              <th>业务一</th>
+              <th>价格一</th>
+              <th>完成日期</th>
+              <th>备注</th>
+            </tr>
+          </thead>
+          <tbody id="report-body"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section id="panel-prices" class="panel">
+      <div class="toolbar">
+        <button type="button" id="btn-new-price" class="primary">新建价目</button>
+      </div>
+      <div class="table-wrap">
+        <table class="data">
+          <thead>
+            <tr>
+              <th>编号</th>
+              <th>服务项目</th>
+              <th>金额</th>
+              <th>货币</th>
+              <th>说明</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="prices-body"></tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+
+  <dialog id="dlg-task" class="dlg-task-wide">
+    <form method="dialog" id="form-task">
+      <h2 id="dlg-task-title">任务</h2>
+      <input type="hidden" id="task-id" />
+      <label>No. <input id="task-no" readonly placeholder="保存后自动生成" /></label>
+      <label>公司名 <input id="task-company" required /></label>
+      <label>日期 <input id="task-date" type="date" /></label>
+      <div class="price-pick-block">
+        <div class="price-pick-head">
+          <span>从价目表选择（可多选）</span>
+          <button type="button" class="ghost small" id="task-price-clear" title="清空勾选">清空勾选</button>
+        </div>
+        <p class="hint">勾选后会自动填入「业务一」「价格一」；多种货币时，第一币种写入价格一，其余在下方说明。</p>
+        <div id="task-price-picks" class="price-pick-list" role="group" aria-label="价目表多选"></div>
+        <div id="task-price-preview" class="price-preview" hidden></div>
+      </div>
+      <label>业务一 <input id="task-s1" /></label>
+      <label>价格一 <input id="task-p1" type="number" step="0.01" min="0" /></label>
+      <input type="hidden" id="task-status" value="Pending" />
+      <label>备注 <input id="task-note" /></label>
+      <div class="dlg-actions">
+        <button type="submit" class="primary">保存</button>
+        <button type="button" id="task-cancel">取消</button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog id="dlg-price">
+    <form method="dialog" id="form-price">
+      <h2 id="dlg-price-title">价目</h2>
+      <input type="hidden" id="price-id" />
+      <label>服务项目 <input id="price-name" required /></label>
+      <label>金额（空表示面议/未定价） <input id="price-amount" type="number" step="0.01" min="0" /></label>
+      <label>货币
+        <select id="price-currency">
+          <option value="CNY">CNY（元）</option>
+          <option value="CAD">CAD（加币）</option>
+          <option value="USD">USD（刀）</option>
+        </select>
+      </label>
+      <label>说明 <input id="price-note" placeholder="如：起" /></label>
+      <div class="dlg-actions">
+        <button type="submit" class="primary">保存</button>
+        <button type="button" id="price-cancel">取消</button>
+      </div>
+    </form>
+  </dialog>
+
+  <script src="/app.js"></script>
+</body>
+</html>
