@@ -84,7 +84,9 @@ detect_go_arch() {
 
 fetch_default_go_version() {
 	local v
-	v="$(curl -sfL 'https://go.dev/VERSION?m=text' 2>/dev/null | tr -d '\r\n' | sed 's/^go//')" || true
+	# go.dev 可能返回多行（版本行 + time 行等），只取首行，避免拼成 1.26.1time... 破坏下载 URL
+	v="$(curl -sfL 'https://go.dev/VERSION?m=text' 2>/dev/null | head -n 1 | tr -d '\r\n')"
+	v="${v#go}"
 	[[ -n "$v" ]] || v="1.22.2"
 	printf '%s' "$v"
 }
