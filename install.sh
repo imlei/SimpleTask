@@ -209,6 +209,7 @@ install_nginx_site() {
 	log "Browse: http://$(hostname -I 2>/dev/null | awk '{print $1}')/  (or your server IP)"
 	log "If using ufw: sudo ufw allow 'Nginx HTTP' && sudo ufw status"
 	log "Optional: sudo ufw delete allow 8088/tcp   # if you previously exposed the app port"
+	log "HTTPS: see deploy/tasktracker.nginx-https.example.conf; set AUTH_SECURE_COOKIE=true and BASE_URL=https://your.domain in systemd"
 }
 
 deploy_as_root() {

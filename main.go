@@ -6,6 +6,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"strings"
 
 	"tasktracker/internal/api"
 	"tasktracker/internal/auth"
@@ -37,6 +38,16 @@ func main() {
 	}
 	baseURL := os.Getenv("BASE_URL")
 
+	certFile := strings.TrimSpace(os.Getenv("TLS_CERT_FILE"))
+	keyFile := strings.TrimSpace(os.Getenv("TLS_KEY_FILE"))
+	if certFile != "" && keyFile != "" {
+		if os.Getenv("AUTH_SECURE_COOKIE") == "" {
+			_ = os.Setenv("AUTH_SECURE_COOKIE", "true")
+		}
+	} else if certFile != "" || keyFile != "" {
+		log.Fatal("TLS_CERT_FILE and TLS_KEY_FILE must both be set for HTTPS, or leave both empty for HTTP")
+	}
+
 	srv := &api.Server{Store: st, Mail: mailer, BaseURL: baseURL}
 	authCfg, err := auth.NewAuth(db, dataDir)
 	if err != nil {
@@ -59,15 +70,26 @@ func main() {
 	if addr == "" {
 		addr = ":8088"
 	}
+	useTLS := certFile != "" && keyFile != ""
+	tlsNote := ""
+	if useTLS {
+		tlsNote = ", HTTPS (TLS_CERT_FILE)"
+	}
 	switch {
 	case authCfg.Disabled:
-		log.Printf("TaskTracker %s listening on %s (DATA_DIR=%s, auth disabled via AUTH_DISABLE)", Version, addr, dataDir)
+		log.Printf("TaskTracker %s listening on %s (DATA_DIR=%s, auth disabled via AUTH_DISABLE)%s", Version, addr, dataDir, tlsNote)
 	case authCfg.NeedsSetup():
-		log.Printf("TaskTracker %s listening on %s (DATA_DIR=%s) — no user yet, open /setup.html to create admin", Version, addr, dataDir)
+		log.Printf("TaskTracker %s listening on %s (DATA_DIR=%s) — no user yet, open /setup.html to create admin%s", Version, addr, dataDir, tlsNote)
 	default:
-		log.Printf("TaskTracker %s listening on %s (DATA_DIR=%s, user=%s)", Version, addr, dataDir, authCfg.Store.Username())
+		log.Printf("TaskTracker %s listening on %s (DATA_DIR=%s, user=%s)%s", Version, addr, dataDir, authCfg.Store.Username(), tlsNote)
 	}
-	if err := http.ListenAndServe(addr, handler); err != nil {
-		log.Fatal(err)
+	var errListen error
+	if useTLS {
+		errListen = http.ListenAndServeTLS(addr, certFile, keyFile, handler)
+	} else {
+		errListen = http.ListenAndServe(addr, handler)
+	}
+	if errListen != nil {
+		log.Fatal(errListen)
 	}
 }

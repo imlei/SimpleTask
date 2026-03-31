@@ -31,7 +31,23 @@ go build -o tasktracker .
 | `DATA_DIR` | 数据目录，默认 `./data` |
 | `AUTH_DISABLE` | 设为 `1` 或 `true` 时**关闭**登录（仅建议本机调试） |
 | `AUTH_USER` / `AUTH_PASSWORD` | 可选：在**数据库中尚无用户**时自动创建首个用户（密码至少 6 位） |
-| `AUTH_SECURE_COOKIE` | 使用 HTTPS 时设为 `true` |
+| `AUTH_SECURE_COOKIE` | 使用 **HTTPS**（Nginx TLS 或下方 `TLS_*`）时设为 `true`，登录 Cookie 带 `Secure` |
+| `BASE_URL` | 对外访问根 URL（如 `https://example.com`），用于邮件内链接等 |
+| `TLS_CERT_FILE` | PEM 证书路径；与 `TLS_KEY_FILE` **同时设置**时，进程用 **HTTPS** 监听 `LISTEN_ADDR`（不设则仅 HTTP） |
+| `TLS_KEY_FILE` | TLS 私钥 PEM 路径 |
+
+### HTTPS（SSL）
+
+**方式 A：Nginx 终止 TLS（推荐，与 `install.sh --with-nginx` 搭配）**
+
+1. 应用仅监听本机：`LISTEN_ADDR=127.0.0.1:8088`，并设置 **`AUTH_SECURE_COOKIE=true`**（以及 **`BASE_URL=https://你的域名`**）。
+2. 参考仓库 **`deploy/tasktracker.nginx-https.example.conf`**，将 `example.com`、证书路径改为你的域名与 Let's Encrypt 路径。
+3. 安装证书（示例）：`sudo apt install -y certbot python3-certbot-nginx`，然后 `sudo certbot --nginx -d your.domain`（按提示操作）。
+4. 防火墙放行 443（见下文「防火墙」）。
+
+**方式 B：由 Go 进程直接提供 HTTPS**
+
+同时设置 **`TLS_CERT_FILE`**、**`TLS_KEY_FILE`** 与 **`LISTEN_ADDR`**（例如 `:8443`；监听 **`:443`** 在 Linux 上通常需 root 或 `setcap`）。若未手动设置 **`AUTH_SECURE_COOKIE`**，程序会自动启用安全 Cookie。
 
 ## 在 Ubuntu 24 服务器部署
 
@@ -45,6 +61,7 @@ go build -o tasktracker .
 
 sudo apt update
 sudo apt install -y git wget ca-certificates
+
 git clone https://github.com/imlei/TaskTracker.git
 cd TaskTracker
 
@@ -73,6 +90,13 @@ sudo ./upgrade.sh
 ```
 
 脚本会：`git fetch` / `git pull`（默认 `origin main`）→ 按 `go.mod` 编译 → 将 `tasktracker` 安装到 **`PREFIX`**（默认 `/opt/tasktracker`）→ **`systemctl restart tasktracker`**（若已启用该服务）。环境变量 **`GIT_BRANCH`**、**`GIT_REMOTE`**、**`GOTOOLCHAIN`**、**`PREFIX`** 可覆盖默认行为；仅编译不装服务时可用普通用户执行，脚本会提示 `sudo` 命令。
+
+**升级同时刷新 Nginx（可选）**：仓库内 **`deploy/`** 模板更新后，可在升级时一并写回 Nginx 配置（需 **root**）：
+
+- 仅 HTTP 反代：`sudo ./upgrade.sh --nginx` 或 `sudo UPGRADE_NGINX=1 ./upgrade.sh`
+- HTTPS（需已存在 Let’s Encrypt 证书，域名与 `server_name`、证书目录一致）：`sudo ./upgrade.sh --nginx-ssl your.domain.com`
+
+若当前 **已是最新提交**，仍会执行 Nginx 刷新（便于只同步配置）。`./upgrade.sh --help` 可查看全部选项。
 
 **定时检查更新（示例）**：用 root 的 crontab 每周拉一次 main（生产环境请谨慎：**直接跟踪 main 可能引入未充分测试的提交**，更稳妥的是打 **Git tag**、在 CI 里发布再部署，或只拉指定 tag/分支）：
 
@@ -188,7 +212,7 @@ sudo systemctl daemon-reload
 sudo systemctl restart tasktracker
 ```
 
-使用 **HTTPS** 时，在 Nginx 上配置 443 与证书（例如 `certbot --nginx`），并在环境中设置 **`AUTH_SECURE_COOKIE=true`**（见上表）。
+HTTPS 详见上文「**HTTPS（SSL）**」；Nginx 示例见 **`deploy/tasktracker.nginx-https.example.conf`**。
 
 ### 6. 防火墙（Ubuntu）
 
@@ -211,8 +235,9 @@ sudo ufw enable
 
 ### 7. 首次访问
 
-- **直连应用端口**：浏览器打开 `http://服务器IP:8088`。
-- **经 Nginx（80）**：打开 `http://服务器IP/` 或你的域名。
+- **直连应用端口**：浏览器打开 `http://服务器IP:8088`（若配置了 TLS，则为 `https://…` 与对应端口）。
+- **经 Nginx（HTTP）**：打开 `http://服务器IP/` 或你的域名。
+- **经 Nginx（HTTPS）**：打开 `https://你的域名/`。
 
 按提示在 **`/setup.html`** 创建管理员；若已用环境变量预置 `AUTH_USER` / `AUTH_PASSWORD` 且数据库中已写入首个用户，则直接登录即可。
 
