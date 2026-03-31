@@ -59,6 +59,16 @@ let customersCache = [];
 /** 当前编辑对话框打开时的任务快照（用于保留 completedAt 等未在表单展示的字段） */
 let lastOpenedTask = null;
 
+function customerIsActive(c) {
+  const s = String((c && c.status) || "active").toLowerCase();
+  return s !== "inactive";
+}
+
+function taskCustomerStatusActive(t) {
+  const s = String((t && t.customerStatus) || "active").toLowerCase();
+  return s !== "inactive";
+}
+
 async function loadCustomers() {
   customersCache = asArray(await api("/api/customers"));
 }
@@ -82,6 +92,9 @@ function fillTaskCustomerSelect(selectedId) {
   sel.appendChild(empty);
   const sorted = [...customersCache].sort((a, b) => String(a.id).localeCompare(String(b.id)));
   for (const c of sorted) {
+    if (!customerIsActive(c) && String(c.id) !== String(selectedId || "")) {
+      continue;
+    }
     const o = document.createElement("option");
     o.value = c.id;
     o.textContent = (c.name || c.id).trim() || c.id;
@@ -608,15 +621,23 @@ async function loadInvoices() {
 }
 
 function renderCustomersList() {
-  const ul = document.getElementById("invoices-customers-list");
+  const tbody = document.getElementById("invoices-customers-list");
   const hint = document.getElementById("invoices-customers-hint");
-  if (!ul) return;
+  if (!tbody) return;
   const rows = [...asArray(customersCache)].sort((a, b) => String(a.id).localeCompare(String(b.id)));
-  ul.innerHTML = "";
+  tbody.innerHTML = "";
   for (const c of rows) {
-    const li = document.createElement("li");
-    li.textContent = `${c.id} — ${(c.name || "").trim() || c.id}`;
-    ul.appendChild(li);
+    const active = customerIsActive(c);
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td>${escapeHtml(c.id)}</td>
+      <td>${escapeHtml((c.name || "").trim() || c.id)}</td>
+      <td>${active ? `<span class="status-done">active</span>` : `<span class="status-pending">inactive</span>`}</td>
+      <td class="row-actions">
+        <button type="button" class="ghost small" data-act="edit">Edit</button>
+      </td>`;
+    tr.querySelector('[data-act="edit"]').addEventListener("click", () => openCustomerEditDialog(c.id));
+    tbody.appendChild(tr);
   }
   if (hint) {
     hint.textContent = rows.length
@@ -647,6 +668,7 @@ async function setInvoiceView(mode) {
 function getDoneTasksForInvoice() {
   return asArray(tasksCache)
     .filter((t) => t.status === "Done")
+    .filter((t) => taskCustomerStatusActive(t))
     .sort((a, b) => {
       const ca = (a.customerName || "").trim();
       const cb = (b.customerName || "").trim();
@@ -819,6 +841,58 @@ document.getElementById("btn-invoices-new-customer")?.addEventListener("click", 
     alert("添加失败: " + e.message);
   }
 });
+
+const dlgCustomer = document.getElementById("dlg-customer");
+const formCustomer = document.getElementById("form-customer");
+
+async function openCustomerEditDialog(customerId) {
+  if (!dlgCustomer || !formCustomer) return;
+  try {
+    const c = await api(`/api/customers/${encodeURIComponent(customerId)}`);
+    document.getElementById("customer-edit-id").value = c.id || "";
+    const idname = document.getElementById("customer-edit-idname");
+    if (idname) idname.textContent = `${c.id} — ${(c.name || "").trim() || c.id}`;
+    document.getElementById("customer-edit-email").value = c.email || "";
+    document.getElementById("customer-edit-phone").value = c.phone || "";
+    document.getElementById("customer-edit-address").value = c.address || "";
+    const inactive = String(c.status || "active").toLowerCase() === "inactive";
+    document.getElementById("customer-edit-inactive").checked = inactive;
+    dlgCustomer.showModal();
+  } catch (e) {
+    alert("加载客户失败: " + e.message);
+  }
+}
+
+formCustomer?.addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const id = document.getElementById("customer-edit-id")?.value?.trim();
+  if (!id) return;
+  const inactive = document.getElementById("customer-edit-inactive")?.checked;
+  const body = {
+    email: document.getElementById("customer-edit-email")?.value ?? "",
+    phone: document.getElementById("customer-edit-phone")?.value ?? "",
+    address: document.getElementById("customer-edit-address")?.value ?? "",
+    status: inactive ? "inactive" : "active",
+  };
+  try {
+    await api(`/api/customers/${encodeURIComponent(id)}`, { method: "PUT", body: JSON.stringify(body) });
+    await loadCustomers();
+    await loadTasks();
+    dlgCustomer?.close();
+    if (invoiceViewMode === "customers") {
+      renderCustomersList();
+    }
+    if (invoiceViewMode === "new-invoice") {
+      renderNewInvoiceView();
+    }
+    const selId = document.getElementById("task-customer")?.value;
+    fillTaskCustomerSelect(selId || "");
+  } catch (err) {
+    alert("保存失败: " + err.message);
+  }
+});
+
+document.getElementById("customer-edit-cancel")?.addEventListener("click", () => dlgCustomer?.close());
 document.getElementById("btn-invoices-back-payment")?.addEventListener("click", () => setInvoiceView("list"));
 document.getElementById("btn-invoices-back-new")?.addEventListener("click", () => setInvoiceView("list"));
 

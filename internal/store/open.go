@@ -119,6 +119,10 @@ func Open(dir string) (*sql.DB, error) {
 		_ = db.Close()
 		return nil, err
 	}
+	if err := ensureCustomerExtraColumns(db); err != nil {
+		_ = db.Close()
+		return nil, err
+	}
 	if err := ensureTaskCustomerIDColumn(db); err != nil {
 		_ = db.Close()
 		return nil, err
@@ -141,6 +145,44 @@ CREATE TABLE IF NOT EXISTS customers (
   name TEXT NOT NULL DEFAULT ''
 );`)
 	return err
+}
+
+func ensureCustomerExtraColumns(db *sql.DB) error {
+	want := []struct {
+		Name string
+		DDL  string
+	}{
+		{Name: "email", DDL: "ALTER TABLE customers ADD COLUMN email TEXT NOT NULL DEFAULT ''"},
+		{Name: "phone", DDL: "ALTER TABLE customers ADD COLUMN phone TEXT NOT NULL DEFAULT ''"},
+		{Name: "address", DDL: "ALTER TABLE customers ADD COLUMN address TEXT NOT NULL DEFAULT ''"},
+		{Name: "status", DDL: "ALTER TABLE customers ADD COLUMN status TEXT NOT NULL DEFAULT 'active'"},
+	}
+	existing := map[string]bool{}
+	rows, err := db.Query(`PRAGMA table_info(customers)`)
+	if err != nil {
+		return err
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var cid int
+		var name, ctype string
+		var notnull int
+		var dflt sql.NullString
+		var pk int
+		if err := rows.Scan(&cid, &name, &ctype, &notnull, &dflt, &pk); err != nil {
+			continue
+		}
+		existing[name] = true
+	}
+	for _, c := range want {
+		if existing[c.Name] {
+			continue
+		}
+		if _, err := db.Exec(c.DDL); err != nil {
+			continue
+		}
+	}
+	return nil
 }
 
 func ensureTaskCustomerIDColumn(db *sql.DB) error {

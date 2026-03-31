@@ -157,7 +157,19 @@
               <button type="button" class="ghost small" id="btn-invoices-back-customers">← 发票列表</button>
             </div>
             <p class="report-summary" id="invoices-customers-hint">系统客户列表。</p>
-            <ul class="invoices-customers-list" id="invoices-customers-list"></ul>
+            <div class="table-wrap invoices-customers-table-wrap">
+              <table class="data">
+                <thead>
+                  <tr>
+                    <th>ID</th>
+                    <th>名称</th>
+                    <th>状态</th>
+                    <th></th>
+                  </tr>
+                </thead>
+                <tbody id="invoices-customers-list"></tbody>
+              </table>
+            </div>
             <div class="invoices-customers-footer">
               <button type="button" class="primary" id="btn-invoices-new-customer">New Customer</button>
             </div>
@@ -342,6 +354,25 @@
       <div class="dlg-actions">
         <button type="submit" class="primary">保存</button>
         <button type="button" id="pay-cancel">取消</button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog id="dlg-customer" class="dlg-task-wide">
+    <form id="form-customer">
+      <h2>Edit Customer</h2>
+      <input type="hidden" id="customer-edit-id" />
+      <p class="customer-edit-title" id="customer-edit-idname"></p>
+      <label>Email <input id="customer-edit-email" type="email" autocomplete="off" /></label>
+      <label>电话 <input id="customer-edit-phone" type="text" autocomplete="off" /></label>
+      <label>地址 <textarea id="customer-edit-address" rows="3"></textarea></label>
+      <label class="customer-inline-check">
+        <input id="customer-edit-inactive" type="checkbox" />
+        设为 inactive（不可新建任务与发票）
+      </label>
+      <div class="dlg-actions">
+        <button type="submit" class="primary">保存</button>
+        <button type="button" id="customer-edit-cancel">取消</button>
       </div>
     </form>
   </dialog>

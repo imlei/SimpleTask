@@ -18,7 +18,13 @@ var (
 	ErrTaskLocked       = errors.New("task locked")
 	ErrTaskPaidLocked   = errors.New("paid task cannot be modified")
 	ErrTaskDeleteLocked = errors.New("only pending tasks can be deleted")
+	ErrCustomerInactive = errors.New("customer is inactive")
 )
+
+func isActiveCustomerStatus(status string) bool {
+	s := strings.ToLower(strings.TrimSpace(status))
+	return s == "" || s == "active"
+}
 
 type Store struct {
 	db      *sql.DB
@@ -125,6 +131,7 @@ func scanTaskJoin(sc interface {
 		&t.Note,
 		&sel,
 		&t.CustomerName,
+		&t.CustomerStatus,
 	)
 	if err != nil {
 		return models.Task{}, err
@@ -186,7 +193,7 @@ const taskCols = `id, customer_id, company_name, date, service1, service2, price
 func (s *Store) GetTask(id string) (models.Task, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	row := s.db.QueryRow(`SELECT t.id, t.customer_id, t.company_name, t.date, t.service1, t.service2, t.price1, t.price2, t.status, t.completed_at, t.note, t.selected_price_ids, COALESCE(c.name,'') FROM tasks t LEFT JOIN customers c ON c.id = t.customer_id WHERE t.id=?`, id)
+	row := s.db.QueryRow(`SELECT t.id, t.customer_id, t.company_name, t.date, t.service1, t.service2, t.price1, t.price2, t.status, t.completed_at, t.note, t.selected_price_ids, COALESCE(c.name,''), COALESCE(c.status,'active') FROM tasks t LEFT JOIN customers c ON c.id = t.customer_id WHERE t.id=?`, id)
 	t, err := scanTaskJoin(row)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
@@ -198,7 +205,7 @@ func (s *Store) GetTask(id string) (models.Task, error) {
 }
 
 func (s *Store) ListTasks() []models.Task {
-	rows, err := s.db.Query(`SELECT t.id, t.customer_id, t.company_name, t.date, t.service1, t.service2, t.price1, t.price2, t.status, t.completed_at, t.note, t.selected_price_ids, COALESCE(c.name,'') FROM tasks t LEFT JOIN customers c ON c.id = t.customer_id ORDER BY t.id`)
+	rows, err := s.db.Query(`SELECT t.id, t.customer_id, t.company_name, t.date, t.service1, t.service2, t.price1, t.price2, t.status, t.completed_at, t.note, t.selected_price_ids, COALESCE(c.name,''), COALESCE(c.status,'active') FROM tasks t LEFT JOIN customers c ON c.id = t.customer_id ORDER BY t.id`)
 	if err != nil {
 		return nil
 	}
@@ -347,7 +354,7 @@ func (s *Store) DeleteTask(id string) error {
 func (s *Store) ListCustomers() []models.Customer {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	rows, err := s.db.Query(`SELECT id, name FROM customers ORDER BY id`)
+	rows, err := s.db.Query(`SELECT id, name, COALESCE(email,''), COALESCE(phone,''), COALESCE(address,''), COALESCE(status,'active') FROM customers ORDER BY id`)
 	if err != nil {
 		return nil
 	}
@@ -355,12 +362,116 @@ func (s *Store) ListCustomers() []models.Customer {
 	out := make([]models.Customer, 0)
 	for rows.Next() {
 		var c models.Customer
-		if err := rows.Scan(&c.ID, &c.Name); err != nil {
+		if err := rows.Scan(&c.ID, &c.Name, &c.Email, &c.Phone, &c.Address, &c.Status); err != nil {
 			continue
 		}
 		out = append(out, c)
 	}
 	return out
+}
+
+// GetCustomer 按 id 查询客户
+func (s *Store) GetCustomer(id string) (models.Customer, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	return s.getCustomerUnlocked(id)
+}
+
+func (s *Store) getCustomerUnlocked(id string) (models.Customer, error) {
+	var c models.Customer
+	err := s.db.QueryRow(
+		`SELECT id, name, COALESCE(email,''), COALESCE(phone,''), COALESCE(address,''), COALESCE(status,'active') FROM customers WHERE id=?`,
+		strings.TrimSpace(id),
+	).Scan(&c.ID, &c.Name, &c.Email, &c.Phone, &c.Address, &c.Status)
+	if errors.Is(err, sql.ErrNoRows) {
+		return models.Customer{}, ErrNotFound
+	}
+	if err != nil {
+		return models.Customer{}, err
+	}
+	return c, nil
+}
+
+// UpdateCustomer 更新联系信息与状态（不修改客户 id/name）
+func (s *Store) UpdateCustomer(id string, patch models.Customer) (models.Customer, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	id = strings.TrimSpace(id)
+	existing, err := s.getCustomerUnlocked(id)
+	if err != nil {
+		return models.Customer{}, err
+	}
+	email := strings.TrimSpace(patch.Email)
+	phone := strings.TrimSpace(patch.Phone)
+	address := strings.TrimSpace(patch.Address)
+	status := strings.ToLower(strings.TrimSpace(patch.Status))
+	if status == "" {
+		status = strings.ToLower(strings.TrimSpace(existing.Status))
+	}
+	if status == "" {
+		status = "active"
+	}
+	if status != "active" && status != "inactive" {
+		status = strings.ToLower(strings.TrimSpace(existing.Status))
+		if status == "" || (status != "active" && status != "inactive") {
+			status = "active"
+		}
+	}
+	res, err := s.db.Exec(`UPDATE customers SET email=?, phone=?, address=?, status=? WHERE id=?`,
+		email, phone, address, status, id)
+	if err != nil {
+		return models.Customer{}, err
+	}
+	n, _ := res.RowsAffected()
+	if n == 0 {
+		return models.Customer{}, ErrNotFound
+	}
+	return s.getCustomerUnlocked(id)
+}
+
+// RequireCustomerActive 新建任务或更换客户时：客户须存在且非 inactive
+func (s *Store) RequireCustomerActive(customerID string) error {
+	cid := strings.TrimSpace(customerID)
+	if cid == "" {
+		return ErrNotFound
+	}
+	c, err := s.GetCustomer(cid)
+	if err != nil {
+		return err
+	}
+	if !isActiveCustomerStatus(c.Status) {
+		return ErrCustomerInactive
+	}
+	return nil
+}
+
+func (s *Store) validateInvoiceTasksCustomersActiveLocked(inv *models.Invoice) error {
+	normalizeInvoiceTaskIDs(inv)
+	for _, tid := range invoiceLinkedTaskIDs(*inv) {
+		if strings.TrimSpace(tid) == "" {
+			continue
+		}
+		var cid string
+		err := s.db.QueryRow(`SELECT customer_id FROM tasks WHERE id=?`, tid).Scan(&cid)
+		if errors.Is(err, sql.ErrNoRows) {
+			return fmt.Errorf("task %s not found", tid)
+		}
+		if err != nil {
+			return err
+		}
+		var st string
+		err = s.db.QueryRow(`SELECT COALESCE(status,'active') FROM customers WHERE id=?`, strings.TrimSpace(cid)).Scan(&st)
+		if errors.Is(err, sql.ErrNoRows) {
+			return fmt.Errorf("customer for task %s not found", tid)
+		}
+		if err != nil {
+			return err
+		}
+		if !isActiveCustomerStatus(st) {
+			return ErrCustomerInactive
+		}
+	}
+	return nil
 }
 
 // CreateCustomer 新建客户（id 空则自动生成 C0001 形式）
@@ -375,12 +486,14 @@ func (s *Store) CreateCustomer(c models.Customer) models.Customer {
 	if id == "" {
 		id = s.nextCustomerIDLocked()
 	}
-	_, err := s.db.Exec(`INSERT INTO customers (id, name) VALUES (?,?)`, id, name)
+	_, err := s.db.Exec(`INSERT INTO customers (id, name, email, phone, address, status) VALUES (?,?,?,?,?,?)`,
+		id, name, strings.TrimSpace(c.Email), strings.TrimSpace(c.Phone), strings.TrimSpace(c.Address), "active")
 	if err != nil {
 		return c
 	}
 	c.ID = id
 	c.Name = name
+	c.Status = "active"
 	return c
 }
 
@@ -531,6 +644,9 @@ func (s *Store) nextInvoiceNo(now time.Time) string {
 func (s *Store) CreateInvoice(inv models.Invoice) (models.Invoice, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
+	if err := s.validateInvoiceTasksCustomersActiveLocked(&inv); err != nil {
+		return models.Invoice{}, err
+	}
 	now := time.Now()
 	if inv.ID == "" {
 		inv.ID = fmt.Sprintf("I%s", now.Format("20060102150405"))

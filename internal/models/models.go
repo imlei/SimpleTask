@@ -12,8 +12,12 @@ const (
 
 // Customer 客户（任务从客户中选择；公司名为任务上的具体名称）
 type Customer struct {
-	ID   string `json:"id"`
-	Name string `json:"name"`
+	ID      string `json:"id"`
+	Name    string `json:"name"`
+	Email   string `json:"email"`
+	Phone   string `json:"phone"`
+	Address string `json:"address"`
+	Status  string `json:"status"` // active | inactive；inactive 时不可新建任务/发票
 }
 
 // Task 对应任务表中的一行
@@ -21,6 +25,7 @@ type Task struct {
 	ID               string     `json:"id"`
 	CustomerID       string     `json:"customerId"`
 	CustomerName     string     `json:"customerName,omitempty"` // 列表/详情展示，来自 customers 表
+	CustomerStatus   string     `json:"customerStatus,omitempty"` // 来自 customers.status，用于前端过滤 inactive
 	CompanyName      string     `json:"companyName"`            // 公司名（隶属于所选 Customer）
 	Date             string     `json:"date"` // ISO 日期字符串，如 2026-03-30
 	Service1         string     `json:"service1"`

@@ -166,24 +166,35 @@ body.login-page {
   font-weight: 600;
 }
 
-.invoices-customers-list {
-  margin: 0;
-  padding: 0 0 0 1.1rem;
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  background: var(--surface);
+.invoices-customers-table-wrap {
   max-height: 60vh;
   overflow: auto;
 }
 
-.invoices-customers-list li {
-  padding: 0.45rem 0;
-  border-bottom: 1px solid var(--border);
+.customer-edit-title {
+  margin: 0 0 0.75rem;
   font-size: 0.95rem;
+  color: var(--muted);
 }
 
-.invoices-customers-list li:last-child {
-  border-bottom: none;
+.customer-inline-check {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+}
+
+#dlg-customer label {
+  display: block;
+  margin-bottom: 0.65rem;
+}
+
+#dlg-customer input[type="email"],
+#dlg-customer input[type="text"],
+#dlg-customer textarea {
+  width: 100%;
+  max-width: 28rem;
+  box-sizing: border-box;
 }
 
 .invoices-customers-footer {

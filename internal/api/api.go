@@ -40,6 +40,18 @@ func (s *Server) handleTasks(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, "customerId is required", http.StatusBadRequest)
 			return
 		}
+		if err := s.Store.RequireCustomerActive(t.CustomerID); err != nil {
+			if errors.Is(err, store.ErrNotFound) {
+				http.Error(w, "customer not found", http.StatusBadRequest)
+				return
+			}
+			if errors.Is(err, store.ErrCustomerInactive) {
+				http.Error(w, err.Error(), http.StatusForbidden)
+				return
+			}
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
 		created := s.Store.CreateTask(t)
 		writeJSON(w, http.StatusCreated, created)
 	default:
@@ -74,6 +86,29 @@ func (s *Server) handleTaskByID(w http.ResponseWriter, r *http.Request) {
 		if strings.TrimSpace(t.CustomerID) == "" {
 			http.Error(w, "customerId is required", http.StatusBadRequest)
 			return
+		}
+		existing, err := s.Store.GetTask(id)
+		if errors.Is(err, store.ErrNotFound) {
+			http.NotFound(w, r)
+			return
+		}
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		if strings.TrimSpace(t.CustomerID) != strings.TrimSpace(existing.CustomerID) {
+			if err := s.Store.RequireCustomerActive(t.CustomerID); err != nil {
+				if errors.Is(err, store.ErrNotFound) {
+					http.Error(w, "customer not found", http.StatusBadRequest)
+					return
+				}
+				if errors.Is(err, store.ErrCustomerInactive) {
+					http.Error(w, err.Error(), http.StatusForbidden)
+					return
+				}
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+				return
+			}
 		}
 		invoiceEdit := r.URL.Query().Get("invoiceEdit") == "1"
 		updated, err := s.Store.UpdateTask(id, t, invoiceEdit)
@@ -201,6 +236,10 @@ func (s *Server) handleInvoices(w http.ResponseWriter, r *http.Request) {
 		}
 		created, err := s.Store.CreateInvoice(inv)
 		if err != nil {
+			if errors.Is(err, store.ErrCustomerInactive) {
+				http.Error(w, err.Error(), http.StatusForbidden)
+				return
+			}
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
@@ -402,9 +441,50 @@ func (s *Server) handleCustomers(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+func (s *Server) handleCustomerByID(w http.ResponseWriter, r *http.Request) {
+	id := strings.TrimPrefix(r.URL.Path, "/api/customers/")
+	id = strings.TrimSpace(id)
+	if id == "" {
+		http.NotFound(w, r)
+		return
+	}
+	switch r.Method {
+	case http.MethodGet:
+		c, err := s.Store.GetCustomer(id)
+		if errors.Is(err, store.ErrNotFound) {
+			http.NotFound(w, r)
+			return
+		}
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		writeJSON(w, http.StatusOK, c)
+	case http.MethodPut:
+		var patch models.Customer
+		if err := json.NewDecoder(r.Body).Decode(&patch); err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+		updated, err := s.Store.UpdateCustomer(id, patch)
+		if errors.Is(err, store.ErrNotFound) {
+			http.NotFound(w, r)
+			return
+		}
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		writeJSON(w, http.StatusOK, updated)
+	default:
+		w.WriteHeader(http.StatusMethodNotAllowed)
+	}
+}
+
 func Register(mux *http.ServeMux, s *Server) {
 	mux.HandleFunc("/api/settings/public", s.handleSettingsPublic)
 	mux.HandleFunc("/api/settings", s.handleSettings)
+	mux.HandleFunc("/api/customers/", s.handleCustomerByID)
 	mux.HandleFunc("/api/customers", s.handleCustomers)
 	mux.HandleFunc("/api/tasks", s.handleTasks)
 	mux.HandleFunc("/api/tasks/", s.handleTaskByID)
