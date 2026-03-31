@@ -87,13 +87,24 @@ function renderTasks() {
   const filter = $("#filter-status").value;
   const body = $("#tasks-body");
   body.innerHTML = "";
-  const rows = asArray(tasksCache).filter((t) => !filter || t.status === filter);
+  const rows = asArray(tasksCache)
+    .filter((t) => t.status !== "Paid")
+    .filter((t) => !filter || t.status === filter)
+    .sort((a, b) => {
+      const pa = a.status === "Pending" ? 0 : 1;
+      const pb = b.status === "Pending" ? 0 : 1;
+      if (pa !== pb) return pa - pb;
+      return String(a.id).localeCompare(String(b.id));
+    });
   for (const t of rows) {
     const tr = document.createElement("tr");
     const done = t.status === "Done";
+    const canDelete = t.status === "Pending";
+    const cn = escapeHtml(t.companyName);
     tr.innerHTML = `
       <td>${escapeHtml(t.id)}</td>
-      <td>${escapeHtml(t.companyName)}</td>
+      <td>${cn}</td>
+      <td>${cn}</td>
       <td>${escapeHtml(t.date || "")}</td>
       <td>${escapeHtml(t.service1 || "")}</td>
       <td>${fmtNum(t.price1)}</td>
@@ -102,12 +113,10 @@ function renderTasks() {
       <td>${escapeHtml(t.note || "")}</td>
       <td class="row-actions">
         <button type="button" class="ghost" data-act="edit">编辑</button>
-        <button type="button" class="ghost" data-act="invoice">Invoice</button>
         <button type="button" class="ghost success" data-act="done" ${done ? "disabled" : ""}>Completed</button>
-        <button type="button" class="ghost danger" data-act="del">删除</button>
+        <button type="button" class="ghost danger" data-act="del" ${canDelete ? "" : "disabled"}>删除</button>
       </td>`;
     tr.querySelector('[data-act="edit"]').addEventListener("click", () => openTaskDialog(t));
-    tr.querySelector('[data-act="invoice"]').addEventListener("click", () => openInvoiceDialog(t));
     const btnDone = tr.querySelector('[data-act="done"]');
     if (!done) {
       btnDone.addEventListener("click", () => markTaskCompleted(t));
@@ -124,6 +133,33 @@ $("#btn-new-task").addEventListener("click", () => openTaskDialog(null));
 const dlgTask = $("#dlg-task");
 const formTask = $("#form-task");
 const taskPricePicks = $("#task-price-picks");
+/** 从 Invoices 打开任务编辑时为 true，可改 Done/Sent */
+let taskDialogInvoiceEdit = false;
+
+function setTaskFormLocked(locked) {
+  const hint = document.getElementById("task-lock-hint");
+  const submit = document.getElementById("task-submit-btn");
+  const clearBtn = document.getElementById("task-price-clear");
+  if (submit) submit.disabled = locked;
+  if (clearBtn) clearBtn.disabled = locked;
+  if (hint) {
+    hint.hidden = !locked;
+    hint.textContent = "此任务在任务页已锁定。Done / Sent 请在 Invoices 中修改；Paid 不可修改。";
+  }
+  document.querySelectorAll("#task-price-picks input[type=checkbox]").forEach((cb) => {
+    cb.disabled = locked;
+  });
+  document.querySelectorAll("#form-task input, #form-task textarea, #form-task select").forEach((el) => {
+    if (el.id === "task-id") return;
+    if (el.type === "hidden") return;
+    el.disabled = locked;
+  });
+}
+
+dlgTask.addEventListener("close", () => {
+  taskDialogInvoiceEdit = false;
+  setTaskFormLocked(false);
+});
 
 taskPricePicks.addEventListener("change", () => applyTaskPriceSelection());
 
@@ -244,15 +280,23 @@ async function markTaskCompleted(t) {
   }
 }
 
-async function openTaskDialog(t) {
+async function openTaskDialog(t, opts = {}) {
+  if (t && t.status === "Paid") {
+    alert("Paid 任务不可修改。");
+    return;
+  }
+  taskDialogInvoiceEdit = !!(opts && opts.invoiceEdit);
+  const locked =
+    !!(t && (t.status === "Done" || t.status === "Sent" || t.status === "Paid") && !taskDialogInvoiceEdit);
   lastOpenedTask = t || null;
   await ensurePricesLoaded();
+  setTaskFormLocked(false);
   $("#dlg-task-title").textContent = t ? "编辑任务" : "新建任务";
   $("#task-id").value = t?.id || "";
   $("#task-no").value = t?.id || "";
   $("#task-company").value = t?.companyName || "";
   $("#task-date").value = t ? (t.date || "") : todayLocalISO();
-  $("#task-status").value = t?.status === "Done" ? "Done" : "Pending";
+  $("#task-status").value = t?.status || "Pending";
   $("#task-note").value = t?.note || "";
 
   renderPriceCheckboxes(t?.selectedPriceIds || []);
@@ -262,6 +306,7 @@ async function openTaskDialog(t) {
   $("#task-price-preview").hidden = true;
   $("#task-price-preview").textContent = "";
   dlgTask.showModal();
+  setTaskFormLocked(locked);
 }
 
 $("#task-cancel").addEventListener("click", () => dlgTask.close());
@@ -269,6 +314,8 @@ $("#task-cancel").addEventListener("click", () => dlgTask.close());
 formTask.addEventListener("submit", async (e) => {
   e.preventDefault();
   const id = $("#task-id").value;
+  const submitBtn = document.getElementById("task-submit-btn");
+  if (submitBtn && submitBtn.disabled) return;
   const payload = {
     companyName: $("#task-company").value.trim(),
     date: $("#task-date").value,
@@ -282,10 +329,14 @@ formTask.addEventListener("submit", async (e) => {
   };
   if (id && lastOpenedTask) {
     payload.completedAt = lastOpenedTask.completedAt || "";
+    if (taskDialogInvoiceEdit) {
+      payload.status = lastOpenedTask.status;
+    }
   }
   try {
     if (id) {
-      await api(`/api/tasks/${encodeURIComponent(id)}`, { method: "PUT", body: JSON.stringify(payload) });
+      const q = taskDialogInvoiceEdit ? "?invoiceEdit=1" : "";
+      await api(`/api/tasks/${encodeURIComponent(id)}${q}`, { method: "PUT", body: JSON.stringify(payload) });
     } else {
       await api("/api/tasks", { method: "POST", body: JSON.stringify(payload) });
     }
@@ -302,13 +353,20 @@ async function deleteTask(id) {
     await api(`/api/tasks/${encodeURIComponent(id)}`, { method: "DELETE" });
     await loadTasks();
   } catch (err) {
-    alert("删除失败: " + err.message);
+    alert("删除失败: " + (err.message || err));
   }
 }
 
 // --- Invoice ---
 const dlgInvoice = document.getElementById("dlg-invoice");
 const formInvoice = document.getElementById("form-invoice");
+/** 合并开票时非空（多任务）；单任务开票为 null */
+let invoiceMultiTasks = null;
+
+dlgInvoice?.addEventListener("close", () => {
+  invoiceMultiTasks = null;
+  setInvoiceDialogMode(false);
+});
 
 function addDaysISO(base, days) {
   const d = new Date(base);
@@ -316,7 +374,16 @@ function addDaysISO(base, days) {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 }
 
+function setInvoiceDialogMode(isMulti) {
+  const singleEl = document.getElementById("inv-single-line-fields");
+  const multiEl = document.getElementById("inv-multi-line-block");
+  if (singleEl) singleEl.hidden = !!isMulti;
+  if (multiEl) multiEl.hidden = !isMulti;
+}
+
 function openInvoiceDialog(task) {
+  invoiceMultiTasks = null;
+  setInvoiceDialogMode(false);
   const today = todayLocalISO();
   document.getElementById("inv-task-id").value = task.id;
   document.getElementById("inv-bill-name").value = task.companyName || "";
@@ -336,13 +403,82 @@ function openInvoiceDialog(task) {
   dlgInvoice.showModal();
 }
 
+/** 同一客户的多条 Done 任务合并开票 */
+function openInvoiceDialogMulti(tasks) {
+  if (!tasks || tasks.length === 0) return;
+  if (tasks.length === 1) {
+    openInvoiceDialog(tasks[0]);
+    return;
+  }
+  invoiceMultiTasks = tasks;
+  setInvoiceDialogMode(true);
+  const first = tasks[0];
+  const today = todayLocalISO();
+  document.getElementById("inv-task-id").value = first.id;
+  document.getElementById("inv-bill-name").value = first.companyName || "";
+  document.getElementById("inv-bill-addr").value = "";
+  document.getElementById("inv-bill-email").value = "";
+  document.getElementById("inv-ship-name").value = first.companyName || "";
+  document.getElementById("inv-ship-addr").value = "";
+  document.getElementById("inv-date").value = today;
+  document.getElementById("inv-terms").value = "Net 30";
+  document.getElementById("inv-due-date").value = addDaysISO(today, 30);
+  document.getElementById("inv-currency").value = "USD";
+  document.getElementById("inv-tax-rate").value = 0;
+  const tbody = document.getElementById("inv-multi-body");
+  if (tbody) {
+    tbody.innerHTML = "";
+    for (const t of tasks) {
+      const rate = Number(t.price1) || 0;
+      const tr = document.createElement("tr");
+      tr.innerHTML = `
+        <td>${escapeHtml(t.id)}</td>
+        <td>${escapeHtml(t.service1 || "")}</td>
+        <td>1</td>
+        <td>${escapeHtml(String(rate))}</td>
+        <td>${escapeHtml(String(rate))}</td>`;
+      tbody.appendChild(tr);
+    }
+  }
+  dlgInvoice.showModal();
+}
+
 document.getElementById("invoice-cancel")?.addEventListener("click", () => dlgInvoice.close());
 
 formInvoice?.addEventListener("submit", async (e) => {
   e.preventDefault();
-  const qty = parseFloat(document.getElementById("inv-qty").value) || 1;
-  const rate = parseFloat(document.getElementById("inv-rate").value) || 0;
   const taxRate = parseFloat(document.getElementById("inv-tax-rate").value) || 0;
+  const taxLabel = taxRate === 0 ? "Zero-rated" : `GST @ ${taxRate}%`;
+  let items;
+  let taskIds;
+  if (invoiceMultiTasks && invoiceMultiTasks.length > 1) {
+    taskIds = invoiceMultiTasks.map((t) => t.id);
+    items = invoiceMultiTasks.map((t) => {
+      const rate = Number(t.price1) || 0;
+      return {
+        description: "Consulting Services",
+        detail: (t.service1 || "").trim(),
+        taxLabel,
+        qty: 1,
+        rate,
+        amount: rate,
+      };
+    });
+  } else {
+    const qty = parseFloat(document.getElementById("inv-qty").value) || 1;
+    const rate = parseFloat(document.getElementById("inv-rate").value) || 0;
+    taskIds = null;
+    items = [
+      {
+        description: document.getElementById("inv-desc").value.trim(),
+        detail: document.getElementById("inv-detail").value.trim(),
+        taxLabel,
+        qty,
+        rate,
+        amount: qty * rate,
+      },
+    ];
+  }
   const payload = {
     taskId: document.getElementById("inv-task-id").value,
     invoiceDate: document.getElementById("inv-date").value,
@@ -355,21 +491,20 @@ formInvoice?.addEventListener("submit", async (e) => {
     shipToAddr: document.getElementById("inv-ship-addr").value.trim(),
     currency: document.getElementById("inv-currency").value,
     taxRate,
-    items: [
-      {
-        description: document.getElementById("inv-desc").value.trim(),
-        detail: document.getElementById("inv-detail").value.trim(),
-        taxLabel: taxRate === 0 ? "Zero-rated" : `GST @ ${taxRate}%`,
-        qty,
-        rate,
-        amount: qty * rate,
-      },
-    ],
+    items,
   };
+  if (taskIds && taskIds.length > 1) {
+    payload.taskIds = taskIds;
+  }
   try {
     const created = await api("/api/invoices", { method: "POST", body: JSON.stringify(payload) });
+    invoiceMultiTasks = null;
     dlgInvoice.close();
     window.open(`/invoice.html?id=${encodeURIComponent(created.id)}`, "_blank");
+    if (invoiceViewMode === "new-invoice") {
+      await loadTasks();
+      renderNewInvoiceView();
+    }
   } catch (err) {
     alert("生成 Invoice 失败: " + err.message);
   }
@@ -377,10 +512,20 @@ formInvoice?.addEventListener("submit", async (e) => {
 
 // --- Invoices list / send / payment ---
 let invoicesCache = [];
-/** list | customers | payment */
+/** list | customers | payment | new-invoice */
 let invoiceViewMode = "list";
 
 async function loadInvoices() {
+  if (invoiceViewMode === "new-invoice") {
+    try {
+      await loadTasks();
+      renderNewInvoiceView();
+    } catch (e) {
+      console.error(e);
+      alert("加载任务失败: " + e.message);
+    }
+    return;
+  }
   const filter = document.getElementById("invoice-filter")?.value || "";
   try {
     if (invoiceViewMode === "customers" || invoiceViewMode === "payment") {
@@ -427,14 +572,97 @@ async function setInvoiceView(mode) {
   const listEl = document.getElementById("invoices-view-list");
   const custEl = document.getElementById("invoices-view-customers");
   const payEl = document.getElementById("invoices-view-payment");
+  const newEl = document.getElementById("invoices-view-new-invoice");
   document.querySelectorAll(".invoices-nav-btn").forEach((btn) => {
     const v = btn.dataset.view;
-    btn.classList.toggle("active", v === mode && mode !== "list");
+    const isNew = btn.dataset.action === "new-invoice";
+    const active = (v === mode && mode !== "list") || (isNew && mode === "new-invoice");
+    btn.classList.toggle("active", active);
   });
   if (listEl) listEl.hidden = mode !== "list";
   if (custEl) custEl.hidden = mode !== "customers";
   if (payEl) payEl.hidden = mode !== "payment";
+  if (newEl) newEl.hidden = mode !== "new-invoice";
   await loadInvoices();
+}
+
+function getDoneTasksForInvoice() {
+  return asArray(tasksCache)
+    .filter((t) => t.status === "Done")
+    .sort((a, b) => {
+      const ca = (a.companyName || "").trim();
+      const cb = (b.companyName || "").trim();
+      if (ca !== cb) return ca.localeCompare(cb);
+      return String(a.id).localeCompare(String(b.id));
+    });
+}
+
+function updateInvoicingButtonState() {
+  const btn = document.getElementById("btn-invoicing-go");
+  if (!btn) return;
+  const selected = [...document.querySelectorAll(".new-inv-cb:checked")]
+    .map((x) => tasksCache.find((t) => t.id === x.dataset.taskId))
+    .filter(Boolean);
+  if (selected.length === 0) {
+    btn.disabled = true;
+    return;
+  }
+  const companies = new Set(selected.map((t) => (t.companyName || "").trim()));
+  btn.disabled = companies.size !== 1;
+}
+
+function onNewInvoiceCheckboxChange(e) {
+  const cb = e.target;
+  if (!cb.classList.contains("new-inv-cb")) return;
+  if (!cb.checked) {
+    updateInvoicingButtonState();
+    return;
+  }
+  const selected = [...document.querySelectorAll(".new-inv-cb:checked")]
+    .map((x) => tasksCache.find((t) => t.id === x.dataset.taskId))
+    .filter(Boolean);
+  const companies = new Set(selected.map((t) => (t.companyName || "").trim()));
+  if (companies.size > 1) {
+    alert("只能选择同一客户的任务。");
+    cb.checked = false;
+  }
+  updateInvoicingButtonState();
+}
+
+function renderNewInvoiceView() {
+  const tbody = document.getElementById("new-invoice-body");
+  const sum = document.getElementById("new-invoice-summary");
+  if (!tbody) return;
+  const done = getDoneTasksForInvoice();
+  tbody.innerHTML = "";
+  if (sum) {
+    sum.textContent =
+      done.length > 0
+        ? `共 ${done.length} 条可开票任务（状态为 Done）。`
+        : "暂无可开票任务：请先在「任务」页将任务标记为 Done。";
+  }
+  for (const t of done) {
+    const tr = document.createElement("tr");
+    const doneCls = t.status === "Done";
+    tr.innerHTML = `
+      <td><input type="checkbox" class="new-inv-cb" data-task-id="${escapeHtml(t.id)}" /></td>
+      <td>${escapeHtml(t.id)}</td>
+      <td>${escapeHtml(t.companyName)}</td>
+      <td>${escapeHtml(t.companyName)}</td>
+      <td>${escapeHtml(t.date || "")}</td>
+      <td>${escapeHtml(t.service1 || "")}</td>
+      <td>${fmtNum(t.price1)}</td>
+      <td><span class="${doneCls ? "status-done" : "status-pending"}">${escapeHtml(t.status)}</span></td>
+      <td class="row-actions">
+        <button type="button" class="ghost small" data-act="edit-from-inv">编辑</button>
+      </td>`;
+    tr.querySelector(".new-inv-cb").addEventListener("change", onNewInvoiceCheckboxChange);
+    tr.querySelector('[data-act="edit-from-inv"]').addEventListener("click", () =>
+      openTaskDialog(t, { invoiceEdit: true }),
+    );
+    tbody.appendChild(tr);
+  }
+  updateInvoicingButtonState();
 }
 
 function renderInvoices() {
@@ -467,12 +695,28 @@ function renderInvoices() {
         <button type="button" class="ghost" data-act="open">打开</button>
         <button type="button" class="ghost" data-act="send">Send</button>
         <button type="button" class="ghost success" data-act="pay">收款</button>
+        <button type="button" class="ghost small" data-act="edit-task">编辑任务</button>
       </td>`;
     tr.querySelector('[data-act="open"]').addEventListener("click", () => {
       window.open(`/invoice.html?id=${encodeURIComponent(inv.id)}`, "_blank");
     });
     tr.querySelector('[data-act="send"]').addEventListener("click", () => openSendInvoice(inv.id));
     tr.querySelector('[data-act="pay"]').addEventListener("click", () => openPayDialog(inv.id));
+    tr.querySelector('[data-act="edit-task"]').addEventListener("click", async () => {
+      const tid = (inv.taskId || "").trim();
+      if (!tid) return;
+      try {
+        const task = await api(`/api/tasks/${encodeURIComponent(tid)}`);
+        if (task.status === "Paid") {
+          alert("Paid 任务不可修改。");
+          return;
+        }
+        const ie = task.status === "Done" || task.status === "Sent";
+        openTaskDialog(task, { invoiceEdit: ie });
+      } catch (err) {
+        alert("加载任务失败: " + err.message);
+      }
+    });
     body.appendChild(tr);
   }
 }
@@ -489,7 +733,7 @@ document.getElementById("invoice-filter")?.addEventListener("change", () => load
 document.querySelectorAll(".invoices-nav-btn").forEach((btn) => {
   btn.addEventListener("click", () => {
     if (btn.dataset.action === "new-invoice") {
-      openNewInvoiceFromMenu();
+      setInvoiceView("new-invoice");
       return;
     }
     const v = btn.dataset.view;
@@ -501,45 +745,16 @@ document.querySelectorAll(".invoices-nav-btn").forEach((btn) => {
 
 document.getElementById("btn-invoices-back-customers")?.addEventListener("click", () => setInvoiceView("list"));
 document.getElementById("btn-invoices-back-payment")?.addEventListener("click", () => setInvoiceView("list"));
+document.getElementById("btn-invoices-back-new")?.addEventListener("click", () => setInvoiceView("list"));
 
-const dlgPickTask = document.getElementById("dlg-pick-task");
-const formPickTask = document.getElementById("form-pick-task");
-
-async function openNewInvoiceFromMenu() {
-  try {
-    await loadTasks();
-  } catch {
-    /* loadTasks already alerts */
-  }
-  const sel = document.getElementById("pick-task-id");
-  if (!sel || !dlgPickTask) return;
-  const tasks = asArray(tasksCache);
-  sel.innerHTML = "";
-  if (tasks.length === 0) {
-    alert("暂无任务，请先在「任务」页创建任务。");
-    return;
-  }
-  for (const t of tasks) {
-    const opt = document.createElement("option");
-    opt.value = t.id;
-    opt.textContent = `${t.id} — ${t.companyName || ""}`;
-    sel.appendChild(opt);
-  }
-  dlgPickTask.showModal();
-}
-
-document.getElementById("pick-task-cancel")?.addEventListener("click", () => dlgPickTask?.close());
-
-formPickTask?.addEventListener("submit", (e) => {
-  e.preventDefault();
-  const id = document.getElementById("pick-task-id")?.value;
-  const task = asArray(tasksCache).find((t) => t.id === id);
-  if (!task) {
-    alert("请选择任务");
-    return;
-  }
-  dlgPickTask?.close();
-  openInvoiceDialog(task);
+document.getElementById("btn-invoicing-go")?.addEventListener("click", () => {
+  const selected = [...document.querySelectorAll(".new-inv-cb:checked")]
+    .map((x) => tasksCache.find((t) => t.id === x.dataset.taskId))
+    .filter(Boolean);
+  if (selected.length === 0) return;
+  const companies = new Set(selected.map((t) => (t.companyName || "").trim()));
+  if (companies.size !== 1) return;
+  openInvoiceDialogMulti(selected);
 });
 
 async function openSendInvoice(id) {
@@ -644,6 +859,8 @@ function openPriceDialog(p) {
     p && p.amount != null && p.amount !== undefined ? p.amount : "";
   $("#price-currency").value = p?.currency || "CNY";
   $("#price-note").value = p?.note || "";
+  const sync = document.getElementById("price-sync-pending");
+  if (sync) sync.checked = false;
   dlgPrice.showModal();
 }
 
@@ -664,10 +881,17 @@ formPrice.addEventListener("submit", async (e) => {
     payload.amount = parseFloat(rawAmt);
   }
   try {
+    const sync = document.getElementById("price-sync-pending")?.checked;
+    const q = sync ? "?syncPendingTasks=1" : "";
+    let res;
     if (id) {
-      await api(`/api/prices/${encodeURIComponent(id)}`, { method: "PUT", body: JSON.stringify(payload) });
+      res = await api(`/api/prices/${encodeURIComponent(id)}${q}`, { method: "PUT", body: JSON.stringify(payload) });
     } else {
-      await api("/api/prices", { method: "POST", body: JSON.stringify(payload) });
+      res = await api(`/api/prices${q}`, { method: "POST", body: JSON.stringify(payload) });
+    }
+    if (typeof res.syncedPendingTasks === "number" && res.syncedPendingTasks > 0) {
+      alert(`已同步 ${res.syncedPendingTasks} 个 Pending 任务的「业务一 / 价格一」。`);
+      await loadTasks();
     }
     dlgPrice.close();
     await loadPrices();

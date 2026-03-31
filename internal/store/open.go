@@ -146,6 +146,7 @@ func ensureInvoiceColumns(db *sql.DB) error {
 		{Name: "sent_at", DDL: "ALTER TABLE invoices ADD COLUMN sent_at TEXT NOT NULL DEFAULT ''"},
 		{Name: "paid_amount", DDL: "ALTER TABLE invoices ADD COLUMN paid_amount REAL NOT NULL DEFAULT 0"},
 		{Name: "paid_at", DDL: "ALTER TABLE invoices ADD COLUMN paid_at TEXT NOT NULL DEFAULT ''"},
+		{Name: "task_ids_json", DDL: "ALTER TABLE invoices ADD COLUMN task_ids_json TEXT NOT NULL DEFAULT '[]'"},
 	}
 	existing := map[string]bool{}
 	rows, err := db.Query(`PRAGMA table_info(invoices)`)

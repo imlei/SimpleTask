@@ -58,6 +58,8 @@ type Invoice struct {
 	ID          string        `json:"id"`
 	InvoiceNo   string        `json:"invoiceNo"`
 	TaskID      string        `json:"taskId"`
+	// TaskIDs 与 taskId 一致：首项为主 task_id；合并开票时含全部任务 ID（持久化在 task_ids_json）
+	TaskIDs     []string      `json:"taskIds,omitempty"`
 	InvoiceDate string        `json:"invoiceDate"`
 	Terms       string        `json:"terms"`
 	DueDate     string        `json:"dueDate"`

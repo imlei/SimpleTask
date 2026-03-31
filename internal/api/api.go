@@ -20,6 +20,11 @@ type Server struct {
 	BaseURL string
 }
 
+type priceSaveResponse struct {
+	models.PriceItem
+	SyncedPending int `json:"syncedPendingTasks,omitempty"`
+}
+
 func (s *Server) handleTasks(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case http.MethodGet:
@@ -45,15 +50,35 @@ func (s *Server) handleTaskByID(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	switch r.Method {
+	case http.MethodGet:
+		t, err := s.Store.GetTask(id)
+		if errors.Is(err, store.ErrNotFound) {
+			http.NotFound(w, r)
+			return
+		}
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		writeJSON(w, http.StatusOK, t)
 	case http.MethodPut:
 		var t models.Task
 		if err := json.NewDecoder(r.Body).Decode(&t); err != nil {
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
 		}
-		updated, err := s.Store.UpdateTask(id, t)
+		invoiceEdit := r.URL.Query().Get("invoiceEdit") == "1"
+		updated, err := s.Store.UpdateTask(id, t, invoiceEdit)
 		if errors.Is(err, store.ErrNotFound) {
 			http.NotFound(w, r)
+			return
+		}
+		if errors.Is(err, store.ErrTaskLocked) || errors.Is(err, store.ErrTaskPaidLocked) {
+			http.Error(w, err.Error(), http.StatusForbidden)
+			return
+		}
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
 		writeJSON(w, http.StatusOK, updated)
@@ -61,6 +86,10 @@ func (s *Server) handleTaskByID(w http.ResponseWriter, r *http.Request) {
 		if err := s.Store.DeleteTask(id); err != nil {
 			if errors.Is(err, store.ErrNotFound) {
 				http.NotFound(w, r)
+				return
+			}
+			if errors.Is(err, store.ErrTaskDeleteLocked) {
+				http.Error(w, err.Error(), http.StatusForbidden)
 				return
 			}
 			http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -84,7 +113,16 @@ func (s *Server) handlePrices(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		created := s.Store.CreatePrice(p)
-		writeJSON(w, http.StatusCreated, created)
+		resp := priceSaveResponse{PriceItem: created}
+		if r.URL.Query().Get("syncPendingTasks") == "1" {
+			n, err := s.Store.SyncPendingTasksForPriceID(created.ID)
+			if err != nil {
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+				return
+			}
+			resp.SyncedPending = n
+		}
+		writeJSON(w, http.StatusCreated, resp)
 	default:
 		w.WriteHeader(http.StatusMethodNotAllowed)
 	}
@@ -108,7 +146,20 @@ func (s *Server) handlePriceByID(w http.ResponseWriter, r *http.Request) {
 			http.NotFound(w, r)
 			return
 		}
-		writeJSON(w, http.StatusOK, updated)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		resp := priceSaveResponse{PriceItem: updated}
+		if r.URL.Query().Get("syncPendingTasks") == "1" {
+			n, err := s.Store.SyncPendingTasksForPriceID(id)
+			if err != nil {
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+				return
+			}
+			resp.SyncedPending = n
+		}
+		writeJSON(w, http.StatusOK, resp)
 	case http.MethodDelete:
 		if err := s.Store.DeletePrice(id); err != nil {
 			if errors.Is(err, store.ErrNotFound) {

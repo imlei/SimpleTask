@@ -35,7 +35,6 @@
             <option value="Pending">Pending</option>
             <option value="Done">Done</option>
             <option value="Sent">Sent</option>
-            <option value="Paid">Paid</option>
           </select>
         </label>
         <button type="button" id="btn-new-task" class="primary">新建任务</button>
@@ -45,6 +44,7 @@
           <thead>
             <tr>
               <th>No.</th>
+              <th>Customer</th>
               <th>公司名</th>
               <th>日期</th>
               <th>业务一</th>
@@ -185,6 +185,35 @@
               </table>
             </div>
           </div>
+          <div id="invoices-view-new-invoice" class="invoices-view" hidden>
+            <div class="invoices-subhead">
+              <h3 class="invoices-subtitle">New Invoice</h3>
+              <button type="button" class="ghost small" id="btn-invoices-back-new">← 发票列表</button>
+            </div>
+            <p class="report-summary" id="new-invoice-summary">状态为 Done 的任务可在此合并开票。</p>
+            <div class="table-wrap">
+              <table class="data">
+                <thead>
+                  <tr>
+                    <th class="col-check"></th>
+                    <th>No.</th>
+                    <th>Customer</th>
+                    <th>公司名</th>
+                    <th>日期</th>
+                    <th>业务一</th>
+                    <th>价格一</th>
+                    <th>状态</th>
+                    <th></th>
+                  </tr>
+                </thead>
+                <tbody id="new-invoice-body"></tbody>
+              </table>
+            </div>
+            <div class="invoice-new-footer">
+              <span class="invoice-new-hint">勾选同一客户的 Done 任务后，可点击 Invoicing 生成发票。</span>
+              <button type="button" id="btn-invoicing-go" class="primary" disabled>Invoicing</button>
+            </div>
+          </div>
         </div>
       </div>
     </section>
@@ -210,8 +239,9 @@
       <label>价格一 <input id="task-p1" type="number" step="0.01" min="0" /></label>
       <input type="hidden" id="task-status" value="Pending" />
       <label>备注 <input id="task-note" /></label>
+      <p id="task-lock-hint" class="hint" hidden></p>
       <div class="dlg-actions">
-        <button type="submit" class="primary">保存</button>
+        <button type="submit" class="primary" id="task-submit-btn">保存</button>
         <button type="button" id="task-cancel">取消</button>
       </div>
     </form>
@@ -231,6 +261,10 @@
         </select>
       </label>
       <label>说明 <input id="price-note" placeholder="如：起" /></label>
+      <label class="price-sync-pending-label">
+        <input type="checkbox" id="price-sync-pending" />
+        同时更新状态为 Pending 且勾选了该价目的任务（业务一 / 价格一）
+      </label>
       <div class="dlg-actions">
         <button type="submit" class="primary">保存</button>
         <button type="button" id="price-cancel">取消</button>
@@ -258,25 +292,32 @@
         </select>
       </label>
       <label>Tax Rate(%) <input id="inv-tax-rate" type="number" step="0.01" min="0" value="0" /></label>
-      <label>Description <input id="inv-desc" value="Consulting Services" /></label>
-      <label>Detail <textarea id="inv-detail" rows="4"></textarea></label>
-      <label>Qty <input id="inv-qty" type="number" step="0.01" min="0.01" value="1" /></label>
-      <label>Rate <input id="inv-rate" type="number" step="0.01" min="0" value="0" /></label>
+      <div id="inv-single-line-fields">
+        <label>Description <input id="inv-desc" value="Consulting Services" /></label>
+        <label>Detail <textarea id="inv-detail" rows="4"></textarea></label>
+        <label>Qty <input id="inv-qty" type="number" step="0.01" min="0.01" value="1" /></label>
+        <label>Rate <input id="inv-rate" type="number" step="0.01" min="0" value="0" /></label>
+      </div>
+      <div id="inv-multi-line-block" hidden>
+        <p class="hint">以下明细将合并到一张发票（每行对应一个任务）：</p>
+        <div class="table-wrap inv-multi-table-wrap">
+          <table class="data">
+            <thead>
+              <tr>
+                <th>Task</th>
+                <th>Detail</th>
+                <th>Qty</th>
+                <th>Rate</th>
+                <th>Amount</th>
+              </tr>
+            </thead>
+            <tbody id="inv-multi-body"></tbody>
+          </table>
+        </div>
+      </div>
       <div class="dlg-actions">
         <button type="submit" class="primary">生成并打开</button>
         <button type="button" id="invoice-cancel">取消</button>
-      </div>
-    </form>
-  </dialog>
-
-  <dialog id="dlg-pick-task" class="dlg-task-wide">
-    <form id="form-pick-task">
-      <h2>New Invoice</h2>
-      <p class="hint">选择要生成发票的任务。</p>
-      <label>任务 <select id="pick-task-id" required></select></label>
-      <div class="dlg-actions">
-        <button type="submit" class="primary">继续</button>
-        <button type="button" id="pick-task-cancel">取消</button>
       </div>
     </form>
   </dialog>

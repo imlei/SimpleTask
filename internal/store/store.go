@@ -13,7 +13,12 @@ import (
 	"tasktracker/internal/models"
 )
 
-var ErrNotFound = errors.New("not found")
+var (
+	ErrNotFound         = errors.New("not found")
+	ErrTaskLocked       = errors.New("task locked")
+	ErrTaskPaidLocked   = errors.New("paid task cannot be modified")
+	ErrTaskDeleteLocked = errors.New("only pending tasks can be deleted")
+)
 
 type Store struct {
 	db      *sql.DB
@@ -103,7 +108,66 @@ func scanTaskScanner(sc interface {
 	return t, nil
 }
 
+func sliceContainsStr(s []string, x string) bool {
+	for _, v := range s {
+		if v == x {
+			return true
+		}
+	}
+	return false
+}
+
+func currencyKey(c models.Currency) string {
+	k := string(c)
+	if k == "" {
+		return "CNY"
+	}
+	return k
+}
+
+// recomputeTaskPricesFromSelection 与前端 applyTaskPriceSelection 一致：按勾选顺序汇总服务名与首币种金额
+func recomputeTaskPricesFromSelection(ids []string, priceMap map[string]models.PriceItem) (service1 string, price1 float64) {
+	var names []string
+	byCur := map[string]float64{}
+	var curOrder []string
+	for _, id := range ids {
+		p, ok := priceMap[id]
+		if !ok {
+			continue
+		}
+		names = append(names, p.ServiceName)
+		if p.Amount == nil {
+			continue
+		}
+		c := currencyKey(p.Currency)
+		if _, ok := byCur[c]; !ok {
+			curOrder = append(curOrder, c)
+		}
+		byCur[c] += *p.Amount
+	}
+	service1 = strings.Join(names, "；")
+	if len(curOrder) == 0 {
+		return service1, 0
+	}
+	price1 = byCur[curOrder[0]]
+	return service1, price1
+}
+
 const taskCols = `id, company_name, date, service1, service2, price1, price2, status, completed_at, note, selected_price_ids`
+
+func (s *Store) GetTask(id string) (models.Task, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	row := s.db.QueryRow(`SELECT `+taskCols+` FROM tasks WHERE id=?`, id)
+	t, err := scanTaskScanner(row)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return models.Task{}, ErrNotFound
+		}
+		return models.Task{}, err
+	}
+	return t, nil
+}
 
 func (s *Store) ListTasks() []models.Task {
 	rows, err := s.db.Query(`SELECT ` + taskCols + ` FROM tasks ORDER BY id`)
@@ -143,7 +207,7 @@ func (s *Store) CreateTask(t models.Task) models.Task {
 	return t
 }
 
-func (s *Store) UpdateTask(id string, t models.Task) (models.Task, error) {
+func (s *Store) updateTaskCore(id string, t models.Task) (models.Task, error) {
 	if t.Status == "" {
 		t.Status = models.StatusPending
 	}
@@ -164,7 +228,83 @@ func (s *Store) UpdateTask(id string, t models.Task) (models.Task, error) {
 	return t, nil
 }
 
+// UpdateTask invoiceEdit 为 true 时允许修改 Done/Sent（供 Invoices 流程）；Paid 永远不可改。
+func (s *Store) UpdateTask(id string, t models.Task, invoiceEdit bool) (models.Task, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	existing, err := scanTaskScanner(s.db.QueryRow(`SELECT `+taskCols+` FROM tasks WHERE id=?`, id))
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return models.Task{}, ErrNotFound
+		}
+		return models.Task{}, err
+	}
+	if existing.Status == models.StatusPaid {
+		return models.Task{}, ErrTaskPaidLocked
+	}
+	if (existing.Status == models.StatusDone || existing.Status == models.StatusSent) && !invoiceEdit {
+		return models.Task{}, ErrTaskLocked
+	}
+	if invoiceEdit && (existing.Status == models.StatusDone || existing.Status == models.StatusSent) {
+		t.Status = existing.Status
+		t.CompletedAt = existing.CompletedAt
+	}
+	return s.updateTaskCore(id, t)
+}
+
+// SyncPendingTasksForPriceID 将价目变更同步到引用该价目 ID 的 Pending 任务（重写业务一/价格一）
+func (s *Store) SyncPendingTasksForPriceID(priceID string) (int, error) {
+	prices := s.ListPrices()
+	priceMap := make(map[string]models.PriceItem, len(prices))
+	for _, p := range prices {
+		priceMap[p.ID] = p
+	}
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	rows, err := s.db.Query(`SELECT ` + taskCols + ` FROM tasks`)
+	if err != nil {
+		return 0, err
+	}
+	defer rows.Close()
+	n := 0
+	for rows.Next() {
+		t, err := scanTask(rows)
+		if err != nil {
+			continue
+		}
+		if t.Status != models.StatusPending {
+			continue
+		}
+		if !sliceContainsStr(t.SelectedPriceIDs, priceID) {
+			continue
+		}
+		if len(t.SelectedPriceIDs) == 0 {
+			continue
+		}
+		s1, p1 := recomputeTaskPricesFromSelection(t.SelectedPriceIDs, priceMap)
+		t.Service1 = s1
+		t.Price1 = p1
+		if _, err := s.updateTaskCore(t.ID, t); err != nil {
+			continue
+		}
+		n++
+	}
+	return n, rows.Err()
+}
+
 func (s *Store) DeleteTask(id string) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	existing, err := scanTaskScanner(s.db.QueryRow(`SELECT `+taskCols+` FROM tasks WHERE id=?`, id))
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return ErrNotFound
+		}
+		return err
+	}
+	if existing.Status != models.StatusPending {
+		return ErrTaskDeleteLocked
+	}
 	res, err := s.db.Exec(`DELETE FROM tasks WHERE id=?`, id)
 	if err != nil {
 		return err
@@ -273,6 +413,25 @@ func (s *Store) DeletePrice(id string) error {
 	return nil
 }
 
+func normalizeInvoiceTaskIDs(inv *models.Invoice) {
+	if len(inv.TaskIDs) == 0 && inv.TaskID != "" {
+		inv.TaskIDs = []string{inv.TaskID}
+	}
+	if len(inv.TaskIDs) > 0 {
+		inv.TaskID = inv.TaskIDs[0]
+	}
+}
+
+func invoiceLinkedTaskIDs(inv models.Invoice) []string {
+	if len(inv.TaskIDs) > 0 {
+		return inv.TaskIDs
+	}
+	if inv.TaskID != "" {
+		return []string{inv.TaskID}
+	}
+	return nil
+}
+
 func (s *Store) nextInvoiceNo(now time.Time) string {
 	prefix := fmt.Sprintf("INV-%04d%02d-", now.Year(), int(now.Month()))
 	var n int
@@ -311,9 +470,11 @@ func (s *Store) CreateInvoice(inv models.Invoice) (models.Invoice, error) {
 	if inv.Status == "" {
 		inv.Status = "Draft"
 	}
-	_, err := s.db.Exec(`INSERT INTO invoices (id, invoice_no, task_id, invoice_date, terms, due_date, bill_to_name, bill_to_addr, ship_to_name, ship_to_addr, bill_to_email, currency, tax_rate, items_json, subtotal, tax_amount, total, balance_due, status, sent_at, paid_amount, paid_at, created_at)
-		VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
-		inv.ID, inv.InvoiceNo, inv.TaskID, inv.InvoiceDate, inv.Terms, inv.DueDate, inv.BillToName, inv.BillToAddr, inv.ShipToName, inv.ShipToAddr, inv.BillToEmail, inv.Currency, inv.TaxRate, string(itemsJSON), inv.Subtotal, inv.TaxAmount, inv.Total, inv.BalanceDue, inv.Status, inv.SentAt, inv.PaidAmount, inv.PaidAt, inv.CreatedAt)
+	normalizeInvoiceTaskIDs(&inv)
+	taskIDsJSON, _ := json.Marshal(inv.TaskIDs)
+	_, err := s.db.Exec(`INSERT INTO invoices (id, invoice_no, task_id, invoice_date, terms, due_date, bill_to_name, bill_to_addr, ship_to_name, ship_to_addr, bill_to_email, currency, tax_rate, items_json, subtotal, tax_amount, total, balance_due, status, sent_at, paid_amount, paid_at, created_at, task_ids_json)
+		VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+		inv.ID, inv.InvoiceNo, inv.TaskID, inv.InvoiceDate, inv.Terms, inv.DueDate, inv.BillToName, inv.BillToAddr, inv.ShipToName, inv.ShipToAddr, inv.BillToEmail, inv.Currency, inv.TaxRate, string(itemsJSON), inv.Subtotal, inv.TaxAmount, inv.Total, inv.BalanceDue, inv.Status, inv.SentAt, inv.PaidAmount, inv.PaidAt, inv.CreatedAt, string(taskIDsJSON))
 	if err != nil {
 		return models.Invoice{}, err
 	}
@@ -322,15 +483,16 @@ func (s *Store) CreateInvoice(inv models.Invoice) (models.Invoice, error) {
 
 func (s *Store) GetInvoice(id string) (models.Invoice, error) {
 	var inv models.Invoice
-	var itemsJSON string
+	var itemsJSON, taskIDsJSON string
 	// 兼容旧库列缺失：列通过 ensureInvoiceColumns 逐步补齐
 	err := s.db.QueryRow(`SELECT id, invoice_no, task_id, invoice_date, terms, due_date, bill_to_name, bill_to_addr, ship_to_name, ship_to_addr,
 		COALESCE(bill_to_email,''), currency, tax_rate, items_json, subtotal, tax_amount, total, balance_due,
-		COALESCE(status,'Draft'), COALESCE(sent_at,''), COALESCE(paid_amount,0), COALESCE(paid_at,''), created_at
+		COALESCE(status,'Draft'), COALESCE(sent_at,''), COALESCE(paid_amount,0), COALESCE(paid_at,''), created_at,
+		COALESCE(task_ids_json,'')
 		FROM invoices WHERE id=?`, id).
 		Scan(&inv.ID, &inv.InvoiceNo, &inv.TaskID, &inv.InvoiceDate, &inv.Terms, &inv.DueDate, &inv.BillToName, &inv.BillToAddr, &inv.ShipToName, &inv.ShipToAddr,
 			&inv.BillToEmail, &inv.Currency, &inv.TaxRate, &itemsJSON, &inv.Subtotal, &inv.TaxAmount, &inv.Total, &inv.BalanceDue,
-			&inv.Status, &inv.SentAt, &inv.PaidAmount, &inv.PaidAt, &inv.CreatedAt)
+			&inv.Status, &inv.SentAt, &inv.PaidAmount, &inv.PaidAt, &inv.CreatedAt, &taskIDsJSON)
 	if errors.Is(err, sql.ErrNoRows) {
 		return models.Invoice{}, ErrNotFound
 	}
@@ -338,6 +500,10 @@ func (s *Store) GetInvoice(id string) (models.Invoice, error) {
 		return models.Invoice{}, err
 	}
 	_ = json.Unmarshal([]byte(itemsJSON), &inv.Items)
+	_ = json.Unmarshal([]byte(taskIDsJSON), &inv.TaskIDs)
+	if len(inv.TaskIDs) == 0 && inv.TaskID != "" {
+		inv.TaskIDs = []string{inv.TaskID}
+	}
 	return inv, nil
 }
 
@@ -379,7 +545,12 @@ func (s *Store) MarkInvoiceSent(id, email, sentAt string) (models.Invoice, error
 		return models.Invoice{}, err
 	}
 	// 同步 task 状态为 Sent（仅当未 Paid）
-	_, _ = s.db.Exec(`UPDATE tasks SET status=? WHERE id=? AND status<>?`, string(models.StatusSent), inv.TaskID, string(models.StatusPaid))
+	for _, tid := range invoiceLinkedTaskIDs(inv) {
+		if tid == "" {
+			continue
+		}
+		_, _ = s.db.Exec(`UPDATE tasks SET status=? WHERE id=? AND status<>?`, string(models.StatusSent), tid, string(models.StatusPaid))
+	}
 	return inv, nil
 }
 
@@ -404,12 +575,23 @@ func (s *Store) AddInvoicePayment(id string, amount float64, paidAt string) (mod
 		bal = 0
 	}
 	newStatus := inv.Status
+	tids := invoiceLinkedTaskIDs(inv)
 	if inv.PaidAmount >= inv.Total && inv.Total > 0 {
 		newStatus = "Paid"
-		_, _ = s.db.Exec(`UPDATE tasks SET status=? WHERE id=?`, string(models.StatusPaid), inv.TaskID)
+		for _, tid := range tids {
+			if tid == "" {
+				continue
+			}
+			_, _ = s.db.Exec(`UPDATE tasks SET status=? WHERE id=?`, string(models.StatusPaid), tid)
+		}
 	} else {
 		newStatus = "Sent"
-		_, _ = s.db.Exec(`UPDATE tasks SET status=? WHERE id=? AND status<>?`, string(models.StatusSent), inv.TaskID, string(models.StatusPaid))
+		for _, tid := range tids {
+			if tid == "" {
+				continue
+			}
+			_, _ = s.db.Exec(`UPDATE tasks SET status=? WHERE id=? AND status<>?`, string(models.StatusSent), tid, string(models.StatusPaid))
+		}
 	}
 	_, _ = s.db.Exec(`UPDATE invoices SET balance_due=?, status=? WHERE id=?`, bal, newStatus, id)
 	return s.GetInvoice(id)
