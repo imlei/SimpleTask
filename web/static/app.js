@@ -280,7 +280,7 @@ function getSelectedPriceIds() {
   return out;
 }
 
-/** 根据当前勾选同步「业务一」「价格一」（勾选变化时调用；多币种时其余写在预览区） */
+/** 根据当前勾选同步 Task / Price（勾选变化时调用；多币种时其余写在预览区） */
 function applyTaskPriceSelection() {
   const ids = getSelectedPriceIds();
   const preview = $("#task-price-preview");
@@ -1233,7 +1233,7 @@ formPrice.addEventListener("submit", async (e) => {
       res = await api(`/api/prices${q}`, { method: "POST", body: JSON.stringify(payload) });
     }
     if (typeof res.syncedPendingTasks === "number" && res.syncedPendingTasks > 0) {
-      alert(`已同步 ${res.syncedPendingTasks} 个 Pending 任务的「业务一 / 价格一」。`);
+      alert(`已同步 ${res.syncedPendingTasks} 个 Pending 任务的 Task / Price。`);
       await loadTasks();
     }
     dlgPrice.close();
@@ -1321,7 +1321,7 @@ function exportReportCSV() {
     alert("当前没有可导出的数据，请先查询。");
     return;
   }
-  const headers = ["No.", "Customer", "公司名", "日期", "业务一", "价格一", "状态", "完成日期", "备注"];
+  const headers = ["No.", "Customer", "Task Name", "日期", "Task", "Price", "状态", "完成日期", "备注"];
   const lines = [headers.join(",")];
   for (const t of rows) {
     lines.push(

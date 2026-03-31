@@ -12,7 +12,7 @@
       <div class="top-brand">
         <div id="app-header-logo" class="app-header-logo" hidden></div>
         <h1 id="app-title">TaskTracker</h1>
-        <span class="app-version" aria-label="version">v0.0.2</span>
+        <span class="app-version" aria-label="version">v0.0.3</span>
       </div>
       <div class="top-actions">
         <a href="/settings.html" class="top-nav-link" id="link-settings">Settings</a>
@@ -47,10 +47,10 @@
             <tr>
               <th>No.</th>
               <th>Customer</th>
-              <th>公司名</th>
+              <th>Task Name</th>
               <th>日期</th>
-              <th>业务一</th>
-              <th>价格一</th>
+              <th>Task</th>
+              <th>Price</th>
               <th>状态</th>
               <th>完成日期</th>
               <th>备注</th>
@@ -122,10 +122,10 @@
             <tr>
               <th>No.</th>
               <th>Customer</th>
-              <th>公司名</th>
+              <th>Task Name</th>
               <th>日期</th>
-              <th>业务一</th>
-              <th>价格一</th>
+              <th>Task</th>
+              <th>Price</th>
               <th>完成日期</th>
               <th>备注</th>
             </tr>
@@ -261,10 +261,10 @@
                     <th class="col-check"></th>
                     <th>No.</th>
                     <th>Customer</th>
-                    <th>公司名</th>
+                    <th>Task Name</th>
                     <th>日期</th>
-                    <th>业务一</th>
-                    <th>价格一</th>
+                    <th>Task</th>
+                    <th>Price</th>
                     <th>状态</th>
                     <th></th>
                   </tr>
@@ -294,19 +294,19 @@
         </label>
         <button type="button" class="ghost small" id="btn-new-customer" title="添加客户">+ 新建客户</button>
       </div>
-      <label>公司名 <input id="task-company" required /></label>
+      <label>Task Name <input id="task-company" required /></label>
       <label>日期 <input id="task-date" type="date" /></label>
       <div class="price-pick-block">
         <div class="price-pick-head">
           <span>从价目表选择（可多选）</span>
           <button type="button" class="ghost small" id="task-price-clear" title="清空勾选">清空勾选</button>
         </div>
-        <p class="hint">勾选后会自动填入「业务一」「价格一」；多种货币时，第一币种写入价格一，其余在下方说明。</p>
+        <p class="hint">勾选后会自动填入 Task 与 Price；多种货币时，第一币种写入 Price，其余在下方说明。</p>
         <div id="task-price-picks" class="price-pick-list" role="group" aria-label="价目表多选"></div>
         <div id="task-price-preview" class="price-preview" hidden></div>
       </div>
-      <label>业务一 <input id="task-s1" /></label>
-      <label>价格一 <input id="task-p1" type="number" step="0.01" min="0" /></label>
+      <label>Task <input id="task-s1" /></label>
+      <label>Price <input id="task-p1" type="number" step="0.01" min="0" /></label>
       <input type="hidden" id="task-status" value="Pending" />
       <label>备注 <input id="task-note" /></label>
       <p id="task-lock-hint" class="hint" hidden></p>
@@ -333,7 +333,7 @@
       <label>说明 <input id="price-note" placeholder="如：起" /></label>
       <label class="price-sync-pending-label">
         <input type="checkbox" id="price-sync-pending" />
-        同时更新状态为 Pending 且勾选了该价目的任务（业务一 / 价格一）
+        同时更新状态为 Pending 且勾选了该价目的任务（Task / Price）
       </label>
       <div class="dlg-actions">
         <button type="submit" class="primary">保存</button>
