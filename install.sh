@@ -91,17 +91,19 @@ fetch_default_go_version() {
 
 install_go_linux() {
 	command -v curl >/dev/null 2>&1 || die "需要 curl：sudo apt install -y curl ca-certificates"
-	local arch ver tmp
+	local arch ver
 	arch="$(detect_go_arch)"
 	ver="${GO_VERSION:-$(fetch_default_go_version)}"
-	tmp="$(mktemp)"
-	trap 'rm -f "$tmp"' EXIT
+	# 必须用全局变量：EXIT trap 在函数返回之后执行，local tmp 已失效，set -u 会报 tmp unbound
+	_TASKTRACKER_GO_TGZ="$(mktemp)" || die "mktemp failed"
+	trap 'rm -f "${_TASKTRACKER_GO_TGZ:-}"' EXIT
 	log "Installing Go ${ver} for linux-${arch} to /usr/local/go ..."
-	curl -sfL "https://go.dev/dl/go${ver}.linux-${arch}.tar.gz" -o "$tmp"
+	curl -sfL "https://go.dev/dl/go${ver}.linux-${arch}.tar.gz" -o "$_TASKTRACKER_GO_TGZ"
 	rm -rf /usr/local/go
-	tar -C /usr/local -xzf "$tmp"
-	rm -f "$tmp"
+	tar -C /usr/local -xzf "$_TASKTRACKER_GO_TGZ"
+	rm -f "$_TASKTRACKER_GO_TGZ"
 	trap - EXIT
+	unset _TASKTRACKER_GO_TGZ
 	export PATH="/usr/local/go/bin:${PATH}"
 	hash -r 2>/dev/null || true
 	go_version_sufficient || die "Go installed but version check failed; try --go-version"
