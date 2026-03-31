@@ -392,7 +392,7 @@ func (s *Store) getCustomerUnlocked(id string) (models.Customer, error) {
 	return c, nil
 }
 
-// UpdateCustomer 更新联系信息与状态（不修改客户 id/name）
+// UpdateCustomer 更新客户资料（不修改客户 id）
 func (s *Store) UpdateCustomer(id string, patch models.Customer) (models.Customer, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
@@ -400,6 +400,10 @@ func (s *Store) UpdateCustomer(id string, patch models.Customer) (models.Custome
 	existing, err := s.getCustomerUnlocked(id)
 	if err != nil {
 		return models.Customer{}, err
+	}
+	name := strings.TrimSpace(patch.Name)
+	if name == "" {
+		name = strings.TrimSpace(existing.Name)
 	}
 	email := strings.TrimSpace(patch.Email)
 	phone := strings.TrimSpace(patch.Phone)
@@ -417,8 +421,8 @@ func (s *Store) UpdateCustomer(id string, patch models.Customer) (models.Custome
 			status = "active"
 		}
 	}
-	res, err := s.db.Exec(`UPDATE customers SET email=?, phone=?, address=?, status=? WHERE id=?`,
-		email, phone, address, status, id)
+	res, err := s.db.Exec(`UPDATE customers SET name=?, email=?, phone=?, address=?, status=? WHERE id=?`,
+		name, email, phone, address, status, id)
 	if err != nil {
 		return models.Customer{}, err
 	}

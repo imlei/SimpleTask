@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"net/http"
+	"regexp"
 	"sort"
 	"strconv"
 	"strings"
@@ -23,6 +24,23 @@ type Server struct {
 type priceSaveResponse struct {
 	models.PriceItem
 	SyncedPending int `json:"syncedPendingTasks,omitempty"`
+}
+
+var (
+	emailRx = regexp.MustCompile(`^[^@\s]+@[^@\s]+\.[^@\s]+$`)
+	phoneRx = regexp.MustCompile(`^\+?\d{10,15}$`)
+)
+
+func validateCustomerContact(c models.Customer) error {
+	email := strings.TrimSpace(c.Email)
+	if email != "" && !emailRx.MatchString(email) {
+		return errors.New("invalid email format")
+	}
+	phone := strings.TrimSpace(c.Phone)
+	if phone != "" && !phoneRx.MatchString(phone) {
+		return errors.New("invalid phone format")
+	}
+	return nil
 }
 
 func (s *Server) handleTasks(w http.ResponseWriter, r *http.Request) {
@@ -434,6 +452,10 @@ func (s *Server) handleCustomers(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, "name is required", http.StatusBadRequest)
 			return
 		}
+		if err := validateCustomerContact(c); err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
 		created := s.Store.CreateCustomer(c)
 		writeJSON(w, http.StatusCreated, created)
 	default:
@@ -463,6 +485,14 @@ func (s *Server) handleCustomerByID(w http.ResponseWriter, r *http.Request) {
 	case http.MethodPut:
 		var patch models.Customer
 		if err := json.NewDecoder(r.Body).Decode(&patch); err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+		if strings.TrimSpace(patch.Name) == "" {
+			http.Error(w, "name is required", http.StatusBadRequest)
+			return
+		}
+		if err := validateCustomerContact(patch); err != nil {
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
 		}

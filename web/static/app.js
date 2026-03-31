@@ -844,6 +844,8 @@ document.getElementById("btn-invoices-new-customer")?.addEventListener("click", 
 
 const dlgCustomer = document.getElementById("dlg-customer");
 const formCustomer = document.getElementById("form-customer");
+const phoneFormatRx = /^\+?\d{10,15}$/;
+const emailFormatRx = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
 
 async function openCustomerEditDialog(customerId) {
   if (!dlgCustomer || !formCustomer) return;
@@ -852,6 +854,7 @@ async function openCustomerEditDialog(customerId) {
     document.getElementById("customer-edit-id").value = c.id || "";
     const idname = document.getElementById("customer-edit-idname");
     if (idname) idname.textContent = `${c.id} — ${(c.name || "").trim() || c.id}`;
+    document.getElementById("customer-edit-name").value = (c.name || "").trim();
     document.getElementById("customer-edit-email").value = c.email || "";
     document.getElementById("customer-edit-phone").value = c.phone || "";
     document.getElementById("customer-edit-address").value = c.address || "";
@@ -867,10 +870,26 @@ formCustomer?.addEventListener("submit", async (e) => {
   e.preventDefault();
   const id = document.getElementById("customer-edit-id")?.value?.trim();
   if (!id) return;
+  const name = document.getElementById("customer-edit-name")?.value?.trim() || "";
+  const email = document.getElementById("customer-edit-email")?.value?.trim() || "";
+  const phone = document.getElementById("customer-edit-phone")?.value?.trim() || "";
+  if (!name) {
+    alert("Customer Name 不能为空。");
+    return;
+  }
+  if (email && !emailFormatRx.test(email)) {
+    alert("Email 格式不正确，请使用 xxx@xxx.com。");
+    return;
+  }
+  if (phone && !phoneFormatRx.test(phone)) {
+    alert("Phone Number 格式不正确，仅支持 +000000000000 或纯数字。");
+    return;
+  }
   const inactive = document.getElementById("customer-edit-inactive")?.checked;
   const body = {
-    email: document.getElementById("customer-edit-email")?.value ?? "",
-    phone: document.getElementById("customer-edit-phone")?.value ?? "",
+    name,
+    email,
+    phone,
     address: document.getElementById("customer-edit-address")?.value ?? "",
     status: inactive ? "inactive" : "active",
   };
