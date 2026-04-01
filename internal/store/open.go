@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+	"time"
 
 	_ "modernc.org/sqlite"
 
@@ -116,6 +117,14 @@ func Open(dir string) (*sql.DB, error) {
 		return nil, err
 	}
 	if err := ensureAppSettingsMICRColumns(db); err != nil {
+		_ = db.Close()
+		return nil, err
+	}
+	if err := ensureBankAccounts(db); err != nil {
+		_ = db.Close()
+		return nil, err
+	}
+	if err := migrateBankAccountsFromLegacySettings(db); err != nil {
 		_ = db.Close()
 		return nil, err
 	}
@@ -298,7 +307,8 @@ CREATE TABLE IF NOT EXISTS app_settings (
   bank_account TEXT NOT NULL DEFAULT '',
   bank_cheque_number TEXT NOT NULL DEFAULT '000001',
   micr_line_override TEXT NOT NULL DEFAULT '',
-  default_cheque_currency TEXT NOT NULL DEFAULT 'CAD'
+  default_cheque_currency TEXT NOT NULL DEFAULT 'CAD',
+  default_bank_account_id TEXT NOT NULL DEFAULT ''
 );
 INSERT OR IGNORE INTO app_settings (id) VALUES (1);
 `)
@@ -319,6 +329,7 @@ func ensureAppSettingsMICRColumns(db *sql.DB) error {
 		{Name: "bank_cheque_number", DDL: "ALTER TABLE app_settings ADD COLUMN bank_cheque_number TEXT NOT NULL DEFAULT '000001'"},
 		{Name: "micr_line_override", DDL: "ALTER TABLE app_settings ADD COLUMN micr_line_override TEXT NOT NULL DEFAULT ''"},
 		{Name: "default_cheque_currency", DDL: "ALTER TABLE app_settings ADD COLUMN default_cheque_currency TEXT NOT NULL DEFAULT 'CAD'"},
+		{Name: "default_bank_account_id", DDL: "ALTER TABLE app_settings ADD COLUMN default_bank_account_id TEXT NOT NULL DEFAULT ''"},
 	}
 	existing := map[string]bool{}
 	rows, err := db.Query(`PRAGMA table_info(app_settings)`)
@@ -345,6 +356,66 @@ func ensureAppSettingsMICRColumns(db *sql.DB) error {
 			continue
 		}
 	}
+	return nil
+}
+
+func ensureBankAccounts(db *sql.DB) error {
+	_, err := db.Exec(`
+CREATE TABLE IF NOT EXISTS bank_accounts (
+  id TEXT PRIMARY KEY,
+  label TEXT NOT NULL DEFAULT '',
+  micr_country TEXT NOT NULL DEFAULT 'CA',
+  bank_institution TEXT NOT NULL DEFAULT '',
+  bank_transit TEXT NOT NULL DEFAULT '',
+  bank_routing_aba TEXT NOT NULL DEFAULT '',
+  bank_account TEXT NOT NULL DEFAULT '',
+  bank_cheque_number TEXT NOT NULL DEFAULT '000001',
+  micr_line_override TEXT NOT NULL DEFAULT '',
+  default_cheque_currency TEXT NOT NULL DEFAULT 'CAD',
+  created_at TEXT NOT NULL DEFAULT '',
+  updated_at TEXT NOT NULL DEFAULT ''
+);`)
+	return err
+}
+
+// migrateBankAccountsFromLegacySettings 将旧版 app_settings 中的单账户字段迁移到 bank_accounts（仅当 bank_accounts 为空时执行一次）。
+func migrateBankAccountsFromLegacySettings(db *sql.DB) error {
+	var n int
+	_ = db.QueryRow(`SELECT COUNT(*) FROM bank_accounts`).Scan(&n)
+	if n > 0 {
+		return nil
+	}
+	// 读取旧字段（若全空则不创建）
+	var mc, inst, tr, rt, ac, chq, ovr, cur string
+	_ = db.QueryRow(`SELECT COALESCE(micr_country,''), COALESCE(bank_institution,''), COALESCE(bank_transit,''), COALESCE(bank_routing_aba,''),
+		COALESCE(bank_account,''), COALESCE(bank_cheque_number,''), COALESCE(micr_line_override,''), COALESCE(default_cheque_currency,'')
+		FROM app_settings WHERE id=1`).Scan(&mc, &inst, &tr, &rt, &ac, &chq, &ovr, &cur)
+	all := strings.TrimSpace(inst) + strings.TrimSpace(tr) + strings.TrimSpace(rt) + strings.TrimSpace(ac) + strings.TrimSpace(ovr)
+	if strings.TrimSpace(all) == "" {
+		return nil
+	}
+	if strings.TrimSpace(chq) == "" {
+		chq = "000001"
+	}
+	if strings.TrimSpace(cur) == "" {
+		cur = "CAD"
+	}
+	if strings.TrimSpace(mc) == "" {
+		mc = "CA"
+	}
+	now := time.Now().Format(time.RFC3339)
+	_, err := db.Exec(`INSERT INTO bank_accounts (id, label, micr_country, bank_institution, bank_transit, bank_routing_aba, bank_account,
+		bank_cheque_number, micr_line_override, default_cheque_currency, created_at, updated_at)
+		VALUES (?,?,?,?,?,?,?,?,?,?,?,?)`,
+		"B0001", "Default", strings.ToUpper(strings.TrimSpace(mc)),
+		strings.TrimSpace(inst), strings.TrimSpace(tr), strings.TrimSpace(rt), strings.TrimSpace(ac),
+		strings.TrimSpace(chq), strings.TrimSpace(ovr), strings.ToUpper(strings.TrimSpace(cur)),
+		now, now,
+	)
+	if err != nil {
+		return err
+	}
+	_, _ = db.Exec(`UPDATE app_settings SET default_bank_account_id=? WHERE id=1`, "B0001")
 	return nil
 }
 

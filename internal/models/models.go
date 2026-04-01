@@ -94,3 +94,17 @@ type Invoice struct {
 	PaidAt      string        `json:"paidAt"`
 	CreatedAt   string        `json:"createdAt"`
 }
+
+// BankAccount 支票打印 / MICR 银行账户（支持多账户）
+type BankAccount struct {
+	ID                   string `json:"id"`
+	Label                string `json:"label"`
+	MICRCountry           string `json:"micrCountry"` // CA | US
+	BankInstitution       string `json:"bankInstitution"`
+	BankTransit           string `json:"bankTransit"`
+	BankRoutingABA        string `json:"bankRoutingAba"`
+	BankAccount           string `json:"bankAccount"`
+	BankChequeNumber      string `json:"bankChequeNumber"`
+	MICRLineOverride      string `json:"micrLineOverride"`
+	DefaultChequeCurrency string `json:"defaultChequeCurrency"`
+}

@@ -633,6 +633,10 @@ func (s *Server) handleCustomerByID(w http.ResponseWriter, r *http.Request) {
 func Register(mux *http.ServeMux, s *Server) {
 	mux.HandleFunc("/api/settings/public", s.handleSettingsPublic)
 	mux.HandleFunc("/api/settings", s.handleSettings)
+	mux.HandleFunc("/api/bank-accounts/default/cheque-next", s.handleBankAccountDefaultChequeNext)
+	mux.HandleFunc("/api/bank-accounts/default", s.handleBankAccountDefault)
+	mux.HandleFunc("/api/bank-accounts/", s.handleBankAccountByID)
+	mux.HandleFunc("/api/bank-accounts", s.handleBankAccounts)
 	mux.HandleFunc("/api/customers/", s.handleCustomerByID)
 	mux.HandleFunc("/api/customers", s.handleCustomers)
 	mux.HandleFunc("/api/tasks", s.handleTasks)

@@ -74,44 +74,7 @@ async function loadSettings() {
   }
   logoDataUrl = s.logoDataUrl || "";
   showLogoPreview(logoDataUrl);
-  const micrC = (s.micrCountry || "CA").toUpperCase();
-  document.getElementById("set-micr-country").value = micrC === "US" ? "US" : "CA";
-  document.getElementById("set-bank-institution").value = s.bankInstitution || "";
-  document.getElementById("set-bank-transit").value = s.bankTransit || "";
-  document.getElementById("set-bank-routing").value = s.bankRoutingAba || "";
-  document.getElementById("set-bank-account").value = s.bankAccount || "";
-  document.getElementById("set-bank-cheque").value = s.bankChequeNumber || "";
-  document.getElementById("set-micr-override").value = s.micrLineOverride || "";
-  const cur = (s.defaultChequeCurrency || "CAD").toUpperCase();
-  const sel = document.getElementById("set-default-cheque-currency");
-  if (sel) {
-    sel.querySelectorAll("option[data-custom]").forEach((o) => o.remove());
-    const allowed = ["CAD", "USD", "CNY", "EUR"];
-    if (allowed.includes(cur)) {
-      sel.value = cur;
-    } else if (cur) {
-      const opt = document.createElement("option");
-      opt.value = cur;
-      opt.textContent = `${cur}（自定义）`;
-      opt.setAttribute("data-custom", "1");
-      sel.appendChild(opt);
-      sel.value = cur;
-    } else {
-      sel.value = "CAD";
-    }
-  }
-  updateMicrCountryUI();
-}
-
-/** 切换加拿大 / 美国专用字段显示 */
-function updateMicrCountryUI() {
-  const sel = document.getElementById("set-micr-country");
-  if (!sel) return;
-  const isUS = sel.value === "US";
-  const ca = document.getElementById("set-group-ca");
-  const us = document.getElementById("set-group-us");
-  if (ca) ca.hidden = isUS;
-  if (us) us.hidden = !isUS;
+  await loadBankAccounts();
 }
 
 /** ABA routing 9 位校验（美国） */
@@ -123,9 +86,9 @@ function abaRoutingChecksumOk(d9) {
   return sum % 10 === 0;
 }
 
-function checkAbaRoutingInput() {
-  const msg = document.getElementById("set-routing-aba-msg");
-  const inp = document.getElementById("set-bank-routing");
+function checkAbaRoutingInput(msgId, inputId) {
+  const msg = document.getElementById(msgId);
+  const inp = document.getElementById(inputId);
   if (!msg || !inp) return;
   const d = inp.value.replace(/\D/g, "");
   msg.textContent = "";
@@ -146,8 +109,18 @@ function checkAbaRoutingInput() {
   msg.hidden = true;
 }
 
-document.getElementById("set-micr-country")?.addEventListener("change", updateMicrCountryUI);
-document.getElementById("set-bank-routing")?.addEventListener("blur", checkAbaRoutingInput);
+function updateBankMicrCountryUI() {
+  const sel = document.getElementById("bank-micr-country");
+  if (!sel) return;
+  const isUS = sel.value === "US";
+  const ca = document.getElementById("bank-group-ca");
+  const us = document.getElementById("bank-group-us");
+  if (ca) ca.hidden = isUS;
+  if (us) us.hidden = !isUS;
+}
+
+document.getElementById("bank-micr-country")?.addEventListener("change", updateBankMicrCountryUI);
+document.getElementById("bank-routing")?.addEventListener("blur", () => checkAbaRoutingInput("bank-routing-aba-msg", "bank-routing"));
 
 document.getElementById("btn-save-settings")?.addEventListener("click", async () => {
   const msg = document.getElementById("save-msg");
@@ -163,19 +136,147 @@ document.getElementById("btn-save-settings")?.addEventListener("click", async ()
     smtpFrom: document.getElementById("set-smtp-from").value.trim(),
     smtpStartTls: document.getElementById("set-smtp-starttls").checked,
     smtpImplicitTls: document.getElementById("set-smtp-tls").checked,
-    micrCountry: document.getElementById("set-micr-country").value.trim() || "CA",
-    bankInstitution: document.getElementById("set-bank-institution").value.trim(),
-    bankTransit: document.getElementById("set-bank-transit").value.trim(),
-    bankRoutingAba: document.getElementById("set-bank-routing").value.trim(),
-    bankAccount: document.getElementById("set-bank-account").value.trim(),
-    bankChequeNumber: document.getElementById("set-bank-cheque").value.trim(),
-    micrLineOverride: document.getElementById("set-micr-override").value.trim(),
-    defaultChequeCurrency: document.getElementById("set-default-cheque-currency").value.trim() || "CAD",
   };
   try {
     await api("/api/settings", { method: "PUT", body: JSON.stringify(body) });
     msg.textContent = "已保存。";
     await loadSettings();
+  } catch (e) {
+    alert("保存失败: " + e.message);
+  }
+});
+
+async function loadBankAccounts() {
+  const box = document.getElementById("bank-list");
+  if (!box) return;
+  box.innerHTML = "加载中…";
+  let data;
+  try {
+    data = await api("/api/bank-accounts");
+  } catch (e) {
+    box.innerHTML = `<p class="hint">加载银行账户失败：${e.message}</p>`;
+    return;
+  }
+  const items = data.items || [];
+  const def = data.defaultId || "";
+  if (items.length === 0) {
+    box.innerHTML = `<p class="hint">尚未添加银行账户。请在下方表单添加，并可设置默认账户。</p>`;
+    return;
+  }
+  box.innerHTML = items
+    .map((b) => {
+      const isDef = b.id === def;
+      const badge = isDef ? `<strong>（默认）</strong>` : "";
+      const safe = (s) => String(s || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+      return `
+        <div style="display:flex; gap:8px; align-items:center; justify-content:space-between; padding:8px 0; border-bottom:1px dashed #cbd5e1;">
+          <div>
+            <div><strong>${safe(b.label || b.id)}</strong> ${badge}</div>
+            <div class="hint">${safe((b.micrCountry || "CA").toUpperCase())} · Cheque # ${safe(b.bankChequeNumber || "")} · Currency ${safe((b.defaultChequeCurrency || "CAD").toUpperCase())}</div>
+          </div>
+          <div style="display:flex; gap:6px; flex-wrap:wrap;">
+            ${isDef ? "" : `<button type="button" class="ghost small" data-act="default" data-id="${safe(b.id)}">设为默认</button>`}
+            <button type="button" class="ghost small" data-act="edit" data-id="${safe(b.id)}">编辑</button>
+            <button type="button" class="ghost small" data-act="del" data-id="${safe(b.id)}">删除</button>
+          </div>
+        </div>
+      `;
+    })
+    .join("");
+  box.querySelectorAll("button[data-act]").forEach((btn) => {
+    btn.addEventListener("click", async () => {
+      const act = btn.dataset.act;
+      const id = btn.dataset.id;
+      if (act === "default") {
+        await api(`/api/bank-accounts/${encodeURIComponent(id)}/default`, { method: "POST", body: "{}" });
+        await loadBankAccounts();
+        return;
+      }
+      if (act === "edit") {
+        const it = items.find((x) => x.id === id);
+        if (!it) return;
+        fillBankForm(it);
+        return;
+      }
+      if (act === "del") {
+        if (!confirm("确定删除该银行账户？")) return;
+        await api(`/api/bank-accounts/${encodeURIComponent(id)}`, { method: "DELETE" });
+        await loadBankAccounts();
+        return;
+      }
+    });
+  });
+}
+
+function fillBankForm(b) {
+  document.getElementById("bank-id").value = b.id || "";
+  document.getElementById("bank-label").value = b.label || "";
+  document.getElementById("bank-micr-country").value = (b.micrCountry || "CA").toUpperCase() === "US" ? "US" : "CA";
+  document.getElementById("bank-institution").value = b.bankInstitution || "";
+  document.getElementById("bank-transit").value = b.bankTransit || "";
+  document.getElementById("bank-routing").value = b.bankRoutingAba || "";
+  document.getElementById("bank-account").value = b.bankAccount || "";
+  document.getElementById("bank-cheque").value = b.bankChequeNumber || "";
+  document.getElementById("bank-micr-override").value = b.micrLineOverride || "";
+  const cur = (b.defaultChequeCurrency || "CAD").toUpperCase();
+  const sel = document.getElementById("bank-default-cheque-currency");
+  if (sel) {
+    sel.querySelectorAll("option[data-custom]").forEach((o) => o.remove());
+    const allowed = ["CAD", "USD", "CNY", "EUR"];
+    if (allowed.includes(cur)) {
+      sel.value = cur;
+    } else if (cur) {
+      const opt = document.createElement("option");
+      opt.value = cur;
+      opt.textContent = `${cur}（自定义）`;
+      opt.setAttribute("data-custom", "1");
+      sel.appendChild(opt);
+      sel.value = cur;
+    } else {
+      sel.value = "CAD";
+    }
+  }
+  updateBankMicrCountryUI();
+  checkAbaRoutingInput("bank-routing-aba-msg", "bank-routing");
+}
+
+function clearBankForm() {
+  fillBankForm({
+    id: "",
+    label: "",
+    micrCountry: "CA",
+    bankInstitution: "",
+    bankTransit: "",
+    bankRoutingAba: "",
+    bankAccount: "",
+    bankChequeNumber: "000001",
+    micrLineOverride: "",
+    defaultChequeCurrency: "CAD",
+  });
+}
+
+document.getElementById("btn-bank-clear")?.addEventListener("click", clearBankForm);
+document.getElementById("btn-bank-save")?.addEventListener("click", async () => {
+  const id = document.getElementById("bank-id").value.trim();
+  const body = {
+    label: document.getElementById("bank-label").value.trim(),
+    micrCountry: document.getElementById("bank-micr-country").value.trim() || "CA",
+    bankInstitution: document.getElementById("bank-institution").value.trim(),
+    bankTransit: document.getElementById("bank-transit").value.trim(),
+    bankRoutingAba: document.getElementById("bank-routing").value.trim(),
+    bankAccount: document.getElementById("bank-account").value.trim(),
+    bankChequeNumber: document.getElementById("bank-cheque").value.trim(),
+    micrLineOverride: document.getElementById("bank-micr-override").value.trim(),
+    defaultChequeCurrency: document.getElementById("bank-default-cheque-currency").value.trim() || "CAD",
+  };
+  try {
+    if (id) {
+      await api(`/api/bank-accounts/${encodeURIComponent(id)}`, { method: "PUT", body: JSON.stringify(body) });
+    } else {
+      await api(`/api/bank-accounts`, { method: "POST", body: JSON.stringify(body) });
+    }
+    clearBankForm();
+    await loadBankAccounts();
   } catch (e) {
     alert("保存失败: " + e.message);
   }
@@ -225,6 +326,7 @@ document.getElementById("btn-save-password")?.addEventListener("click", async ()
       return;
     }
     await loadSettings();
+    clearBankForm();
   } catch {
     window.location.href = "/login.html";
   }

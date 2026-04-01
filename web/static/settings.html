@@ -32,47 +32,53 @@
     </section>
 
     <section class="settings-card">
-      <h2>支票 / MICR 银行账户</h2>
-      <p class="hint">用于「支票打印」页底部 <strong>E13B MICR</strong> 线。敏感信息仅存本机数据库。打印需<strong>磁墨</strong>与银行认可的 E13B 字体（可将 <code>micr-e13b.woff2</code> / <code>.ttf</code> 放到 <code>/fonts/</code>）。下方按<strong>加拿大 CPA</strong>与<strong>美国 ABA</strong>常见字段拼装；若与开户行不符，请用「MICR 完全覆盖」。</p>
-      <label>支票 / MICR 国家格式
-        <select id="set-micr-country">
-          <option value="CA">加拿大 (Canada — CPA 常用：Institution + Transit + Account + Cheque)</option>
-          <option value="US">美国 (United States — ABA：Routing + Account + Cheque)</option>
-        </select>
-      </label>
+      <h2>银行账户（支票 / MICR）</h2>
+      <p class="hint">已改为<strong>独立</strong>的「银行账户」列表，支持添加多个，并可设置默认账户供「支票打印」使用。</p>
 
-      <div id="set-group-ca" class="settings-micr-group">
-        <h3 class="settings-subh">加拿大银行</h3>
-        <p class="hint">金融机构号 = Institution（3 位）+ Transit / Branch（5 位），共 8 位；Account 左补零至 12 位；Cheque 号 5 位。与支票底部预印或银行说明一致。</p>
-        <label>Institution number（FI，3 位） <input id="set-bank-institution" type="text" inputmode="numeric" maxlength="8" autocomplete="off" placeholder="如 003" /></label>
-        <label>Transit / Branch number（5 位） <input id="set-bank-transit" type="text" inputmode="numeric" maxlength="8" autocomplete="off" placeholder="如 45678" /></label>
-      </div>
-
-      <div id="set-group-us" class="settings-micr-group" hidden>
-        <h3 class="settings-subh">美国银行</h3>
-        <p class="hint">ABA Routing（9 位，含校验位），需与支票左下角预印一致；Account 为账号数字；Cheque 号常见 6 位（左补零）。</p>
-        <label>ABA Routing number（9 位） <input id="set-bank-routing" type="text" inputmode="numeric" maxlength="12" autocomplete="off" placeholder="9 位数字" /></label>
-        <p class="hint" id="set-routing-aba-msg" hidden></p>
-      </div>
+      <div id="bank-list" class="settings-micr-group"></div>
 
       <div class="settings-micr-group">
-        <h3 class="settings-subh">共用</h3>
-        <label>支票金额币种（与上方「国家格式」独立）
-          <select id="set-default-cheque-currency">
+        <h3 class="settings-subh">添加 / 编辑银行账户</h3>
+        <input type="hidden" id="bank-id" value="" />
+        <label>名称（用于区分多个账户） <input id="bank-label" type="text" maxlength="80" autocomplete="off" placeholder="如 RBC CAD Chequing" /></label>
+        <label>国家格式
+          <select id="bank-micr-country">
+            <option value="CA">加拿大 (Canada — CPA)</option>
+            <option value="US">美国 (United States — ABA)</option>
+          </select>
+        </label>
+
+        <div id="bank-group-ca" class="settings-micr-group">
+          <h3 class="settings-subh">加拿大银行</h3>
+          <label>Institution number（FI，3 位） <input id="bank-institution" type="text" inputmode="numeric" maxlength="8" autocomplete="off" placeholder="如 003" /></label>
+          <label>Transit / Branch number（5 位） <input id="bank-transit" type="text" inputmode="numeric" maxlength="8" autocomplete="off" placeholder="如 45678" /></label>
+        </div>
+
+        <div id="bank-group-us" class="settings-micr-group" hidden>
+          <h3 class="settings-subh">美国银行</h3>
+          <label>ABA Routing number（9 位） <input id="bank-routing" type="text" inputmode="numeric" maxlength="12" autocomplete="off" placeholder="9 位数字" /></label>
+          <p class="hint" id="bank-routing-aba-msg" hidden></p>
+        </div>
+
+        <label>支票金额默认币种
+          <select id="bank-default-cheque-currency">
             <option value="CAD">CAD — 加元</option>
             <option value="USD">USD — 美元</option>
             <option value="CNY">CNY — 人民币</option>
             <option value="EUR">EUR — 欧元</option>
           </select>
         </label>
-        <p class="hint">例如：加拿大银行账户（CPA MICR）但签发<strong>美元</strong>支票时，选 <strong>USD</strong>。无发票打开支票页时默认用此处币种；从发票打开时仍默认用发票币种，可在支票页上改。</p>
-        <label>Account number（账号） <input id="set-bank-account" type="text" maxlength="80" autocomplete="off" /></label>
-        <label>当前支票号码 <input id="set-bank-cheque" type="text" maxlength="20" autocomplete="off" placeholder="CA 如 00123；US 如 000123" /></label>
-      </div>
+        <label>Account number（账号） <input id="bank-account" type="text" maxlength="80" autocomplete="off" /></label>
+        <label>当前支票号码 <input id="bank-cheque" type="text" maxlength="20" autocomplete="off" placeholder="CA 如 00123；US 如 000123" /></label>
+        <label style="display:block;">MICR 行完全覆盖（可选）
+          <textarea id="bank-micr-override" rows="2" maxlength="500" placeholder="非空则忽略自动拼装"></textarea>
+        </label>
 
-      <label style="display:block;">MICR 行完全覆盖（可选，非空则忽略自动拼装）
-        <textarea id="set-micr-override" rows="2" maxlength="500" placeholder="仅当银行提供固定 MICR 字符串时使用"></textarea>
-      </label>
+        <div style="display:flex; gap:8px; flex-wrap:wrap;">
+          <button type="button" class="ghost" id="btn-bank-clear">清空表单</button>
+          <button type="button" class="primary" id="btn-bank-save">保存银行账户</button>
+        </div>
+      </div>
     </section>
 
     <section class="settings-card">

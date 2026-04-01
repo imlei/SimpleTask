@@ -14,6 +14,7 @@ function qs(name) {
 const MICR_DELIM = "\u2446";
 
 let appSettings = {};
+let defaultBank = null;
 
 const small = [
   "zero",
@@ -142,7 +143,7 @@ function buildMicrLine(settings, chequeNo) {
 function updateMicrFormatBanner() {
   const el = document.getElementById("check-micr-banner");
   if (!el) return;
-  const us = (appSettings.micrCountry || "CA").toUpperCase() === "US";
+  const us = ((defaultBank && defaultBank.micrCountry) || "CA").toUpperCase() === "US";
   el.textContent = us
     ? "当前 Settings：美国 ABA — MICR 为 Routing（9 位）+ Account + Cheque（6 位）。"
     : "当前 Settings：加拿大 CPA 常用 — MICR 为 FI 8 位（Institution+Transit）+ Account（12 位左补零）+ Cheque（5 位）。";
@@ -151,7 +152,7 @@ function updateMicrFormatBanner() {
 function syncMicr() {
   const chequeEl = document.getElementById("fld-cheque");
   const chequeVal = chequeEl ? chequeEl.value : "";
-  const line = buildMicrLine(appSettings, chequeVal);
+  const line = buildMicrLine(defaultBank || {}, chequeVal);
   const out = document.getElementById("out-micr");
   const hint = document.getElementById("micr-hint");
   if (out) out.textContent = line;
@@ -200,10 +201,20 @@ async function loadSettingsForCheck() {
   }
   if (r.ok) {
     appSettings = await r.json();
+  }
+  const br = await fetch("/api/bank-accounts/default", { credentials: "same-origin" });
+  if (br.status === 401) {
+    window.location.href = "/login.html";
+    return;
+  }
+  if (br.ok) {
+    defaultBank = await br.json();
     const el = document.getElementById("fld-cheque");
     if (el && !el.dataset.userEdited) {
-      el.value = appSettings.bankChequeNumber || "000001";
+      el.value = defaultBank.bankChequeNumber || "000001";
     }
+  } else {
+    defaultBank = null;
   }
   updateMicrFormatBanner();
   syncOutputs();
@@ -213,7 +224,7 @@ async function loadFromInvoice() {
   const id = qs("id");
   if (!id) {
     document.getElementById("fld-date").value = todayISO();
-    const dc = (appSettings.defaultChequeCurrency || "CAD").trim().toUpperCase();
+    const dc = ((defaultBank && defaultBank.defaultChequeCurrency) || appSettings.defaultChequeCurrency || "CAD").trim().toUpperCase();
     document.getElementById("fld-currency").value = dc || "CAD";
     syncOutputs();
     return;
@@ -245,48 +256,22 @@ async function loadFromInvoice() {
   syncOutputs();
 }
 
-function stripEnvFromSettingsPayload(s) {
-  const o = { ...s };
-  delete o.envSmtpHost;
-  delete o.envBaseUrl;
-  delete o.smtpPassSet;
-  o.smtpPass = "";
-  return o;
-}
-
-function incrementChequeString(s) {
-  const raw = String(s || "").trim();
-  const d = raw.replace(/\D/g, "") || "0";
-  const width = Math.max(d.length, 6);
-  const n = BigInt(d) + 1n;
-  return String(n).padStart(width, "0");
-}
-
 async function saveChequeNextToSettings() {
-  const r = await fetch("/api/settings", { credentials: "same-origin" });
-  if (r.status === 401) {
+  const put = await fetch("/api/bank-accounts/default/cheque-next", {
+    method: "POST",
+    credentials: "same-origin",
+  });
+  if (put.status === 401) {
     window.location.href = "/login.html";
     return;
   }
-  if (!r.ok) {
-    alert("读取设置失败");
-    return;
-  }
-  const cur = await r.json();
-  const next = incrementChequeString(document.getElementById("fld-cheque").value);
-  const body = stripEnvFromSettingsPayload(cur);
-  body.bankChequeNumber = next;
-  const put = await fetch("/api/settings", {
-    method: "PUT",
-    credentials: "same-origin",
-    headers: { "Content-Type": "application/json; charset=utf-8" },
-    body: JSON.stringify(body),
-  });
   if (!put.ok) {
-    alert("保存失败");
+    alert("保存失败：请先在 Settings 添加并设置默认银行账户");
     return;
   }
-  appSettings = { ...appSettings, ...body };
+  const out = await put.json();
+  const next = out.bankChequeNumber || "";
+  if (defaultBank) defaultBank = { ...defaultBank, bankChequeNumber: next };
   document.getElementById("fld-cheque").value = next;
   document.getElementById("fld-cheque").dataset.userEdited = "";
   syncOutputs();
