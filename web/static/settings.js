@@ -111,7 +111,7 @@ document.getElementById("btn-save-settings")?.addEventListener("click", () => su
 document.getElementById("btn-save-smtp")?.addEventListener("click", () => submitSettings("save-msg-smtp"));
 
 function showSettingsView(view) {
-  const ids = ["company", "password", "expense-code", "smtp"];
+  const ids = ["company", "password", "expense-code", "exchange-currencies", "smtp"];
   for (const v of ids) {
     const el = document.getElementById(`settings-view-${v}`);
     if (el) el.hidden = v !== view;
@@ -122,10 +122,61 @@ function showSettingsView(view) {
   if (view === "expense-code") {
     loadExpenseCodes();
   }
+  if (view === "exchange-currencies") {
+    loadExchangeWatchlist();
+  }
 }
 
 document.querySelectorAll("[data-settings-view]").forEach((btn) => {
   btn.addEventListener("click", () => showSettingsView(btn.dataset.settingsView));
+});
+
+async function loadExchangeWatchlist() {
+  const tbody = document.getElementById("erc-body");
+  if (!tbody) return;
+  tbody.innerHTML = `<tr><td colspan="2" class="hint">加载中…</td></tr>`;
+  try {
+    const list = asArray(await api("/api/exchange-rate-codes"));
+    tbody.innerHTML = "";
+    if (list.length === 0) {
+      tbody.innerHTML = `<tr><td colspan="2" class="hint">暂无货币。添加如 USD、CNY、EUR（三位字母）。</td></tr>`;
+      return;
+    }
+    for (const row of list) {
+      const code = row.code || "";
+      const tr = document.createElement("tr");
+      tr.innerHTML = `<td>${escapeHtml(code)}</td><td class="row-actions"><button type="button" class="ghost danger" data-act="del">删除</button></td>`;
+      tr.querySelector('[data-act="del"]').addEventListener("click", async () => {
+        if (!confirm(`从列表移除 ${code}？`)) return;
+        try {
+          await api(`/api/exchange-rate-codes/${encodeURIComponent(code)}`, { method: "DELETE" });
+          await loadExchangeWatchlist();
+        } catch (e) {
+          alert(e.message || "删除失败");
+        }
+      });
+      tbody.appendChild(tr);
+    }
+  } catch (e) {
+    tbody.innerHTML = `<tr><td colspan="2" class="hint">加载失败</td></tr>`;
+    alert(e.message || "加载失败");
+  }
+}
+
+document.getElementById("btn-erc-add")?.addEventListener("click", async () => {
+  const inp = document.getElementById("erc-new-code");
+  const raw = (inp?.value || "").trim().toUpperCase();
+  if (!/^[A-Z]{3}$/.test(raw)) {
+    alert("请输入三位字母货币代码（如 USD）。");
+    return;
+  }
+  try {
+    await api("/api/exchange-rate-codes", { method: "POST", body: JSON.stringify({ code: raw }) });
+    if (inp) inp.value = "";
+    await loadExchangeWatchlist();
+  } catch (e) {
+    alert(e.message || "添加失败");
+  }
 });
 
 function asArray(v) {

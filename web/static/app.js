@@ -1463,16 +1463,10 @@ function fmtExchangeRate(n) {
 
 function buildExchangeRatesURL() {
   const q = document.getElementById("exchange-q")?.value?.trim() || "";
-  const from = document.getElementById("exchange-from")?.value?.trim() || "";
-  const to = document.getElementById("exchange-to")?.value?.trim() || "";
+  const day = document.getElementById("exchange-date")?.value?.trim() || "";
   const params = new URLSearchParams();
   if (q) params.set("q", q);
-  if (from && to) {
-    params.set("from", from);
-    params.set("to", to);
-  } else if (from || to) {
-    return { error: "请同时填写起始与结束日期，或两者都留空使用默认（昨日止 5 个工作日）。" };
-  }
+  if (day) params.set("date", day);
   const qs = params.toString();
   return { url: qs ? `/api/exchange-rates?${qs}` : "/api/exchange-rates" };
 }
@@ -1483,10 +1477,6 @@ async function loadExchangeRates() {
   const tbody = document.getElementById("exchange-body");
   if (!thead || !tbody) return;
   const built = buildExchangeRatesURL();
-  if (built.error) {
-    alert(built.error);
-    return;
-  }
   if (sum) sum.textContent = "加载中…";
   tbody.innerHTML = "";
   thead.innerHTML = "";
@@ -1495,8 +1485,13 @@ async function loadExchangeRates() {
     const dates = asArray(data.dates);
     const rows = asArray(data.rows);
     const base = data.base || "";
+    const dayLabel = dates.length ? dates[0] : "";
     if (sum) {
-      sum.textContent = `基准 ${base}；列为工作日。已显示 ${rows.length} 种货币。本地无数据时由服务器从 Frankfurter 拉取并写入缓存。`;
+      if (rows.length === 0) {
+        sum.textContent = `基准 ${base}；日期 ${dayLabel || "—"}。未在 Settings → 汇率货币 中添加报价币种则表格为空；有列表时优先用本地缓存，缺失则拉取 Frankfurter 并写入库。`;
+      } else {
+        sum.textContent = `基准 ${base}；日期 ${dayLabel}；共 ${rows.length} 种货币（Settings → 汇率货币）。数据优先本地，缺则 Frankfurter 并缓存。`;
+      }
     }
     const hr = document.createElement("tr");
     const thCur = document.createElement("th");
@@ -1533,13 +1528,6 @@ async function loadExchangeRates() {
 }
 
 document.getElementById("btn-exchange-load")?.addEventListener("click", () => loadExchangeRates());
-document.getElementById("btn-exchange-default")?.addEventListener("click", () => {
-  const f = document.getElementById("exchange-from");
-  const t = document.getElementById("exchange-to");
-  if (f) f.value = "";
-  if (t) t.value = "";
-  loadExchangeRates();
-});
 document.getElementById("exchange-q")?.addEventListener("keydown", (ev) => {
   if (ev.key === "Enter") {
     ev.preventDefault();

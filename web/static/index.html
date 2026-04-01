@@ -12,7 +12,7 @@
       <div class="top-brand">
         <div id="app-header-logo" class="app-header-logo" hidden></div>
         <h1 id="app-title">TaskTracker</h1>
-        <span class="app-version" aria-label="version">v0.0.8</span>
+        <span class="app-version" aria-label="version">v0.0.9</span>
       </div>
       <div class="top-actions">
         <a href="/settings.html" class="top-nav-link" id="link-settings">Settings</a>
@@ -186,22 +186,19 @@
         <label>搜索
           <input type="search" id="exchange-q" placeholder="代码或名称" autocomplete="off" />
         </label>
-        <label>起始日期
-          <input type="date" id="exchange-from" />
-        </label>
-        <label>结束日期
-          <input type="date" id="exchange-to" />
+        <label>查询日期
+          <input type="date" id="exchange-date" />
         </label>
         <button type="button" id="btn-exchange-load" class="primary">查询</button>
-        <button type="button" id="btn-exchange-default" class="ghost">默认（昨日止 5 个工作日）</button>
       </div>
-      <p class="report-summary" id="exchange-summary">基准货币在 Settings → Company Profile 中设置。数据优先读本地，缺失时从 Frankfurter 拉取并缓存。</p>
+      <p class="report-summary" id="exchange-summary">基准货币在 Settings → Company Profile；表格货币在 Settings → 汇率货币。留空日期则查询昨日；有本地缓存则直接用，否则从 Frankfurter 拉取并保存。</p>
       <div class="table-wrap">
         <table class="data exchange-rates-table">
           <thead id="exchange-thead"></thead>
           <tbody id="exchange-body"></tbody>
         </table>
       </div>
+      <p class="exchange-footnote">未选择日期时，默认查询<strong>昨日</strong>（按日历日）。每次查询先读本地库，该日该币种无缓存再请求 Frankfurter。</p>
     </section>
 
     <section id="panel-cheque" class="panel">

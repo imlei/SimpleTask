@@ -1,4 +1,4 @@
 package main
 
-// Version 发布版本（与 Git 标签 v0.0.8 对应）
-const Version = "0.0.8"
+// Version 发布版本（与 Git 标签 v0.0.9 对应）
+const Version = "0.0.9"

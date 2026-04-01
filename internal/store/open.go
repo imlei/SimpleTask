@@ -172,6 +172,10 @@ func Open(dir string) (*sql.DB, error) {
 		_ = db.Close()
 		return nil, err
 	}
+	if err := ensureExchangeRateWatchlistTable(db); err != nil {
+		_ = db.Close()
+		return nil, err
+	}
 	return db, nil
 }
 
@@ -379,6 +383,15 @@ CREATE TABLE IF NOT EXISTS exchange_rates (
 		return err
 	}
 	_, err := db.Exec(`CREATE INDEX IF NOT EXISTS idx_exchange_rates_base_date ON exchange_rates (base_code, requested_date);`)
+	return err
+}
+
+func ensureExchangeRateWatchlistTable(db *sql.DB) error {
+	_, err := db.Exec(`
+CREATE TABLE IF NOT EXISTS exchange_rate_watchlist (
+  code TEXT PRIMARY KEY,
+  sort_order INTEGER NOT NULL DEFAULT 0
+);`)
 	return err
 }
 

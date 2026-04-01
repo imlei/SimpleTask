@@ -890,6 +890,20 @@ table.data.exchange-rates-table tbody tr:nth-child(even) {
   background: rgba(255, 255, 255, 0.035);
 }
 
+.exchange-footnote {
+  margin: 0.75rem 0 0;
+  font-size: 0.78rem;
+  line-height: 1.45;
+  color: var(--muted);
+}
+
+.settings-subtoolbar .erc-add-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  margin-right: 0.5rem;
+}
+
 .price-pick-block {
   border: 1px solid var(--border);
   border-radius: 8px;

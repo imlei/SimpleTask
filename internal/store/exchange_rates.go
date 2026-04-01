@@ -88,3 +88,60 @@ func (s *Store) GetExchangeRatesForDates(base string, dates []string) (map[strin
 	}
 	return out, rows.Err()
 }
+
+// ReplaceExchangeQuotesForDate 仅替换指定报价币种在该日、该基准下的缓存（不影响其它币种行）
+func (s *Store) ReplaceExchangeQuotesForDate(requestedDate, base string, quoteToRate map[string]float64, fetchedAt string) error {
+	base = strings.ToUpper(strings.TrimSpace(base))
+	requestedDate = strings.TrimSpace(requestedDate)
+	if base == "" || requestedDate == "" {
+		return fmt.Errorf("base and date required")
+	}
+	if len(quoteToRate) == 0 {
+		return nil
+	}
+	if fetchedAt == "" {
+		fetchedAt = time.Now().UTC().Format(time.RFC3339)
+	}
+	tx, err := s.db.Begin()
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+	keys := make([]string, 0, len(quoteToRate))
+	for q := range quoteToRate {
+		q = strings.ToUpper(strings.TrimSpace(q))
+		if q == "" || q == base {
+			continue
+		}
+		keys = append(keys, q)
+	}
+	if len(keys) == 0 {
+		return tx.Commit()
+	}
+	ph := make([]string, len(keys))
+	args := make([]any, 0, len(keys)+2)
+	args = append(args, requestedDate, base)
+	for i, k := range keys {
+		ph[i] = "?"
+		args = append(args, k)
+	}
+	delQ := fmt.Sprintf(`DELETE FROM exchange_rates WHERE requested_date=? AND base_code=? AND quote_code IN (%s)`, strings.Join(ph, ","))
+	if _, err := tx.Exec(delQ, args...); err != nil {
+		return err
+	}
+	stmt, err := tx.Prepare(`INSERT INTO exchange_rates (requested_date, base_code, quote_code, rate, fetched_at) VALUES (?,?,?,?,?)`)
+	if err != nil {
+		return err
+	}
+	defer stmt.Close()
+	for q, r := range quoteToRate {
+		q = strings.ToUpper(strings.TrimSpace(q))
+		if q == "" || q == base {
+			continue
+		}
+		if _, err := stmt.Exec(requestedDate, base, q, r, fetchedAt); err != nil {
+			return err
+		}
+	}
+	return tx.Commit()
+}
