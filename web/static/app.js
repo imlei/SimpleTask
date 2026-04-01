@@ -1277,6 +1277,7 @@ async function deletePrice(id) {
 // --- Expenses ---
 let expensesCache = [];
 let expenseCatalogCache = [];
+let expenseVendorsCache = [];
 
 async function loadExpenseCatalog() {
   try {
@@ -1287,10 +1288,20 @@ async function loadExpenseCatalog() {
   }
 }
 
+async function loadExpenseVendors() {
+  try {
+    expenseVendorsCache = asArray(await api("/api/expense-vendors"));
+  } catch (e) {
+    console.error(e);
+    expenseVendorsCache = [];
+  }
+}
+
 async function loadExpenses() {
   try {
     await loadTasks();
     await loadExpenseCatalog();
+    await loadExpenseVendors();
     expensesCache = asArray(await api("/api/expenses"));
     renderExpenses();
   } catch (e) {
@@ -1311,6 +1322,30 @@ function fillExpenseTaskSelect(selectedId) {
     sel.appendChild(o);
   }
   if (selectedId) sel.value = selectedId;
+}
+
+function fillExpenseVendorSelect(selectedId) {
+  const sel = document.getElementById("expense-vendor-id");
+  if (!sel) return;
+  sel.innerHTML = "";
+  const ph = document.createElement("option");
+  ph.value = "";
+  ph.textContent = "— Optional —";
+  sel.appendChild(ph);
+  for (const v of expenseVendorsCache) {
+    const o = document.createElement("option");
+    o.value = v.id;
+    o.textContent = (v.name || v.id).trim() || v.id;
+    sel.appendChild(o);
+  }
+  const vid = selectedId != null ? String(selectedId).trim() : "";
+  if (vid && !expenseVendorsCache.some((v) => String(v.id) === vid)) {
+    const o = document.createElement("option");
+    o.value = vid;
+    o.textContent = `${vid}（vendor missing）`;
+    sel.appendChild(o);
+  }
+  if (vid) sel.value = vid;
 }
 
 /** Expense account：仅 Settings 中已添加的 expense_codes */
@@ -1351,6 +1386,7 @@ function renderExpenses() {
     const d = ex.expenseDate || "";
     tr.innerHTML = `
       <td>${escapeHtml(ex.taskName || "")}</td>
+      <td>${escapeHtml(ex.vendorName || "—")}</td>
       <td>${escapeHtml(d || "—")}</td>
       <td>${escapeHtml(ex.accountCode || "—")}</td>
       <td>${escapeHtml(ex.description || "")}</td>
@@ -1375,12 +1411,14 @@ async function openNewExpenseForTask(t) {
 
 async function openExpenseDialog(ex) {
   await loadExpenseCatalog();
+  await loadExpenseVendors();
   const isEdit = !!(ex && ex.id);
   const title = document.getElementById("dlg-expense-title");
   if (title) title.textContent = isEdit ? "Edit expense" : "New expense";
   const hid = document.getElementById("expense-id");
   if (hid) hid.value = isEdit ? ex.id : "";
   fillExpenseTaskSelect((ex && ex.taskId) || "");
+  fillExpenseVendorSelect((ex && ex.vendorId) || "");
   const accCode = ex && ex.accountCode != null ? String(ex.accountCode).trim() : "";
   fillExpenseAccountSelect(accCode, isEdit);
   const dateEl = document.getElementById("expense-date");
@@ -1412,8 +1450,10 @@ if (formExpense) {
     const taskId = document.getElementById("expense-task-id")?.value?.trim() || "";
     const accountCode = document.getElementById("expense-account-code")?.value?.trim() || "";
     const expenseDate = document.getElementById("expense-date")?.value?.trim() || "";
+    const vendorId = document.getElementById("expense-vendor-id")?.value?.trim() || "";
     const payload = {
       taskId,
+      vendorId,
       accountCode,
       expenseDate,
       description: document.getElementById("expense-description")?.value?.trim() || "",
@@ -1444,6 +1484,48 @@ if (formExpense) {
       }
       dlgExpense.close();
       await loadExpenses();
+    } catch (err) {
+      alert("保存失败: " + err.message);
+    }
+  });
+}
+
+const dlgVendor = document.getElementById("dlg-vendor");
+const formVendor = document.getElementById("form-vendor");
+
+document.getElementById("btn-expense-new-vendor")?.addEventListener("click", () => {
+  const n = document.getElementById("vendor-name");
+  const em = document.getElementById("vendor-email");
+  const ad = document.getElementById("vendor-address");
+  const cu = document.getElementById("vendor-currency");
+  if (n) n.value = "";
+  if (em) em.value = "";
+  if (ad) ad.value = "";
+  if (cu) cu.value = "CAD";
+  dlgVendor?.showModal();
+});
+
+document.getElementById("vendor-cancel")?.addEventListener("click", () => dlgVendor?.close());
+
+if (formVendor) {
+  formVendor.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const name = document.getElementById("vendor-name")?.value?.trim() || "";
+    if (!name) {
+      alert("请输入 Vendor name。");
+      return;
+    }
+    const body = {
+      name,
+      currency: document.getElementById("vendor-currency")?.value || "CAD",
+      email: document.getElementById("vendor-email")?.value?.trim() || "",
+      address: document.getElementById("vendor-address")?.value?.trim() || "",
+    };
+    try {
+      const created = await api("/api/expense-vendors", { method: "POST", body: JSON.stringify(body) });
+      await loadExpenseVendors();
+      fillExpenseVendorSelect(created && created.id ? created.id : "");
+      dlgVendor?.close();
     } catch (err) {
       alert("保存失败: " + err.message);
     }

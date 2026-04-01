@@ -49,6 +49,15 @@ func (s *Server) applyExpensePayload(e *models.Expense) error {
 	if !s.Store.ExpenseCodeInCatalog(e.AccountCode) {
 		return errors.New("accountCode must be added in Settings → Expense Code")
 	}
+	vid := strings.TrimSpace(e.VendorID)
+	if vid != "" {
+		if _, err := s.Store.GetExpenseVendor(vid); err != nil {
+			if errors.Is(err, store.ErrNotFound) {
+				return errors.New("vendor not found")
+			}
+			return err
+		}
+	}
 	return nil
 }
 

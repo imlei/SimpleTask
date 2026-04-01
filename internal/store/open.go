@@ -164,6 +164,14 @@ func Open(dir string) (*sql.DB, error) {
 		_ = db.Close()
 		return nil, err
 	}
+	if err := ensureExpenseVendorsTable(db); err != nil {
+		_ = db.Close()
+		return nil, err
+	}
+	if err := ensureExpenseVendorIDColumn(db); err != nil {
+		_ = db.Close()
+		return nil, err
+	}
 	if err := ensureBaseCurrencyColumn(db); err != nil {
 		_ = db.Close()
 		return nil, err
@@ -733,5 +741,43 @@ func ensureExpenseDateColumn(db *sql.DB) error {
 		}
 	}
 	_, _ = db.Exec(`UPDATE expenses SET expense_date = substr(created_at, 1, 10) WHERE IFNULL(expense_date,'') = '' AND length(created_at) >= 10`)
+	return nil
+}
+
+func ensureExpenseVendorsTable(db *sql.DB) error {
+	_, err := db.Exec(`
+CREATE TABLE IF NOT EXISTS expense_vendors (
+  id TEXT PRIMARY KEY,
+  name TEXT NOT NULL DEFAULT '',
+  currency TEXT NOT NULL DEFAULT 'CAD',
+  email TEXT NOT NULL DEFAULT '',
+  address TEXT NOT NULL DEFAULT '',
+  created_at TEXT NOT NULL DEFAULT ''
+);`)
+	return err
+}
+
+func ensureExpenseVendorIDColumn(db *sql.DB) error {
+	existing := map[string]bool{}
+	rows, err := db.Query(`PRAGMA table_info(expenses)`)
+	if err != nil {
+		return err
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var cid int
+		var name, ctype string
+		var notnull, pk int
+		var dflt sql.NullString
+		if err := rows.Scan(&cid, &name, &ctype, &notnull, &dflt, &pk); err != nil {
+			continue
+		}
+		existing[name] = true
+	}
+	if !existing["vendor_id"] {
+		if _, err := db.Exec(`ALTER TABLE expenses ADD COLUMN vendor_id TEXT NOT NULL DEFAULT ''`); err != nil {
+			return err
+		}
+	}
 	return nil
 }

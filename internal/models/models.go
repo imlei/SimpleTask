@@ -95,14 +95,26 @@ type Invoice struct {
 	CreatedAt   string        `json:"createdAt"`
 }
 
+// ExpenseVendor 支出供应商（在 New expense 中选择或新建）
+type ExpenseVendor struct {
+	ID        string `json:"id"`
+	Name      string `json:"name"`
+	Currency  string `json:"currency"`
+	Email     string `json:"email"`
+	Address   string `json:"address"`
+	CreatedAt string `json:"createdAt,omitempty"`
+}
+
 // Expense 任务相关支出记录
 type Expense struct {
 	ID          string  `json:"id"`
 	TaskID      string  `json:"taskId"`
 	TaskName    string  `json:"taskName,omitempty"` // 列表/详情：来自 tasks.company_name
-	ExpenseDate string  `json:"expenseDate"`        // 业务日期 YYYY-MM-DD
-	Description string  `json:"description"`        // 支出说明
-	AccountCode string  `json:"accountCode"`        // 费用科目 5XXX（须在 Settings 目录中）
+	VendorID    string  `json:"vendorId,omitempty"`
+	VendorName  string  `json:"vendorName,omitempty"` // 列表/详情：来自 expense_vendors.name
+	ExpenseDate string  `json:"expenseDate"`            // 业务日期 YYYY-MM-DD
+	Description string  `json:"description"`            // 支出说明
+	AccountCode string  `json:"accountCode"`            // 费用科目 5XXX（须在 Settings 目录中）
 	Amount      float64 `json:"amount"`
 	Currency    string  `json:"currency"`
 	CreatedAt   string  `json:"createdAt,omitempty"`

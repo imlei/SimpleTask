@@ -12,7 +12,7 @@
       <div class="top-brand">
         <div id="app-header-logo" class="app-header-logo" hidden></div>
         <h1 id="app-title">TaskTracker</h1>
-        <span class="app-version" aria-label="version">v0.0.10</span>
+        <span class="app-version" aria-label="version">v0.0.11</span>
       </div>
       <div class="top-actions">
         <a href="/settings.html" class="top-nav-link" id="link-settings">Settings</a>
@@ -169,6 +169,7 @@
           <thead>
             <tr>
               <th>Task name</th>
+              <th>Vendor</th>
               <th>Date</th>
               <th>Account</th>
               <th>Description</th>
@@ -370,10 +371,16 @@
 
   <dialog id="dlg-expense">
     <form method="dialog" id="form-expense">
-      <h2 id="dlg-expense-title">Expense</h2>
       <input type="hidden" id="expense-id" />
+      <div class="dlg-head-row">
+        <h2 id="dlg-expense-title">Expense</h2>
+        <button type="button" class="ghost small" id="btn-expense-new-vendor">New Vendor</button>
+      </div>
       <label>Task name
         <select id="expense-task-id" required></select>
+      </label>
+      <label>Vendor
+        <select id="expense-vendor-id"></select>
       </label>
       <label>Expense account
         <select id="expense-account-code" required></select>
@@ -391,6 +398,26 @@
       <div class="dlg-actions">
         <button type="submit" class="primary">保存</button>
         <button type="button" id="expense-cancel">取消</button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog id="dlg-vendor">
+    <form id="form-vendor">
+      <h2>New vendor</h2>
+      <label>Vendor name <input id="vendor-name" type="text" required maxlength="200" autocomplete="organization" /></label>
+      <label>Currency
+        <select id="vendor-currency">
+          <option value="CAD">CAD</option>
+          <option value="USD">USD</option>
+          <option value="CNY">CNY</option>
+        </select>
+      </label>
+      <label>Email <input id="vendor-email" type="email" maxlength="200" autocomplete="email" placeholder="可选" /></label>
+      <label>Address <textarea id="vendor-address" rows="2" maxlength="500" placeholder="可选"></textarea></label>
+      <div class="dlg-actions">
+        <button type="submit" class="primary">保存</button>
+        <button type="button" id="vendor-cancel">取消</button>
       </div>
     </form>
   </dialog>
