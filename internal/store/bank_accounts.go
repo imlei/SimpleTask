@@ -16,7 +16,7 @@ func (s *Store) ListBankAccounts() ([]models.BankAccount, string, error) {
 	defer s.mu.Unlock()
 	def := ""
 	_ = s.db.QueryRow(`SELECT COALESCE(default_bank_account_id,'') FROM app_settings WHERE id=1`).Scan(&def)
-	rows, err := s.db.Query(`SELECT id, label, micr_country, bank_institution, bank_transit, bank_routing_aba, bank_account,
+	rows, err := s.db.Query(`SELECT id, label, bank_name, micr_country, bank_institution, bank_transit, bank_routing_aba, bank_account, bank_iban, bank_swift,
 		bank_cheque_number, micr_line_override, default_cheque_currency
 		FROM bank_accounts ORDER BY id`)
 	if err != nil {
@@ -26,7 +26,7 @@ func (s *Store) ListBankAccounts() ([]models.BankAccount, string, error) {
 	out := make([]models.BankAccount, 0)
 	for rows.Next() {
 		var b models.BankAccount
-		if err := rows.Scan(&b.ID, &b.Label, &b.MICRCountry, &b.BankInstitution, &b.BankTransit, &b.BankRoutingABA, &b.BankAccount,
+		if err := rows.Scan(&b.ID, &b.Label, &b.BankName, &b.MICRCountry, &b.BankInstitution, &b.BankTransit, &b.BankRoutingABA, &b.BankAccount, &b.BankIBAN, &b.BankSWIFT,
 			&b.BankChequeNumber, &b.MICRLineOverride, &b.DefaultChequeCurrency); err != nil {
 			continue
 		}
@@ -43,10 +43,10 @@ func (s *Store) GetBankAccount(id string) (models.BankAccount, error) {
 		return models.BankAccount{}, ErrNotFound
 	}
 	var b models.BankAccount
-	err := s.db.QueryRow(`SELECT id, label, micr_country, bank_institution, bank_transit, bank_routing_aba, bank_account,
+	err := s.db.QueryRow(`SELECT id, label, bank_name, micr_country, bank_institution, bank_transit, bank_routing_aba, bank_account, bank_iban, bank_swift,
 		bank_cheque_number, micr_line_override, default_cheque_currency
 		FROM bank_accounts WHERE id=?`, id).Scan(
-		&b.ID, &b.Label, &b.MICRCountry, &b.BankInstitution, &b.BankTransit, &b.BankRoutingABA, &b.BankAccount,
+		&b.ID, &b.Label, &b.BankName, &b.MICRCountry, &b.BankInstitution, &b.BankTransit, &b.BankRoutingABA, &b.BankAccount, &b.BankIBAN, &b.BankSWIFT,
 		&b.BankChequeNumber, &b.MICRLineOverride, &b.DefaultChequeCurrency,
 	)
 	if errors.Is(err, sql.ErrNoRows) {
@@ -66,10 +66,10 @@ func (s *Store) GetDefaultBankAccount() (models.BankAccount, error) {
 	def = strings.TrimSpace(def)
 	if def != "" {
 		var b models.BankAccount
-		err := s.db.QueryRow(`SELECT id, label, micr_country, bank_institution, bank_transit, bank_routing_aba, bank_account,
+		err := s.db.QueryRow(`SELECT id, label, bank_name, micr_country, bank_institution, bank_transit, bank_routing_aba, bank_account, bank_iban, bank_swift,
 			bank_cheque_number, micr_line_override, default_cheque_currency
 			FROM bank_accounts WHERE id=?`, def).Scan(
-			&b.ID, &b.Label, &b.MICRCountry, &b.BankInstitution, &b.BankTransit, &b.BankRoutingABA, &b.BankAccount,
+			&b.ID, &b.Label, &b.BankName, &b.MICRCountry, &b.BankInstitution, &b.BankTransit, &b.BankRoutingABA, &b.BankAccount, &b.BankIBAN, &b.BankSWIFT,
 			&b.BankChequeNumber, &b.MICRLineOverride, &b.DefaultChequeCurrency,
 		)
 		if err == nil {
@@ -78,10 +78,10 @@ func (s *Store) GetDefaultBankAccount() (models.BankAccount, error) {
 	}
 	// fallback: first account
 	var b models.BankAccount
-	err := s.db.QueryRow(`SELECT id, label, micr_country, bank_institution, bank_transit, bank_routing_aba, bank_account,
+	err := s.db.QueryRow(`SELECT id, label, bank_name, micr_country, bank_institution, bank_transit, bank_routing_aba, bank_account, bank_iban, bank_swift,
 		bank_cheque_number, micr_line_override, default_cheque_currency
 		FROM bank_accounts ORDER BY id LIMIT 1`).Scan(
-		&b.ID, &b.Label, &b.MICRCountry, &b.BankInstitution, &b.BankTransit, &b.BankRoutingABA, &b.BankAccount,
+		&b.ID, &b.Label, &b.BankName, &b.MICRCountry, &b.BankInstitution, &b.BankTransit, &b.BankRoutingABA, &b.BankAccount, &b.BankIBAN, &b.BankSWIFT,
 		&b.BankChequeNumber, &b.MICRLineOverride, &b.DefaultChequeCurrency,
 	)
 	if errors.Is(err, sql.ErrNoRows) {
@@ -101,10 +101,10 @@ func (s *Store) CreateBankAccount(in models.BankAccount) (models.BankAccount, er
 		in.ID = s.nextBankAccountIDLocked()
 	}
 	now := time.Now().Format(time.RFC3339)
-	_, err := s.db.Exec(`INSERT INTO bank_accounts (id, label, micr_country, bank_institution, bank_transit, bank_routing_aba, bank_account,
+	_, err := s.db.Exec(`INSERT INTO bank_accounts (id, label, bank_name, micr_country, bank_institution, bank_transit, bank_routing_aba, bank_account, bank_iban, bank_swift,
 		bank_cheque_number, micr_line_override, default_cheque_currency, created_at, updated_at)
-		VALUES (?,?,?,?,?,?,?,?,?,?,?,?)`,
-		in.ID, in.Label, in.MICRCountry, in.BankInstitution, in.BankTransit, in.BankRoutingABA, in.BankAccount,
+		VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+		in.ID, in.Label, in.BankName, in.MICRCountry, in.BankInstitution, in.BankTransit, in.BankRoutingABA, in.BankAccount, in.BankIBAN, in.BankSWIFT,
 		in.BankChequeNumber, in.MICRLineOverride, in.DefaultChequeCurrency, now, now,
 	)
 	if err != nil {
@@ -129,10 +129,10 @@ func (s *Store) UpdateBankAccount(id string, patch models.BankAccount) (models.B
 	patch.ID = id
 	patch = normalizeBankAccount(patch)
 	now := time.Now().Format(time.RFC3339)
-	res, err := s.db.Exec(`UPDATE bank_accounts SET label=?, micr_country=?, bank_institution=?, bank_transit=?, bank_routing_aba=?, bank_account=?,
+	res, err := s.db.Exec(`UPDATE bank_accounts SET label=?, bank_name=?, micr_country=?, bank_institution=?, bank_transit=?, bank_routing_aba=?, bank_account=?, bank_iban=?, bank_swift=?,
 		bank_cheque_number=?, micr_line_override=?, default_cheque_currency=?, updated_at=?
 		WHERE id=?`,
-		patch.Label, patch.MICRCountry, patch.BankInstitution, patch.BankTransit, patch.BankRoutingABA, patch.BankAccount,
+		patch.Label, patch.BankName, patch.MICRCountry, patch.BankInstitution, patch.BankTransit, patch.BankRoutingABA, patch.BankAccount, patch.BankIBAN, patch.BankSWIFT,
 		patch.BankChequeNumber, patch.MICRLineOverride, patch.DefaultChequeCurrency, now,
 		id,
 	)
@@ -240,8 +240,9 @@ func incrementChequeString(s string) string {
 func normalizeBankAccount(in models.BankAccount) models.BankAccount {
 	in.ID = strings.TrimSpace(in.ID)
 	in.Label = clampLen(strings.TrimSpace(in.Label), maxBankStrLen)
+	in.BankName = clampLen(strings.TrimSpace(in.BankName), maxBankStrLen)
 	mc := strings.ToUpper(strings.TrimSpace(in.MICRCountry))
-	if mc != "US" {
+	if mc != "US" && mc != "EU" {
 		mc = "CA"
 	}
 	in.MICRCountry = mc
@@ -249,6 +250,8 @@ func normalizeBankAccount(in models.BankAccount) models.BankAccount {
 	in.BankTransit = clampLen(strings.TrimSpace(in.BankTransit), maxBankStrLen)
 	in.BankRoutingABA = clampLen(strings.TrimSpace(in.BankRoutingABA), maxBankStrLen)
 	in.BankAccount = clampLen(strings.TrimSpace(in.BankAccount), maxBankStrLen)
+	in.BankIBAN = clampLen(strings.TrimSpace(in.BankIBAN), maxBankStrLen)
+	in.BankSWIFT = clampLen(strings.TrimSpace(in.BankSWIFT), maxBankStrLen)
 	in.BankChequeNumber = clampLen(strings.TrimSpace(in.BankChequeNumber), maxBankStrLen)
 	if in.BankChequeNumber == "" {
 		in.BankChequeNumber = "000001"

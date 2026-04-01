@@ -364,18 +364,58 @@ func ensureBankAccounts(db *sql.DB) error {
 CREATE TABLE IF NOT EXISTS bank_accounts (
   id TEXT PRIMARY KEY,
   label TEXT NOT NULL DEFAULT '',
+  bank_name TEXT NOT NULL DEFAULT '',
   micr_country TEXT NOT NULL DEFAULT 'CA',
   bank_institution TEXT NOT NULL DEFAULT '',
   bank_transit TEXT NOT NULL DEFAULT '',
   bank_routing_aba TEXT NOT NULL DEFAULT '',
   bank_account TEXT NOT NULL DEFAULT '',
+  bank_iban TEXT NOT NULL DEFAULT '',
+  bank_swift TEXT NOT NULL DEFAULT '',
   bank_cheque_number TEXT NOT NULL DEFAULT '000001',
   micr_line_override TEXT NOT NULL DEFAULT '',
   default_cheque_currency TEXT NOT NULL DEFAULT 'CAD',
   created_at TEXT NOT NULL DEFAULT '',
   updated_at TEXT NOT NULL DEFAULT ''
 );`)
-	return err
+	if err != nil {
+		return err
+	}
+	type colDef struct {
+		Name string
+		DDL  string
+	}
+	want := []colDef{
+		{Name: "bank_name", DDL: "ALTER TABLE bank_accounts ADD COLUMN bank_name TEXT NOT NULL DEFAULT ''"},
+		{Name: "bank_iban", DDL: "ALTER TABLE bank_accounts ADD COLUMN bank_iban TEXT NOT NULL DEFAULT ''"},
+		{Name: "bank_swift", DDL: "ALTER TABLE bank_accounts ADD COLUMN bank_swift TEXT NOT NULL DEFAULT ''"},
+	}
+	existing := map[string]bool{}
+	rows, e := db.Query(`PRAGMA table_info(bank_accounts)`)
+	if e != nil {
+		return nil
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var cid int
+		var name, ctype string
+		var notnull int
+		var dflt sql.NullString
+		var pk int
+		if err := rows.Scan(&cid, &name, &ctype, &notnull, &dflt, &pk); err != nil {
+			continue
+		}
+		existing[name] = true
+	}
+	for _, c := range want {
+		if existing[c.Name] {
+			continue
+		}
+		if _, err := db.Exec(c.DDL); err != nil {
+			continue
+		}
+	}
+	return nil
 }
 
 // migrateBankAccountsFromLegacySettings 将旧版 app_settings 中的单账户字段迁移到 bank_accounts（仅当 bank_accounts 为空时执行一次）。

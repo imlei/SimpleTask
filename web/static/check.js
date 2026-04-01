@@ -133,6 +133,9 @@ function buildMicrLine(settings, chequeNo) {
     if (rt.length !== 9 || !ac) return "";
     return MICR_DELIM + rt + MICR_DELIM + ac + MICR_DELIM + ch + MICR_DELIM;
   }
+  if (country === "EU") {
+    return "";
+  }
   const inst = padLeftDigits(settings.bankInstitution, 3);
   const tr = padLeftDigits(settings.bankTransit, 5);
   const block8 = inst + tr;
@@ -144,10 +147,16 @@ function buildMicrLine(settings, chequeNo) {
 function updateMicrFormatBanner() {
   const el = document.getElementById("check-micr-banner");
   if (!el) return;
-  const us = ((defaultBank && defaultBank.micrCountry) || "CA").toUpperCase() === "US";
-  el.textContent = us
-    ? "当前 Settings：美国 ABA — MICR 为 Routing（9 位）+ Account + Cheque（6 位）。"
-    : "当前 Settings：加拿大 CPA 常用 — MICR 为 FI 8 位（Institution+Transit）+ Account（12 位左补零）+ Cheque（5 位）。";
+  const country = ((defaultBank && defaultBank.micrCountry) || "CA").toUpperCase();
+  if (country === "US") {
+    el.textContent = "当前账户：美国 ABA — MICR 为 Routing（9 位）+ Account + Cheque（6 位）。";
+    return;
+  }
+  if (country === "EU") {
+    el.textContent = "当前账户：欧洲账户（EU）— 默认不自动生成 MICR，可使用 MICR Override。";
+    return;
+  }
+  el.textContent = "当前账户：加拿大 CPA 常用 — MICR 为 FI 8 位（Institution+Transit）+ Account（12 位左补零）+ Cheque（5 位）。";
 }
 
 function syncMicr() {
@@ -253,27 +262,38 @@ function renderBankList(defaultId) {
   box.innerHTML = allBanks
     .map((b) => {
       const isDef = b.id === defaultId;
+      const bankDisplay = b.bankName || (b.micrCountry === "US" ? `Routing ${b.bankRoutingAba || "-"}` : b.micrCountry === "EU" ? `IBAN ${b.bankIban || "-"}` : `FI ${b.bankInstitution || ""}-${b.bankTransit || ""}`);
       return `
-        <div class="bank-item">
-          <div>
-            <div><strong>${escHtml(b.label || b.id)}</strong>${isDef ? " (Default)" : ""}</div>
-            <div class="meta">${escHtml((b.micrCountry || "CA").toUpperCase())} · Cheque # ${escHtml(b.bankChequeNumber || "")}</div>
+        <div class="bank-item-row">
+          <div><div class="bank-col-title">Account Name</div><div class="bank-col-value"><strong>${escHtml(b.label || b.id)}</strong>${isDef ? " (Default)" : ""}</div></div>
+          <div><div class="bank-col-title">Bank</div><div class="bank-col-value">${escHtml(bankDisplay)}</div></div>
+          <div><div class="bank-col-title">Currency</div><div class="bank-col-value">${escHtml((b.defaultChequeCurrency || "CAD").toUpperCase())}</div></div>
+          <div><div class="bank-col-title">Account</div><div class="bank-col-value">${escHtml(b.bankAccount || "")}</div></div>
+          <div class="bank-row-actions">
+            <button type="button" data-edit-id="${escHtml(b.id)}">Edit</button>
+            <button type="button" data-write-id="${escHtml(b.id)}">Write Cheque</button>
           </div>
-          <button type="button" data-bank-id="${escHtml(b.id)}">Use</button>
         </div>
       `;
     })
     .join("");
-  box.querySelectorAll("button[data-bank-id]").forEach((btn) => {
+  box.querySelectorAll("button[data-edit-id]").forEach((btn) => {
     btn.addEventListener("click", async () => {
-      const id = btn.getAttribute("data-bank-id") || "";
+      const id = btn.getAttribute("data-edit-id") || "";
       if (!id) return;
-      await useBankAccount(id);
+      openEditBank(id);
+    });
+  });
+  box.querySelectorAll("button[data-write-id]").forEach((btn) => {
+    btn.addEventListener("click", async () => {
+      const id = btn.getAttribute("data-write-id") || "";
+      if (!id) return;
+      await useBankAccount(id, true);
     });
   });
 }
 
-async function useBankAccount(id) {
+async function useBankAccount(id, goWritePanel) {
   const r = await fetch(`/api/bank-accounts/${encodeURIComponent(id)}/default`, {
     method: "POST",
     credentials: "same-origin",
@@ -303,35 +323,52 @@ async function useBankAccount(id) {
     }
   }
   renderBankList(id);
+  if (goWritePanel) activateMenu("write");
   updateMicrFormatBanner();
   syncOutputs();
 }
 
 function bindLeftMenu() {
+  const menuWrite = document.getElementById("menu-write-cheque");
   const menuList = document.getElementById("menu-bank-list");
   const menuAdd = document.getElementById("menu-bank-add");
-  const panelList = document.getElementById("panel-bank-list");
-  const panelAdd = document.getElementById("panel-bank-add");
-  if (!menuList || !menuAdd || !panelList || !panelAdd) return;
-  const activate = (tab) => {
-    const listOn = tab === "list";
-    panelList.hidden = !listOn;
-    panelAdd.hidden = listOn;
-    menuList.classList.toggle("active", listOn);
-    menuAdd.classList.toggle("active", !listOn);
-  };
-  menuList.addEventListener("click", () => activate("list"));
-  menuAdd.addEventListener("click", () => activate("add"));
+  if (!menuWrite || !menuList || !menuAdd) return;
+  menuWrite.addEventListener("click", () => activateMenu("write"));
+  menuList.addEventListener("click", () => activateMenu("list"));
+  menuAdd.addEventListener("click", () => {
+    clearNewBankForm();
+    activateMenu("add");
+  });
+}
+
+function activateMenu(tab) {
+  const menuWrite = document.getElementById("menu-write-cheque");
+  const menuList = document.getElementById("menu-bank-list");
+  const menuAdd = document.getElementById("menu-bank-add");
+  const pWrite = document.getElementById("panel-write-cheque-main");
+  const pList = document.getElementById("panel-bank-list-main");
+  const pAdd = document.getElementById("panel-bank-add-main");
+  if (!menuWrite || !menuList || !menuAdd || !pWrite || !pList || !pAdd) return;
+  pWrite.hidden = tab !== "write";
+  pList.hidden = tab !== "list";
+  pAdd.hidden = tab !== "add";
+  menuWrite.classList.toggle("active", tab === "write");
+  menuList.classList.toggle("active", tab === "list");
+  menuAdd.classList.toggle("active", tab === "add");
 }
 
 function syncNewBankCountryFields() {
   const country = (document.getElementById("new-bank-country")?.value || "CA").toUpperCase();
   const isUS = country === "US";
+  const isEU = country === "EU";
   document.querySelectorAll(".bank-field-ca").forEach((el) => {
-    el.hidden = isUS;
+    el.hidden = isUS || isEU;
   });
   document.querySelectorAll(".bank-field-us").forEach((el) => {
     el.hidden = !isUS;
+  });
+  document.querySelectorAll(".bank-field-eu").forEach((el) => {
+    el.hidden = !isEU;
   });
 }
 
@@ -340,33 +377,78 @@ function clearNewBankForm() {
     const el = document.getElementById(id);
     if (el) el.value = v;
   };
+  set("new-bank-id", "");
+  const title = document.getElementById("bank-form-title");
+  if (title) title.textContent = "Add New Acct";
   set("new-bank-label", "");
+  set("new-bank-name", "");
   set("new-bank-country", "CA");
   set("new-bank-institution", "");
   set("new-bank-transit", "");
   set("new-bank-routing", "");
+  set("new-bank-iban", "");
+  set("new-bank-swift", "");
   set("new-bank-account", "");
   set("new-bank-cheque", "000001");
   set("new-bank-currency", "CAD");
   set("new-bank-micr", "");
+  const del = document.getElementById("btn-bank-delete");
+  if (del) del.hidden = true;
   syncNewBankCountryFields();
+}
+
+function openEditBank(id) {
+  const b = allBanks.find((x) => x.id === id);
+  if (!b) return;
+  const set = (id2, v) => {
+    const el = document.getElementById(id2);
+    if (!el) return;
+    if ("value" in el) {
+      el.value = v || "";
+      return;
+    }
+    el.textContent = v || "";
+  };
+  set("new-bank-id", b.id);
+  set("new-bank-label", b.label);
+  set("new-bank-name", b.bankName);
+  set("new-bank-country", (b.micrCountry || "CA").toUpperCase());
+  set("new-bank-institution", b.bankInstitution);
+  set("new-bank-transit", b.bankTransit);
+  set("new-bank-routing", b.bankRoutingAba);
+  set("new-bank-iban", b.bankIban);
+  set("new-bank-swift", b.bankSwift);
+  set("new-bank-account", b.bankAccount);
+  set("new-bank-cheque", b.bankChequeNumber || "000001");
+  set("new-bank-currency", (b.defaultChequeCurrency || "CAD").toUpperCase());
+  set("new-bank-micr", b.micrLineOverride);
+  const title = document.getElementById("bank-form-title");
+  if (title) title.textContent = "Edit Bank Account";
+  const del = document.getElementById("btn-bank-delete");
+  if (del) del.hidden = false;
+  syncNewBankCountryFields();
+  activateMenu("add");
 }
 
 async function addNewBankAccount() {
   const val = (id) => (document.getElementById(id)?.value || "").trim();
+  const editID = val("new-bank-id");
   const body = {
     label: val("new-bank-label"),
+    bankName: val("new-bank-name"),
     micrCountry: val("new-bank-country") || "CA",
     bankInstitution: val("new-bank-institution"),
     bankTransit: val("new-bank-transit"),
     bankRoutingAba: val("new-bank-routing"),
+    bankIban: val("new-bank-iban"),
+    bankSwift: val("new-bank-swift"),
     bankAccount: val("new-bank-account"),
     bankChequeNumber: val("new-bank-cheque"),
     defaultChequeCurrency: val("new-bank-currency") || "CAD",
     micrLineOverride: val("new-bank-micr"),
   };
-  const r = await fetch("/api/bank-accounts", {
-    method: "POST",
+  const r = await fetch(editID ? `/api/bank-accounts/${encodeURIComponent(editID)}` : "/api/bank-accounts", {
+    method: editID ? "PUT" : "POST",
     credentials: "same-origin",
     headers: { "Content-Type": "application/json; charset=utf-8" },
     body: JSON.stringify(body),
@@ -383,7 +465,25 @@ async function addNewBankAccount() {
   clearNewBankForm();
   const data = await fetchBankAccounts();
   renderBankList(data.defaultId || "");
-  document.getElementById("menu-bank-list")?.click();
+  activateMenu("list");
+}
+
+async function deleteEditingBank() {
+  const id = (document.getElementById("new-bank-id")?.value || "").trim();
+  if (!id) return;
+  if (!confirm("Delete this bank account?")) return;
+  const r = await fetch(`/api/bank-accounts/${encodeURIComponent(id)}`, {
+    method: "DELETE",
+    credentials: "same-origin",
+  });
+  if (!r.ok) {
+    alert("删除失败");
+    return;
+  }
+  clearNewBankForm();
+  const data = await fetchBankAccounts();
+  renderBankList(data.defaultId || "");
+  activateMenu("list");
 }
 
 async function loadFromInvoice() {
@@ -457,11 +557,17 @@ document.getElementById("btn-print")?.addEventListener("click", () => window.pri
 document.getElementById("btn-back")?.addEventListener("click", () => (window.location.href = "/"));
 document.getElementById("btn-cheque-next")?.addEventListener("click", () => saveChequeNextToSettings());
 document.getElementById("btn-add-bank")?.addEventListener("click", () => addNewBankAccount());
+document.getElementById("btn-bank-cancel")?.addEventListener("click", () => {
+  clearNewBankForm();
+  activateMenu("list");
+});
+document.getElementById("btn-bank-delete")?.addEventListener("click", () => deleteEditingBank());
 document.getElementById("new-bank-country")?.addEventListener("change", syncNewBankCountryFields);
 
 (async function init() {
   bindLeftMenu();
   clearNewBankForm();
+  activateMenu("list");
   await loadSettingsForCheck();
   try {
     const data = await fetchBankAccounts();

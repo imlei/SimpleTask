@@ -99,11 +99,14 @@ type Invoice struct {
 type BankAccount struct {
 	ID                   string `json:"id"`
 	Label                string `json:"label"`
-	MICRCountry           string `json:"micrCountry"` // CA | US
+	BankName             string `json:"bankName"`
+	MICRCountry          string `json:"micrCountry"` // CA | US | EU
 	BankInstitution       string `json:"bankInstitution"`
 	BankTransit           string `json:"bankTransit"`
 	BankRoutingABA        string `json:"bankRoutingAba"`
 	BankAccount           string `json:"bankAccount"`
+	BankIBAN             string `json:"bankIban"`
+	BankSWIFT            string `json:"bankSwift"`
 	BankChequeNumber      string `json:"bankChequeNumber"`
 	MICRLineOverride      string `json:"micrLineOverride"`
 	DefaultChequeCurrency string `json:"defaultChequeCurrency"`

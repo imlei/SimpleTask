@@ -57,37 +57,41 @@
       border-color: var(--link-accent);
       color: #fff;
     }
-    .side-panel h3 {
+    .content-panel h3 {
       margin: 0 0 10px;
       font-size: 0.95rem;
       color: var(--text);
     }
-    .bank-list {
+    .bank-list-main {
       display: flex;
       flex-direction: column;
       gap: 8px;
     }
-    .bank-item {
-      border: 1px dashed var(--border);
-      border-radius: 6px;
-      padding: 8px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 8px;
-    }
-    .bank-item .meta {
-      font-size: 12px;
-      color: var(--muted);
-      margin-top: 4px;
-    }
-    .bank-item button {
-      padding: 6px 10px;
+    .bank-item-row {
       border: 1px solid var(--border);
       border-radius: 6px;
-      background: transparent;
+      padding: 10px;
+      display: grid;
+      grid-template-columns: 1.4fr 1fr 0.7fr 1fr auto;
+      align-items: center;
+      gap: 8px;
+      background: var(--bg);
+    }
+    .bank-col-title {
+      font-size: 11px;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+    .bank-col-value {
+      font-size: 14px;
       color: var(--text);
-      cursor: pointer;
+      word-break: break-all;
+    }
+    .bank-row-actions {
+      display: flex;
+      gap: 6px;
+      justify-content: flex-end;
     }
     .bank-form {
       display: grid;
@@ -348,33 +352,60 @@
       }
     }
     .bank-field-us[hidden], .bank-field-ca[hidden] { display: none !important; }
+    .bank-field-eu[hidden] { display: none !important; }
+    .content-panel {
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: var(--surface);
+      padding: 12px;
+      margin-bottom: 12px;
+    }
+    @media (max-width: 1200px) {
+      .bank-item-row {
+        grid-template-columns: 1fr 1fr;
+      }
+      .bank-row-actions {
+        grid-column: 1 / -1;
+        justify-content: flex-start;
+      }
+    }
   </style>
 </head>
 <body>
   <div class="layout">
     <aside class="sidebar no-print">
       <div class="side-menu">
-        <button type="button" id="menu-bank-list" class="active">Bank Account</button>
-        <button type="button" id="menu-bank-add">Add New Bank Acct</button>
+        <button type="button" id="menu-write-cheque">Write Cheque</button>
+        <button type="button" id="menu-bank-list" class="active">Bank Account List</button>
+        <button type="button" id="menu-bank-add">Add New Acct</button>
       </div>
-      <section id="panel-bank-list" class="side-panel">
-        <h3>Bank Account</h3>
-        <div id="check-bank-list" class="bank-list"></div>
+    </aside>
+
+    <div class="main-pane">
+      <section id="panel-bank-list-main" class="content-panel no-print">
+        <h3>Bank Account List</h3>
+        <div id="check-bank-list" class="bank-list-main"></div>
       </section>
-      <section id="panel-bank-add" class="side-panel" hidden>
-        <h3>Add New Bank Acct</h3>
+
+      <section id="panel-bank-add-main" class="content-panel no-print" hidden>
+        <h3 id="bank-form-title">Add New Acct</h3>
+        <input type="hidden" id="new-bank-id" value="" />
         <div class="bank-form">
-          <label>Account Label <input type="text" id="new-bank-label" maxlength="80" placeholder="e.g. RBC CAD" /></label>
+          <label>Account Name <input type="text" id="new-bank-label" maxlength="80" placeholder="e.g. Operating CAD" /></label>
+          <label>Bank Name <input type="text" id="new-bank-name" maxlength="80" placeholder="e.g. RBC" /></label>
           <label>Country
             <select id="new-bank-country">
-              <option value="CA">CA</option>
-              <option value="US">US</option>
+              <option value="CA">Canada</option>
+              <option value="US">United States</option>
+              <option value="EU">Europe</option>
             </select>
           </label>
           <label class="bank-field-ca">Institution (CA) <input type="text" id="new-bank-institution" maxlength="8" /></label>
           <label class="bank-field-ca">Transit (CA) <input type="text" id="new-bank-transit" maxlength="8" /></label>
           <label class="bank-field-us" hidden>Routing ABA (US) <input type="text" id="new-bank-routing" maxlength="12" /></label>
-          <label>Account Number <input type="text" id="new-bank-account" maxlength="80" /></label>
+          <label class="bank-field-eu" hidden>IBAN (EU) <input type="text" id="new-bank-iban" maxlength="80" /></label>
+          <label class="bank-field-eu" hidden>SWIFT/BIC (EU) <input type="text" id="new-bank-swift" maxlength="80" /></label>
+          <label>Account <input type="text" id="new-bank-account" maxlength="80" /></label>
           <label>Cheque Number <input type="text" id="new-bank-cheque" maxlength="20" value="000001" /></label>
           <label>Currency
             <select id="new-bank-currency">
@@ -386,13 +417,14 @@
           </label>
           <label>MICR Override <textarea id="new-bank-micr" rows="2" maxlength="500"></textarea></label>
           <div class="bank-form-actions">
-            <button type="button" id="btn-add-bank" class="primary">Save Account</button>
+            <button type="button" id="btn-bank-cancel" class="ghost">Cancel</button>
+            <button type="button" id="btn-bank-delete" class="ghost" hidden>Delete</button>
+            <button type="button" id="btn-add-bank" class="primary">Save</button>
           </div>
         </div>
       </section>
-    </aside>
 
-    <div class="main-pane">
+      <section id="panel-write-cheque-main">
       <div class="toolbar no-print">
         <button type="button" id="btn-back">返回系统</button>
         <button type="button" id="btn-cheque-next">将支票号 +1 写回设置</button>
@@ -459,6 +491,7 @@
           </section>
         </div>
       </div>
+      </section>
     </div>
   </div>
   <script src="/check.js"></script>
