@@ -30,6 +30,9 @@ Options:
   --go-version VER 指定要下载的 Go 版本号，如 1.22.2（默认从 go.dev 读取稳定版；离线回退为 1.22.2）。
   -h, --help       显示本说明。
 
+  HTTPS（Nginx + Let’s Encrypt）在仓库根目录执行: sudo ./enable-ssl.sh <域名>
+  （需 DNS 已指向本机；详见 enable-ssl.sh --help；亦可用 upgrade.sh --nginx-ssl 仅刷新已有证书的配置）
+
 环境变量（可选）:
   PREFIX, LISTEN_ADDR, GO_VERSION
 
@@ -38,6 +41,11 @@ Options:
   sudo ./install.sh
   sudo ./install.sh --with-nginx
   sudo PREFIX=/srv/tasktracker ./install.sh --no-systemd
+
+  # HTTP 反代就绪后启用 HTTPS（在克隆的仓库根目录）:
+  sudo ./enable-ssl.sh app.example.com
+  # 或非交互（需邮箱）:
+  sudo CERTBOT_EMAIL=admin@example.com ./enable-ssl.sh app.example.com
 EOF
 }
 
@@ -209,7 +217,7 @@ install_nginx_site() {
 	log "Browse: http://$(hostname -I 2>/dev/null | awk '{print $1}')/  (or your server IP)"
 	log "If using ufw: sudo ufw allow 'Nginx HTTP' && sudo ufw status"
 	log "Optional: sudo ufw delete allow 8088/tcp   # if you previously exposed the app port"
-	log "HTTPS: see deploy/tasktracker.nginx-https.example.conf; set AUTH_SECURE_COOKIE=true and BASE_URL=https://your.domain in systemd"
+	log "HTTPS: sudo \"$ROOT/enable-ssl.sh\" <your.domain>   # DNS 指向本机后执行；或见 deploy/tasktracker.nginx-https.example.conf"
 }
 
 deploy_as_root() {

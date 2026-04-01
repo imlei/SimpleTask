@@ -40,6 +40,18 @@ go build -o tasktracker .
 
 **方式 A：Nginx 终止 TLS（推荐，与 `install.sh --with-nginx` 搭配）**
 
+**一键脚本（推荐）**：DNS 已指向服务器且已执行 `sudo ./install.sh --with-nginx` 后，在**仓库根目录**执行：
+
+```bash
+sudo ./enable-ssl.sh 你的域名
+# 或非交互申请证书（需邮箱）：
+sudo CERTBOT_EMAIL=you@example.com ./enable-ssl.sh 你的域名
+```
+
+脚本会安装 certbot、申请 Let’s Encrypt 证书、用 **`deploy/tasktracker.nginx-https.example.conf`** 写入 Nginx 站点、重载 Nginx，并为 systemd 增加 **`AUTH_SECURE_COOKIE=true`** 与 **`BASE_URL=https://你的域名`**。详见 `./enable-ssl.sh --help`。
+
+**手动**（与 `upgrade.sh --nginx-ssl 域名` 类似，但证书需自行先申请）：
+
 1. 应用仅监听本机：`LISTEN_ADDR=127.0.0.1:8088`，并设置 **`AUTH_SECURE_COOKIE=true`**（以及 **`BASE_URL=https://你的域名`**）。
 2. 参考仓库 **`deploy/tasktracker.nginx-https.example.conf`**，将 `example.com`、证书路径改为你的域名与 Let's Encrypt 路径。
 3. 安装证书（示例）：`sudo apt install -y certbot python3-certbot-nginx`，然后 `sudo certbot --nginx -d your.domain`（按提示操作）。
