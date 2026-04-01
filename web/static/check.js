@@ -15,6 +15,7 @@ const MICR_DELIM = "\u2446";
 
 let appSettings = {};
 let defaultBank = null;
+let allBanks = [];
 
 const small = [
   "zero",
@@ -220,6 +221,171 @@ async function loadSettingsForCheck() {
   syncOutputs();
 }
 
+async function fetchBankAccounts() {
+  const r = await fetch("/api/bank-accounts", { credentials: "same-origin" });
+  if (r.status === 401) {
+    window.location.href = "/login.html";
+    return;
+  }
+  if (!r.ok) {
+    throw new Error("加载银行账户失败");
+  }
+  const data = await r.json();
+  allBanks = Array.isArray(data.items) ? data.items : [];
+  return data;
+}
+
+function escHtml(s) {
+  return String(s || "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+}
+
+function renderBankList(defaultId) {
+  const box = document.getElementById("check-bank-list");
+  if (!box) return;
+  if (!allBanks.length) {
+    box.innerHTML = `<div class="meta">No bank accounts yet. Please add one.</div>`;
+    return;
+  }
+  box.innerHTML = allBanks
+    .map((b) => {
+      const isDef = b.id === defaultId;
+      return `
+        <div class="bank-item">
+          <div>
+            <div><strong>${escHtml(b.label || b.id)}</strong>${isDef ? " (Default)" : ""}</div>
+            <div class="meta">${escHtml((b.micrCountry || "CA").toUpperCase())} · Cheque # ${escHtml(b.bankChequeNumber || "")}</div>
+          </div>
+          <button type="button" data-bank-id="${escHtml(b.id)}">Use</button>
+        </div>
+      `;
+    })
+    .join("");
+  box.querySelectorAll("button[data-bank-id]").forEach((btn) => {
+    btn.addEventListener("click", async () => {
+      const id = btn.getAttribute("data-bank-id") || "";
+      if (!id) return;
+      await useBankAccount(id);
+    });
+  });
+}
+
+async function useBankAccount(id) {
+  const r = await fetch(`/api/bank-accounts/${encodeURIComponent(id)}/default`, {
+    method: "POST",
+    credentials: "same-origin",
+    headers: { "Content-Type": "application/json; charset=utf-8" },
+    body: "{}",
+  });
+  if (r.status === 401) {
+    window.location.href = "/login.html";
+    return;
+  }
+  if (!r.ok) {
+    alert("切换默认银行账户失败");
+    return;
+  }
+  const b = allBanks.find((x) => x.id === id);
+  if (b) {
+    defaultBank = b;
+    const el = document.getElementById("fld-cheque");
+    if (el) {
+      el.value = b.bankChequeNumber || "000001";
+      el.dataset.userEdited = "";
+    }
+    const c = (b.defaultChequeCurrency || "CAD").trim().toUpperCase();
+    const cur = document.getElementById("fld-currency");
+    if (cur && !qs("id")) {
+      cur.value = c || "CAD";
+    }
+  }
+  renderBankList(id);
+  updateMicrFormatBanner();
+  syncOutputs();
+}
+
+function bindLeftMenu() {
+  const menuList = document.getElementById("menu-bank-list");
+  const menuAdd = document.getElementById("menu-bank-add");
+  const panelList = document.getElementById("panel-bank-list");
+  const panelAdd = document.getElementById("panel-bank-add");
+  if (!menuList || !menuAdd || !panelList || !panelAdd) return;
+  const activate = (tab) => {
+    const listOn = tab === "list";
+    panelList.hidden = !listOn;
+    panelAdd.hidden = listOn;
+    menuList.classList.toggle("active", listOn);
+    menuAdd.classList.toggle("active", !listOn);
+  };
+  menuList.addEventListener("click", () => activate("list"));
+  menuAdd.addEventListener("click", () => activate("add"));
+}
+
+function syncNewBankCountryFields() {
+  const country = (document.getElementById("new-bank-country")?.value || "CA").toUpperCase();
+  const isUS = country === "US";
+  document.querySelectorAll(".bank-field-ca").forEach((el) => {
+    el.hidden = isUS;
+  });
+  document.querySelectorAll(".bank-field-us").forEach((el) => {
+    el.hidden = !isUS;
+  });
+}
+
+function clearNewBankForm() {
+  const set = (id, v) => {
+    const el = document.getElementById(id);
+    if (el) el.value = v;
+  };
+  set("new-bank-label", "");
+  set("new-bank-country", "CA");
+  set("new-bank-institution", "");
+  set("new-bank-transit", "");
+  set("new-bank-routing", "");
+  set("new-bank-account", "");
+  set("new-bank-cheque", "000001");
+  set("new-bank-currency", "CAD");
+  set("new-bank-micr", "");
+  syncNewBankCountryFields();
+}
+
+async function addNewBankAccount() {
+  const val = (id) => (document.getElementById(id)?.value || "").trim();
+  const body = {
+    label: val("new-bank-label"),
+    micrCountry: val("new-bank-country") || "CA",
+    bankInstitution: val("new-bank-institution"),
+    bankTransit: val("new-bank-transit"),
+    bankRoutingAba: val("new-bank-routing"),
+    bankAccount: val("new-bank-account"),
+    bankChequeNumber: val("new-bank-cheque"),
+    defaultChequeCurrency: val("new-bank-currency") || "CAD",
+    micrLineOverride: val("new-bank-micr"),
+  };
+  const r = await fetch("/api/bank-accounts", {
+    method: "POST",
+    credentials: "same-origin",
+    headers: { "Content-Type": "application/json; charset=utf-8" },
+    body: JSON.stringify(body),
+  });
+  if (r.status === 401) {
+    window.location.href = "/login.html";
+    return;
+  }
+  if (!r.ok) {
+    const txt = await r.text();
+    alert("添加失败: " + (txt || "unknown error"));
+    return;
+  }
+  clearNewBankForm();
+  const data = await fetchBankAccounts();
+  renderBankList(data.defaultId || "");
+  document.getElementById("menu-bank-list")?.click();
+}
+
 async function loadFromInvoice() {
   const id = qs("id");
   if (!id) {
@@ -290,8 +456,19 @@ async function saveChequeNextToSettings() {
 document.getElementById("btn-print")?.addEventListener("click", () => window.print());
 document.getElementById("btn-back")?.addEventListener("click", () => (window.location.href = "/"));
 document.getElementById("btn-cheque-next")?.addEventListener("click", () => saveChequeNextToSettings());
+document.getElementById("btn-add-bank")?.addEventListener("click", () => addNewBankAccount());
+document.getElementById("new-bank-country")?.addEventListener("change", syncNewBankCountryFields);
 
 (async function init() {
+  bindLeftMenu();
+  clearNewBankForm();
   await loadSettingsForCheck();
+  try {
+    const data = await fetchBankAccounts();
+    renderBankList(data.defaultId || (defaultBank && defaultBank.id) || "");
+  } catch {
+    const box = document.getElementById("check-bank-list");
+    if (box) box.innerHTML = `<div class="meta">Load bank accounts failed.</div>`;
+  }
   await loadFromInvoice();
 })();

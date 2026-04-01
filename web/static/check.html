@@ -4,6 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Print cheque</title>
+  <link rel="stylesheet" href="/style.css" />
   <style>
     @font-face {
       font-family: "MicrE13B";
@@ -14,45 +15,145 @@
       font-style: normal;
     }
     * { box-sizing: border-box; }
-    body { margin: 0; font-family: "Segoe UI", system-ui, sans-serif; background: #e8ecf1; color: #0f172a; }
+    body { margin: 0; font-family: "Segoe UI", system-ui, sans-serif; background: var(--bg); color: var(--text); }
     body.check-embed .toolbar #btn-back { display: none !important; }
     body.check-embed { padding-bottom: 8px; }
-    .toolbar {
-      max-width: 920px;
-      margin: 12px auto;
-      padding: 0 16px;
+    .layout {
+      max-width: 1320px;
+      margin: 0 auto;
+      padding: 12px 16px 24px;
+      display: grid;
+      grid-template-columns: 280px minmax(0, 1fr);
+      gap: 14px;
+      align-items: start;
+    }
+    .sidebar {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      box-shadow: 0 1px 3px rgba(0,0,0,.06);
+      padding: 12px;
+      position: sticky;
+      top: 12px;
+    }
+    .side-menu {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      margin-bottom: 12px;
+    }
+    .side-menu button {
+      text-align: left;
+      padding: 8px 10px;
+      border: 1px solid var(--border);
+      background: var(--bg);
+      border-radius: 6px;
+      cursor: pointer;
+      color: var(--text);
+      font-weight: 600;
+    }
+    .side-menu button.active {
+      background: rgba(126, 91, 239, 0.2);
+      border-color: var(--link-accent);
+      color: #fff;
+    }
+    .side-panel h3 {
+      margin: 0 0 10px;
+      font-size: 0.95rem;
+      color: var(--text);
+    }
+    .bank-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .bank-item {
+      border: 1px dashed var(--border);
+      border-radius: 6px;
+      padding: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+    }
+    .bank-item .meta {
+      font-size: 12px;
+      color: var(--muted);
+      margin-top: 4px;
+    }
+    .bank-item button {
+      padding: 6px 10px;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      background: transparent;
+      color: var(--text);
+      cursor: pointer;
+    }
+    .bank-form {
+      display: grid;
+      gap: 8px;
+    }
+    .bank-form label {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      font-size: 12px;
+      color: var(--muted);
+    }
+    .bank-form input, .bank-form select, .bank-form textarea {
+      padding: 8px 10px;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      font-size: 13px;
+      font-family: inherit;
+      background: var(--bg);
+      color: var(--text);
+    }
+    .bank-form-actions {
       display: flex;
       flex-wrap: wrap;
       gap: 8px;
       align-items: center;
     }
+    .bank-form-actions button,
     .toolbar button {
       padding: 8px 14px;
-      border: 1px solid #64748b;
-      background: #fff;
+      border: 1px solid var(--border);
+      background: transparent;
       border-radius: 6px;
       cursor: pointer;
     }
-    .toolbar .primary { background: #1d4ed8; color: #fff; border-color: #1d4ed8; }
+    .toolbar .primary,
+    .bank-form-actions .primary { background: var(--accent); color: #fff; border-color: var(--accent); }
+    .main-pane {
+      min-width: 0;
+    }
+    .toolbar {
+      margin: 0 0 12px;
+      padding: 0;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: center;
+    }
     .form-panel {
-      max-width: 920px;
-      margin: 0 auto 16px;
+      margin: 0 0 16px;
       padding: 16px 20px;
-      background: #fff;
+      background: var(--surface);
       border-radius: 8px;
-      border: 1px solid #cbd5e1;
+      border: 1px solid var(--border);
       box-shadow: 0 1px 3px rgba(0,0,0,.06);
     }
-    .form-panel h2 { margin: 0 0 12px; font-size: 1rem; color: #334155; }
+    .form-panel h2 { margin: 0 0 12px; font-size: 1rem; color: var(--text); }
     .form-grid {
       display: grid;
       grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
       gap: 12px 16px;
     }
-    .form-grid label { display: flex; flex-direction: column; gap: 4px; font-size: 13px; color: #475569; }
-    .form-grid input { padding: 8px 10px; border: 1px solid #94a3b8; border-radius: 6px; font-size: 14px; }
-    .form-panel .hint { margin: 12px 0 0; font-size: 12px; color: #64748b; }
-    .check-wrap { max-width: 920px; margin: 0 auto; padding: 0 16px 24px; }
+    .form-grid label { display: flex; flex-direction: column; gap: 4px; font-size: 13px; color: var(--muted); }
+    .form-grid input { padding: 8px 10px; border: 1px solid var(--border); border-radius: 6px; font-size: 14px; background: var(--bg); color: var(--text); }
+    .form-panel .hint { margin: 12px 0 0; font-size: 12px; color: var(--muted); }
+    .check-wrap { margin: 0; padding: 0; overflow-x: auto; }
 
     /* US Letter 整页；支票区 8.5×3.5；折痕约 3.5 / 7.25（距顶） */
     .check-sheet {
@@ -238,73 +339,126 @@
         page-break-inside: avoid;
       }
     }
+    @media (max-width: 1024px) {
+      .layout {
+        grid-template-columns: 1fr;
+      }
+      .sidebar {
+        position: static;
+      }
+    }
+    .bank-field-us[hidden], .bank-field-ca[hidden] { display: none !important; }
   </style>
 </head>
 <body>
-  <div class="toolbar no-print">
-    <button type="button" id="btn-back">返回系统</button>
-    <button type="button" id="btn-cheque-next">将支票号 +1 写回设置</button>
-    <button type="button" class="primary" id="btn-print">打印 / 导出 PDF</button>
-  </div>
-  <div class="form-panel no-print">
-    <h2>打印前可修改（下方为 8.5×11 坐标版式）</h2>
-    <div class="form-grid">
-      <label>Date <input type="date" id="fld-date" /></label>
-      <label>Pay to the order of <input type="text" id="fld-payee" autocomplete="organization" /></label>
-      <label>Amount <input type="number" id="fld-amount" step="0.01" min="0" /></label>
-      <label>Currency <input type="text" id="fld-currency" maxlength="8" /></label>
-      <label>Cheque #（MICR） <input type="text" id="fld-cheque" maxlength="24" autocomplete="off" /></label>
-      <label style="grid-column: 1 / -1;">Memo <input type="text" id="fld-memo" /></label>
-    </div>
-    <p class="hint" id="check-micr-banner"></p>
-    <p class="hint" id="micr-hint" hidden>未生成 MICR 行：请到 <a href="/settings.html">Settings</a> 配置银行账户或 MICR 覆盖。</p>
-    <p class="hint"><strong>打印：</strong>请选择「实际大小 / 100% / Actual size」，<strong>不要</strong>使用「适合页面」或缩放，否则坐标会错位。MICR 须使用 E-13B 字体与磁墨；底边 0.625″ 内为银行扫描区。</p>
-    <p class="hint">折痕线位置：距顶约 3.5″ 与 7.25″（与常见预印纸一致）。预印支票请用打印边距微调对齐。</p>
-  </div>
-  <div class="check-wrap">
-    <div class="check-sheet" id="check-sheet">
-      <section class="check-face" aria-label="Cheque face">
-        <div class="abs abs-company" id="out-company-main"></div>
-        <div class="abs abs-check-no"><span class="chk-label">No.</span> <span id="out-check-no"></span></div>
-        <div class="abs abs-date"><span class="chk-label">Date </span><span id="out-date"></span></div>
-        <div class="abs abs-payee">
-          <div class="chk-label">Pay to the order of</div>
-          <div class="payee-line" id="out-payee"></div>
-        </div>
-        <div class="abs abs-amount" id="out-amount"></div>
-        <div class="abs abs-words" id="out-words"></div>
-        <div class="abs abs-memo">
-          <span class="chk-label">Memo</span>
-          <div class="memo-line" id="out-memo"></div>
-        </div>
-        <div class="abs abs-sig">
-          <div class="sig-box"></div>
-          <div class="sig-label">Signature</div>
-        </div>
-        <div class="abs abs-micr">
-          <div class="micr-line" id="out-micr"></div>
+  <div class="layout">
+    <aside class="sidebar no-print">
+      <div class="side-menu">
+        <button type="button" id="menu-bank-list" class="active">Bank Account</button>
+        <button type="button" id="menu-bank-add">Add New Bank Acct</button>
+      </div>
+      <section id="panel-bank-list" class="side-panel">
+        <h3>Bank Account</h3>
+        <div id="check-bank-list" class="bank-list"></div>
+      </section>
+      <section id="panel-bank-add" class="side-panel" hidden>
+        <h3>Add New Bank Acct</h3>
+        <div class="bank-form">
+          <label>Account Label <input type="text" id="new-bank-label" maxlength="80" placeholder="e.g. RBC CAD" /></label>
+          <label>Country
+            <select id="new-bank-country">
+              <option value="CA">CA</option>
+              <option value="US">US</option>
+            </select>
+          </label>
+          <label class="bank-field-ca">Institution (CA) <input type="text" id="new-bank-institution" maxlength="8" /></label>
+          <label class="bank-field-ca">Transit (CA) <input type="text" id="new-bank-transit" maxlength="8" /></label>
+          <label class="bank-field-us" hidden>Routing ABA (US) <input type="text" id="new-bank-routing" maxlength="12" /></label>
+          <label>Account Number <input type="text" id="new-bank-account" maxlength="80" /></label>
+          <label>Cheque Number <input type="text" id="new-bank-cheque" maxlength="20" value="000001" /></label>
+          <label>Currency
+            <select id="new-bank-currency">
+              <option value="CAD">CAD</option>
+              <option value="USD">USD</option>
+              <option value="CNY">CNY</option>
+              <option value="EUR">EUR</option>
+            </select>
+          </label>
+          <label>MICR Override <textarea id="new-bank-micr" rows="2" maxlength="500"></textarea></label>
+          <div class="bank-form-actions">
+            <button type="button" id="btn-add-bank" class="primary">Save Account</button>
+          </div>
         </div>
       </section>
+    </aside>
 
-      <hr class="perf-line" aria-hidden="true" />
-      <section class="check-stub stub-1" aria-label="Stub 1">
-        <div class="stub-head">
-          <span class="stub-company" id="stub-company-1"></span>
-          <span class="stub-no">No. <span id="stub-chq-1"></span></span>
+    <div class="main-pane">
+      <div class="toolbar no-print">
+        <button type="button" id="btn-back">返回系统</button>
+        <button type="button" id="btn-cheque-next">将支票号 +1 写回设置</button>
+        <button type="button" class="primary" id="btn-print">打印 / 导出 PDF</button>
+      </div>
+      <div class="form-panel no-print">
+        <h2>打印前可修改（下方为 8.5×11 坐标版式）</h2>
+        <div class="form-grid">
+          <label>Date <input type="date" id="fld-date" /></label>
+          <label>Pay to the order of <input type="text" id="fld-payee" autocomplete="organization" /></label>
+          <label>Amount <input type="number" id="fld-amount" step="0.01" min="0" /></label>
+          <label>Currency <input type="text" id="fld-currency" maxlength="8" /></label>
+          <label>Cheque #（MICR） <input type="text" id="fld-cheque" maxlength="24" autocomplete="off" /></label>
+          <label style="grid-column: 1 / -1;">Memo <input type="text" id="fld-memo" /></label>
         </div>
-        <div class="stub-caption">Remittance / detail</div>
-        <div class="stub-body" id="stub-memo-1"></div>
-      </section>
+        <p class="hint" id="check-micr-banner"></p>
+        <p class="hint" id="micr-hint" hidden>未生成 MICR 行：请到 <a href="/settings.html">Settings</a> 配置银行账户或 MICR 覆盖。</p>
+        <p class="hint"><strong>打印：</strong>请选择「实际大小 / 100% / Actual size」，<strong>不要</strong>使用「适合页面」或缩放，否则坐标会错位。MICR 须使用 E-13B 字体与磁墨；底边 0.625″ 内为银行扫描区。</p>
+        <p class="hint">折痕线位置：距顶约 3.5″ 与 7.25″（与常见预印纸一致）。预印支票请用打印边距微调对齐。</p>
+      </div>
+      <div class="check-wrap">
+        <div class="check-sheet" id="check-sheet">
+          <section class="check-face" aria-label="Cheque face">
+            <div class="abs abs-company" id="out-company-main"></div>
+            <div class="abs abs-check-no"><span class="chk-label">No.</span> <span id="out-check-no"></span></div>
+            <div class="abs abs-date"><span class="chk-label">Date </span><span id="out-date"></span></div>
+            <div class="abs abs-payee">
+              <div class="chk-label">Pay to the order of</div>
+              <div class="payee-line" id="out-payee"></div>
+            </div>
+            <div class="abs abs-amount" id="out-amount"></div>
+            <div class="abs abs-words" id="out-words"></div>
+            <div class="abs abs-memo">
+              <span class="chk-label">Memo</span>
+              <div class="memo-line" id="out-memo"></div>
+            </div>
+            <div class="abs abs-sig">
+              <div class="sig-box"></div>
+              <div class="sig-label">Signature</div>
+            </div>
+            <div class="abs abs-micr">
+              <div class="micr-line" id="out-micr"></div>
+            </div>
+          </section>
 
-      <hr class="perf-line" aria-hidden="true" />
-      <section class="check-stub stub-2" aria-label="Stub 2">
-        <div class="stub-head">
-          <span class="stub-company" id="stub-company-2"></span>
-          <span class="stub-no">No. <span id="stub-chq-2"></span></span>
+          <hr class="perf-line" aria-hidden="true" />
+          <section class="check-stub stub-1" aria-label="Stub 1">
+            <div class="stub-head">
+              <span class="stub-company" id="stub-company-1"></span>
+              <span class="stub-no">No. <span id="stub-chq-1"></span></span>
+            </div>
+            <div class="stub-caption">Remittance / detail</div>
+            <div class="stub-body" id="stub-memo-1"></div>
+          </section>
+
+          <hr class="perf-line" aria-hidden="true" />
+          <section class="check-stub stub-2" aria-label="Stub 2">
+            <div class="stub-head">
+              <span class="stub-company" id="stub-company-2"></span>
+              <span class="stub-no">No. <span id="stub-chq-2"></span></span>
+            </div>
+            <div class="stub-caption">Record copy</div>
+            <div class="stub-body" id="stub-memo-2"></div>
+          </section>
         </div>
-        <div class="stub-caption">Record copy</div>
-        <div class="stub-body" id="stub-memo-2"></div>
-      </section>
+      </div>
     </div>
   </div>
   <script src="/check.js"></script>
