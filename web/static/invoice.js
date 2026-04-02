@@ -7,6 +7,15 @@ function fmtMoney(v, currency) {
   return `${currency} ${n.toLocaleString("en-CA", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 }
 
+function formatDisplayDate(s) {
+  const t = String(s || "").trim();
+  if (!t) return "";
+  if (t.length >= 10 && /^\d{4}-\d{2}-\d{2}/.test(t)) {
+    return t.slice(0, 4) + "/" + t.slice(5, 7) + "/" + t.slice(7, 10) + t.slice(10);
+  }
+  return t;
+}
+
 async function loadInvoice() {
   const id = qs("id");
   if (!id) {
@@ -30,16 +39,16 @@ async function loadInvoice() {
   document.getElementById("ship-name").textContent = inv.shipToName || "";
   document.getElementById("ship-addr").textContent = inv.shipToAddr || "";
   document.getElementById("invoice-no").textContent = inv.invoiceNo || "";
-  document.getElementById("invoice-date").textContent = inv.invoiceDate || "";
+  document.getElementById("invoice-date").textContent = formatDisplayDate(inv.invoiceDate || "");
   document.getElementById("terms").textContent = inv.terms || "";
-  document.getElementById("due-date").textContent = inv.dueDate || "";
+  document.getElementById("due-date").textContent = formatDisplayDate(inv.dueDate || "");
 
   const body = document.getElementById("items-body");
   body.innerHTML = "";
   (inv.items || []).forEach((it) => {
     const tr = document.createElement("tr");
     tr.innerHTML = `
-      <td>${inv.invoiceDate || ""}</td>
+      <td>${formatDisplayDate(inv.invoiceDate || "")}</td>
       <td><div>${it.description || ""}</div><div>${it.detail || ""}</div></td>
       <td>${it.taxLabel || ""}</td>
       <td class="num">${Number(it.qty || 0)}</td>

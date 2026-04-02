@@ -93,10 +93,12 @@ function todayISO() {
 }
 
 function formatDisplayDate(iso) {
-  if (!iso) return "";
-  const p = iso.split("-");
-  if (p.length !== 3) return iso;
-  return `${p[0]}-${p[1]}-${p[2]}`;
+  const t = String(iso || "").trim();
+  if (!t) return "";
+  if (t.length >= 10 && /^\d{4}-\d{2}-\d{2}/.test(t)) {
+    return t.slice(0, 4) + "/" + t.slice(5, 7) + "/" + t.slice(7, 10) + t.slice(10);
+  }
+  return t;
 }
 
 function fmtAmountBox(v, currency) {

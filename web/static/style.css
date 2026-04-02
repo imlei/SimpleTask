@@ -790,6 +790,11 @@ table.data th {
   white-space: nowrap;
 }
 
+table.data td.td-date,
+table.data th.td-date {
+  white-space: nowrap;
+}
+
 table.data tbody tr:last-child td {
   border-bottom: none;
 }

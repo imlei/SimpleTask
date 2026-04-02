@@ -15,6 +15,16 @@ function currentMonthISO() {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
 }
 
+/** 表格展示：开头 YYYY-MM-DD 改为 YYYY/MM/DD（其余后缀如 RFC3339 保留） */
+function formatDisplayDate(s) {
+  const t = String(s || "").trim();
+  if (!t) return "";
+  if (t.length >= 10 && /^\d{4}-\d{2}-\d{2}/.test(t)) {
+    return t.slice(0, 4) + "/" + t.slice(5, 7) + "/" + t.slice(7, 10) + t.slice(10);
+  }
+  return t;
+}
+
 async function api(path, opts = {}) {
   const r = await fetch(path, {
     credentials: "same-origin",
@@ -169,11 +179,11 @@ function renderTasks() {
       <td>${escapeHtml(t.id)}</td>
       <td>${cust}</td>
       <td>${cn}</td>
-      <td>${escapeHtml(t.date || "")}</td>
+      <td class="td-date">${escapeHtml(formatDisplayDate(t.date || ""))}</td>
       <td>${escapeHtml(t.service1 || "")}</td>
       <td>${fmtNum(t.price1)}</td>
       <td><span class="${done ? "status-done" : "status-pending"}">${escapeHtml(t.status)}</span></td>
-      <td>${escapeHtml(t.completedAt || "")}</td>
+      <td class="td-date">${escapeHtml(formatDisplayDate(t.completedAt || ""))}</td>
       <td>${escapeHtml(t.note || "")}</td>
       <td class="row-actions">
         <button type="button" class="ghost" data-act="edit">编辑</button>
@@ -749,7 +759,7 @@ function renderNewInvoiceView() {
       <td>${escapeHtml(t.id)}</td>
       <td>${escapeHtml(t.customerName || "")}</td>
       <td>${escapeHtml(t.companyName || "")}</td>
-      <td>${escapeHtml(t.date || "")}</td>
+      <td class="td-date">${escapeHtml(formatDisplayDate(t.date || ""))}</td>
       <td>${escapeHtml(t.service1 || "")}</td>
       <td>${fmtNum(t.price1)}</td>
       <td><span class="${doneCls ? "status-done" : "status-pending"}">${escapeHtml(t.status)}</span></td>
@@ -784,13 +794,13 @@ function renderInvoices() {
       <td>${escapeHtml(inv.invoiceNo || "")}</td>
       <td>${escapeHtml(inv.taskId || "")}</td>
       <td>${escapeHtml(inv.billToName || "")}</td>
-      <td>${escapeHtml(inv.invoiceDate || "")}</td>
-      <td>${escapeHtml(inv.dueDate || "")}</td>
+      <td class="td-date">${escapeHtml(formatDisplayDate(inv.invoiceDate || ""))}</td>
+      <td class="td-date">${escapeHtml(formatDisplayDate(inv.dueDate || ""))}</td>
       <td>${escapeHtml(inv.status || "")}</td>
       <td>${escapeHtml(fmtMoneySimple(inv.total, inv.currency))}</td>
       <td>${escapeHtml(fmtMoneySimple(inv.paidAmount, inv.currency))}</td>
       <td>${escapeHtml(fmtMoneySimple(inv.balanceDue, inv.currency))}</td>
-      <td>${escapeHtml(inv.sentAt || "")}</td>
+      <td class="td-date">${escapeHtml(formatDisplayDate(inv.sentAt || ""))}</td>
       <td class="row-actions">
         <button type="button" class="ghost" data-act="open">打开</button>
         <button type="button" class="ghost" data-act="send">Send</button>
@@ -1558,7 +1568,7 @@ function renderExpenses() {
     tr.innerHTML = `
       <td>${escapeHtml(ex.taskName || "")}</td>
       <td>${escapeHtml(ex.vendorName || "—")}</td>
-      <td>${escapeHtml(d || "—")}</td>
+      <td class="td-date">${d ? escapeHtml(formatDisplayDate(d)) : "—"}</td>
       <td>${escapeHtml(ex.accountCode || "—")}</td>
       <td>${escapeHtml(ex.description || "")}</td>
       <td>${escapeHtml(amt)} ${escapeHtml(cur)}</td>
@@ -1843,7 +1853,11 @@ async function loadExchangeRates() {
     const rows = asArray(data.rows);
     const base = data.base || "";
     const dayRange =
-      dates.length >= 2 ? `${dates[0]} … ${dates[dates.length - 1]}` : dates.length ? dates[0] : "—";
+      dates.length >= 2
+        ? `${formatDisplayDate(dates[0])} … ${formatDisplayDate(dates[dates.length - 1])}`
+        : dates.length
+          ? formatDisplayDate(dates[0])
+          : "—";
     if (sum) {
       if (rows.length === 0) {
         sum.textContent = `基准 ${base}；列日期 ${dayRange}（${dates.length} 个工作日）。未在 Settings → 汇率货币 中添加报价币种则表格为空；非当日列优先本地缓存，缺失则拉取 Frankfurter 并写入库。`;
@@ -1857,8 +1871,8 @@ async function loadExchangeRates() {
     hr.appendChild(thCur);
     for (const d of dates) {
       const th = document.createElement("th");
-      th.className = "num";
-      th.textContent = d;
+      th.className = "num td-date";
+      th.textContent = formatDisplayDate(d);
       hr.appendChild(th);
     }
     thead.appendChild(hr);
@@ -1949,11 +1963,11 @@ async function loadReport() {
         <td>${escapeHtml(t.id)}</td>
         <td>${escapeHtml(t.customerName || "")}</td>
         <td>${escapeHtml(t.companyName || "")}</td>
-        <td>${escapeHtml(t.date || "")}</td>
+        <td class="td-date">${escapeHtml(formatDisplayDate(t.date || ""))}</td>
         <td>${escapeHtml(t.service1 || "")}</td>
         <td>${fmtNum(t.price1)}</td>
         <td class="num">${escapeHtml(fmtMarginPct(t.marginPct))}</td>
-        <td>${escapeHtml(t.completedAt || "")}</td>
+        <td class="td-date">${escapeHtml(formatDisplayDate(t.completedAt || ""))}</td>
         <td>${escapeHtml(t.note || "")}</td>`;
       bodyEl.appendChild(tr);
     }
@@ -2004,14 +2018,14 @@ function exportReportCSV() {
         csvEscape(t.id),
         csvEscape(t.customerName),
         csvEscape(t.companyName),
-        csvEscape(t.date),
+        csvEscape(formatDisplayDate(t.date)),
         csvEscape(t.service1),
         csvEscape(t.price1),
         csvEscape(t.expenseCad),
         csvEscape(t.profit),
         csvEscape(marginStr),
         csvEscape(t.status),
-        csvEscape(t.completedAt),
+        csvEscape(formatDisplayDate(t.completedAt)),
         csvEscape(t.note),
       ].join(","),
     );
