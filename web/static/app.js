@@ -917,9 +917,12 @@ function openNewCustomerDialog(opts = {}) {
     dispInp.value = "";
     dispInp.placeholder = "默认同步全名前 20 字，可改";
   }
-  document.getElementById("customer-edit-email")?.value = "";
-  document.getElementById("customer-edit-phone")?.value = "";
-  document.getElementById("customer-edit-address")?.value = "";
+  const emailEl = document.getElementById("customer-edit-email");
+  if (emailEl) emailEl.value = "";
+  const phoneEl = document.getElementById("customer-edit-phone");
+  if (phoneEl) phoneEl.value = "";
+  const addrEl = document.getElementById("customer-edit-address");
+  if (addrEl) addrEl.value = "";
   dlgCustomer.showModal();
 }
 
