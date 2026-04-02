@@ -877,6 +877,91 @@ dialog input[readonly] {
   flex-wrap: nowrap;
 }
 
+.exchange-converter {
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 1rem 1.1rem;
+  margin-bottom: 1rem;
+  background: var(--bg);
+}
+
+.exchange-conv-date-label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  font-size: 0.88rem;
+  color: var(--muted);
+  max-width: 14rem;
+}
+
+.exchange-conv-hint {
+  margin: 0.35rem 0 0.75rem;
+  font-size: 0.82rem;
+}
+
+.exchange-conv-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: stretch;
+  gap: 0.5rem 0.65rem;
+}
+
+.exchange-conv-box {
+  flex: 1 1 200px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 0.65rem 0.75rem;
+  position: relative;
+  background: var(--surface);
+}
+
+.exchange-conv-tag {
+  position: absolute;
+  top: -0.55rem;
+  left: 0.5rem;
+  padding: 0 0.35rem;
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--muted);
+  background: var(--bg);
+}
+
+.exchange-conv-inner {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  margin-top: 0.25rem;
+}
+
+.exchange-conv-inner input[type="number"] {
+  font-size: 1.15rem;
+  font-weight: 500;
+  padding: 0.4rem 0.5rem;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.exchange-conv-swap {
+  align-self: center;
+  min-width: 2.5rem;
+  border-radius: 999px;
+  font-size: 1.1rem;
+  line-height: 1;
+  padding: 0.4rem 0.5rem;
+}
+
+.exchange-conv-rate {
+  margin: 0.65rem 0 0;
+  font-size: 0.95rem;
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+}
+
+.exchange-conv-note {
+  margin: 0.25rem 0 0;
+}
+
 .exchange-rates-toolbar {
   flex-wrap: wrap;
   gap: 0.5rem 1rem;

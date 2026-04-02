@@ -52,7 +52,7 @@ document.querySelectorAll(".tab").forEach((btn) => {
     }
     if (tab === "prices") loadPrices();
     if (tab === "expense") loadExpenses();
-    if (tab === "exchange") loadExchangeRates();
+    if (tab === "exchange") loadExchangeTab().catch((e) => console.error(e));
     if (tab === "cheque") {
       const fr = document.getElementById("iframe-cheque");
       if (fr && !fr.getAttribute("src")) {
@@ -1533,6 +1533,94 @@ if (formVendor) {
 }
 
 // --- Exchange rates (Frankfurter, server cache) ---
+let exchangeConvTimer = null;
+let exchangeConvCurrencyList = [];
+let exchangeConvLastFixed = "from";
+
+async function ensureExchangeCurrencyList() {
+  if (exchangeConvCurrencyList.length) return;
+  exchangeConvCurrencyList = asArray(await api("/api/exchange-rates/currencies"));
+  const from = document.getElementById("exchange-conv-from");
+  const to = document.getElementById("exchange-conv-to");
+  if (!from || !to) return;
+  from.innerHTML = "";
+  to.innerHTML = "";
+  for (const row of exchangeConvCurrencyList) {
+    const code = row.code || "";
+    const name = row.name || code;
+    const lab = `${code} — ${name}`;
+    const o1 = document.createElement("option");
+    o1.value = code;
+    o1.textContent = lab;
+    from.appendChild(o1);
+    const o2 = document.createElement("option");
+    o2.value = code;
+    o2.textContent = lab;
+    to.appendChild(o2);
+  }
+  if (from.querySelector('option[value="USD"]')) from.value = "USD";
+  if (to.querySelector('option[value="EUR"]')) to.value = "EUR";
+}
+
+function initExchangeConverterDate() {
+  const d = document.getElementById("exchange-conv-date");
+  if (d && !d.value) d.value = todayLocalISO();
+  const fa = document.getElementById("exchange-conv-from-amt");
+  if (fa && String(fa.value).trim() === "") fa.value = "1";
+}
+
+async function runExchangeConverter(fixed) {
+  const date = document.getElementById("exchange-conv-date")?.value?.trim();
+  const from = document.getElementById("exchange-conv-from")?.value?.trim();
+  const to = document.getElementById("exchange-conv-to")?.value?.trim();
+  const rateEl = document.getElementById("exchange-conv-rate");
+  const noteEl = document.getElementById("exchange-conv-note");
+  if (!date) {
+    if (rateEl) rateEl.textContent = "";
+    if (noteEl) noteEl.textContent = "请选择换算日期。";
+    return;
+  }
+  if (!from || !to) {
+    if (rateEl) rateEl.textContent = "";
+    return;
+  }
+  if (from === to) {
+    if (rateEl) rateEl.textContent = "";
+    if (noteEl) noteEl.textContent = "请选择两个不同的货币。";
+    return;
+  }
+  const fromAmt = parseFloat(document.getElementById("exchange-conv-from-amt")?.value || "");
+  const toAmt = parseFloat(document.getElementById("exchange-conv-to-amt")?.value || "");
+  let amt = fixed === "to" ? toAmt : fromAmt;
+  if (Number.isNaN(amt) || amt < 0) amt = 0;
+  const params = new URLSearchParams({ date, from, to, amount: String(amt), fixed });
+  try {
+    const data = await api(`/api/exchange-rates/convert?${params.toString()}`);
+    const fa = document.getElementById("exchange-conv-from-amt");
+    const ta = document.getElementById("exchange-conv-to-amt");
+    if (fa && data.amountFrom != null && !Number.isNaN(data.amountFrom)) fa.value = String(data.amountFrom);
+    if (ta && data.amountTo != null && !Number.isNaN(data.amountTo)) ta.value = String(data.amountTo);
+    if (rateEl) rateEl.textContent = (data.rateLabel || "") + (data.live ? " · 即时" : "");
+    if (noteEl) noteEl.textContent = data.note || "";
+  } catch (e) {
+    if (rateEl) rateEl.textContent = "";
+    if (noteEl) noteEl.textContent = e.message || "换算失败";
+  }
+}
+
+function scheduleExchangeConv(fixed) {
+  exchangeConvLastFixed = fixed;
+  clearTimeout(exchangeConvTimer);
+  exchangeConvTimer = setTimeout(() => runExchangeConverter(fixed).catch((err) => console.error(err)), 280);
+}
+
+async function loadExchangeTab() {
+  await ensureExchangeCurrencyList();
+  initExchangeConverterDate();
+  await runExchangeConverter("from");
+  await loadExchangeRates();
+}
+
 function fmtExchangeRate(n) {
   if (n == null || typeof n !== "number" || Number.isNaN(n)) return "—";
   const a = Math.abs(n);
@@ -1567,12 +1655,13 @@ async function loadExchangeRates() {
     const dates = asArray(data.dates);
     const rows = asArray(data.rows);
     const base = data.base || "";
-    const dayLabel = dates.length ? dates[0] : "";
+    const dayRange =
+      dates.length >= 2 ? `${dates[0]} … ${dates[dates.length - 1]}` : dates.length ? dates[0] : "—";
     if (sum) {
       if (rows.length === 0) {
-        sum.textContent = `基准 ${base}；日期 ${dayLabel || "—"}。未在 Settings → 汇率货币 中添加报价币种则表格为空；有列表时优先用本地缓存，缺失则拉取 Frankfurter 并写入库。`;
+        sum.textContent = `基准 ${base}；列日期 ${dayRange}（${dates.length} 个工作日）。未在 Settings → 汇率货币 中添加报价币种则表格为空；非当日列优先本地缓存，缺失则拉取 Frankfurter 并写入库。`;
       } else {
-        sum.textContent = `基准 ${base}；日期 ${dayLabel}；共 ${rows.length} 种货币（Settings → 汇率货币）。数据优先本地，缺则 Frankfurter 并缓存。`;
+        sum.textContent = `基准 ${base}；列日期 ${dayRange}（${dates.length} 个工作日）；共 ${rows.length} 种货币（Settings → 汇率货币）。当日列为即时汇率且不写入库。`;
       }
     }
     const hr = document.createElement("tr");
@@ -1615,6 +1704,21 @@ document.getElementById("exchange-q")?.addEventListener("keydown", (ev) => {
     ev.preventDefault();
     loadExchangeRates();
   }
+});
+
+document.getElementById("exchange-conv-date")?.addEventListener("change", () => scheduleExchangeConv(exchangeConvLastFixed));
+document.getElementById("exchange-conv-from-amt")?.addEventListener("input", () => scheduleExchangeConv("from"));
+document.getElementById("exchange-conv-to-amt")?.addEventListener("input", () => scheduleExchangeConv("to"));
+document.getElementById("exchange-conv-from")?.addEventListener("change", () => scheduleExchangeConv("from"));
+document.getElementById("exchange-conv-to")?.addEventListener("change", () => scheduleExchangeConv("from"));
+document.getElementById("exchange-conv-swap")?.addEventListener("click", () => {
+  const fs = document.getElementById("exchange-conv-from");
+  const ts = document.getElementById("exchange-conv-to");
+  if (!fs || !ts) return;
+  const x = fs.value;
+  fs.value = ts.value;
+  ts.value = x;
+  scheduleExchangeConv("from");
 });
 
 function escapeHtml(s) {

@@ -136,21 +136,36 @@ func (s *Server) handleExchangeRates(w http.ResponseWriter, r *http.Request) {
 	dateStr := strings.TrimSpace(r.URL.Query().Get("date"))
 	qFilter := strings.ToLower(strings.TrimSpace(r.URL.Query().Get("q")))
 
-	var dates []string
+	var anchor time.Time
 	if dateStr == "" {
-		y := time.Now().In(loc).AddDate(0, 0, -1)
-		dates = []string{time.Date(y.Year(), y.Month(), y.Day(), 0, 0, 0, 0, loc).Format("2006-01-02")}
+		anchor = time.Now().In(loc).AddDate(0, 0, -1)
 	} else {
 		d, err := time.ParseInLocation("2006-01-02", dateStr, loc)
 		if err != nil {
 			http.Error(w, "invalid date (use YYYY-MM-DD)", http.StatusBadRequest)
 			return
 		}
-		dates = []string{time.Date(d.Year(), d.Month(), d.Day(), 0, 0, 0, 0, loc).Format("2006-01-02")}
+		anchor = time.Date(d.Year(), d.Month(), d.Day(), 0, 0, 0, 0, loc)
 	}
+	dates := lastNWeekdaysBeforeOrOn(anchor, 5, loc)
+	if len(dates) == 0 {
+		http.Error(w, "no dates in window", http.StatusBadRequest)
+		return
+	}
+	todayStr := time.Now().In(loc).Format("2006-01-02")
+	liveByDate := map[string]map[string]float64{}
 
 	if len(watchlist) > 0 {
 		for _, d := range dates {
+			if d == todayStr {
+				rates, err := fetchFrankfurterRates(d, base, watchlist)
+				if err != nil {
+					http.Error(w, "fetch exchange rates: "+err.Error(), http.StatusBadGateway)
+					return
+				}
+				liveByDate[d] = rates
+				continue
+			}
 			n, err := s.Store.CountCachedWatchlistQuotes(d, base, watchlist)
 			if err != nil {
 				http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -176,6 +191,14 @@ func (s *Server) handleExchangeRates(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
+	}
+	for d, rs := range liveByDate {
+		if grid[d] == nil {
+			grid[d] = make(map[string]float64)
+		}
+		for q, v := range rs {
+			grid[d][q] = v
+		}
 	}
 	var names map[string]string
 	if len(watchlist) > 0 {

@@ -183,23 +183,48 @@
     </section>
 
     <section id="panel-exchange" class="panel">
+      <div class="exchange-converter">
+        <label class="exchange-conv-date-label">换算日期
+          <input type="date" id="exchange-conv-date" />
+        </label>
+        <p class="hint exchange-conv-hint">先选日期；修改 From 或 To 金额会联动。当日为即时汇率且<strong>不写入</strong>数据库；历史日以本地缓存为准，缺失则拉取并保存。</p>
+        <div class="exchange-conv-row">
+          <div class="exchange-conv-box">
+            <span class="exchange-conv-tag">From</span>
+            <div class="exchange-conv-inner">
+              <input type="number" id="exchange-conv-from-amt" step="any" min="0" inputmode="decimal" />
+              <select id="exchange-conv-from"></select>
+            </div>
+          </div>
+          <button type="button" class="ghost exchange-conv-swap" id="exchange-conv-swap" title="Swap">⇄</button>
+          <div class="exchange-conv-box">
+            <span class="exchange-conv-tag">To</span>
+            <div class="exchange-conv-inner">
+              <input type="number" id="exchange-conv-to-amt" step="any" min="0" inputmode="decimal" />
+              <select id="exchange-conv-to"></select>
+            </div>
+          </div>
+        </div>
+        <p class="exchange-conv-rate" id="exchange-conv-rate" aria-live="polite"></p>
+        <p class="exchange-conv-note hint" id="exchange-conv-note"></p>
+      </div>
       <div class="toolbar report-toolbar exchange-rates-toolbar">
         <label>搜索
           <input type="search" id="exchange-q" placeholder="代码或名称" autocomplete="off" />
         </label>
-        <label>查询日期
+        <label>表格截止日期
           <input type="date" id="exchange-date" />
         </label>
         <button type="button" id="btn-exchange-load" class="primary">查询</button>
       </div>
-      <p class="report-summary" id="exchange-summary">基准货币在 Settings → Company Profile；表格货币在 Settings → 汇率货币。留空日期则查询昨日；有本地缓存则直接用，否则从 Frankfurter 拉取并保存。</p>
+      <p class="report-summary" id="exchange-summary">基准货币在 Settings → Company Profile；表格货币在 Settings → 汇率货币。表格显示<strong>5 个工作日</strong>（截至所选日或昨日）；当日列用即时汇率且不写入库。</p>
       <div class="table-wrap">
         <table class="data exchange-rates-table">
           <thead id="exchange-thead"></thead>
           <tbody id="exchange-body"></tbody>
         </table>
       </div>
-      <p class="exchange-footnote">未选择日期时，默认查询<strong>昨日</strong>（按日历日）。每次查询先读本地库，该日该币种无缓存再请求 Frankfurter。</p>
+      <p class="exchange-footnote">表格未选日期时，以<strong>昨日</strong>为截止日显示 5 个工作日。非「当日」列：先读本地库，无缓存再请求 Frankfurter 并保存。</p>
     </section>
 
     <section id="panel-cheque" class="panel">
