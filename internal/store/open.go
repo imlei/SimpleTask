@@ -12,7 +12,7 @@ import (
 
 	_ "modernc.org/sqlite"
 
-	"tasktracker/internal/models"
+	"simpletask/internal/models"
 )
 
 const (
@@ -173,6 +173,10 @@ func Open(dir string) (*sql.DB, error) {
 		return nil, err
 	}
 	if err := ensureBaseCurrencyColumn(db); err != nil {
+		_ = db.Close()
+		return nil, err
+	}
+	if err := ensureCompanyContactColumns(db); err != nil {
 		_ = db.Close()
 		return nil, err
 	}
@@ -372,6 +376,44 @@ func ensureBaseCurrencyColumn(db *sql.DB) error {
 	}
 	if !existing["base_currency"] {
 		if _, err := db.Exec(`ALTER TABLE app_settings ADD COLUMN base_currency TEXT NOT NULL DEFAULT 'CAD'`); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func ensureCompanyContactColumns(db *sql.DB) error {
+	want := []struct {
+		Name string
+		DDL  string
+	}{
+		{Name: "company_phone", DDL: "ALTER TABLE app_settings ADD COLUMN company_phone TEXT NOT NULL DEFAULT ''"},
+		{Name: "company_fax", DDL: "ALTER TABLE app_settings ADD COLUMN company_fax TEXT NOT NULL DEFAULT ''"},
+		{Name: "company_address", DDL: "ALTER TABLE app_settings ADD COLUMN company_address TEXT NOT NULL DEFAULT ''"},
+		{Name: "company_email", DDL: "ALTER TABLE app_settings ADD COLUMN company_email TEXT NOT NULL DEFAULT ''"},
+	}
+	existing := map[string]bool{}
+	rows, err := db.Query(`PRAGMA table_info(app_settings)`)
+	if err != nil {
+		return err
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var cid int
+		var name, ctype string
+		var notnull int
+		var dflt sql.NullString
+		var pk int
+		if err := rows.Scan(&cid, &name, &ctype, &notnull, &dflt, &pk); err != nil {
+			continue
+		}
+		existing[name] = true
+	}
+	for _, c := range want {
+		if existing[c.Name] {
+			continue
+		}
+		if _, err := db.Exec(c.DDL); err != nil {
 			return err
 		}
 	}

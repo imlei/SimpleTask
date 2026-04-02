@@ -9,7 +9,7 @@ import (
 	"strings"
 	"time"
 
-	"tasktracker/internal/models"
+	"simpletask/internal/models"
 )
 
 var expenseCodeFormatRx = regexp.MustCompile(`^5[0-9]{3}$`)

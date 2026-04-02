@@ -8,10 +8,10 @@ import (
 	"os"
 	"strings"
 
-	"tasktracker/internal/api"
-	"tasktracker/internal/auth"
-	"tasktracker/internal/mail"
-	"tasktracker/internal/store"
+	"simpletask/internal/api"
+	"simpletask/internal/auth"
+	"simpletask/internal/mail"
+	"simpletask/internal/store"
 )
 
 //go:embed web/static
@@ -77,11 +77,11 @@ func main() {
 	}
 	switch {
 	case authCfg.Disabled:
-		log.Printf("TaskTracker %s listening on %s (DATA_DIR=%s, auth disabled via AUTH_DISABLE)%s", Version, addr, dataDir, tlsNote)
+		log.Printf("SimpleTask %s listening on %s (DATA_DIR=%s, auth disabled via AUTH_DISABLE)%s", Version, addr, dataDir, tlsNote)
 	case authCfg.NeedsSetup():
-		log.Printf("TaskTracker %s listening on %s (DATA_DIR=%s) — no user yet, open /setup.html to create admin%s", Version, addr, dataDir, tlsNote)
+		log.Printf("SimpleTask %s listening on %s (DATA_DIR=%s) — no user yet, open /setup.html to create admin%s", Version, addr, dataDir, tlsNote)
 	default:
-		log.Printf("TaskTracker %s listening on %s (DATA_DIR=%s, user=%s)%s", Version, addr, dataDir, authCfg.Store.Username(), tlsNote)
+		log.Printf("SimpleTask %s listening on %s (DATA_DIR=%s, user=%s)%s", Version, addr, dataDir, authCfg.Store.Username(), tlsNote)
 	}
 	var errListen error
 	if useTLS {

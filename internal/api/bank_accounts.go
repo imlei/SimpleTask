@@ -6,8 +6,8 @@ import (
 	"net/http"
 	"strings"
 
-	"tasktracker/internal/models"
-	"tasktracker/internal/store"
+	"simpletask/internal/models"
+	"simpletask/internal/store"
 )
 
 func (s *Server) handleBankAccounts(w http.ResponseWriter, r *http.Request) {

@@ -519,9 +519,8 @@ button.ghost.small {
 }
 
 .trend-card--pies {
-  max-height: min(320px, 46vh);
-  overflow-y: auto;
-  overflow-x: hidden;
+  max-height: none;
+  overflow: visible;
 }
 
 .trend-card--bar {
@@ -564,6 +563,39 @@ button.ghost.small {
   margin: 0 0 0.35rem;
   font-size: 0.8rem;
   color: var(--muted);
+}
+
+.trend-kpi-note {
+  margin: 0 0 0.4rem;
+  font-size: 0.76rem;
+  color: var(--muted);
+}
+
+#trend-profit-total {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.trend-profit-table-wrap {
+  margin-top: 0.75rem;
+  padding-top: 0.65rem;
+  border-top: 1px solid var(--border);
+}
+
+.trend-profit-table-title {
+  margin: 0 0 0.35rem;
+  font-size: 0.95rem;
+  font-weight: 600;
+}
+
+.trend-profit-hint {
+  margin: 0 0 0.5rem;
+  font-size: 0.78rem;
+}
+
+table.data.trend-profit-table td.trend-profit-negative {
+  color: #f87171;
 }
 
 .trend-pie-chart {
@@ -934,7 +966,7 @@ dialog input[readonly] {
   margin-top: 0.25rem;
 }
 
-.exchange-conv-inner input[type="number"] {
+.exchange-conv-inner input.exchange-conv-amt {
   font-size: 1.15rem;
   font-weight: 500;
   padding: 0.4rem 0.5rem;

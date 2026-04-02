@@ -144,12 +144,7 @@ func formatRateCross(v float64) string {
 	if v == 0 || v != v {
 		return "—"
 	}
-	a := v
-	if a >= 1 {
-		return fmt.Sprintf("%.4f", v)
-	}
-	s := fmt.Sprintf("%.8f", v)
-	return strings.TrimRight(strings.TrimRight(s, "0"), ".")
+	return fmt.Sprintf("%.8f", v)
 }
 
 func (s *Server) handleExchangeRatesConvert(w http.ResponseWriter, r *http.Request) {

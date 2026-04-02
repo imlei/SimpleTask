@@ -5,7 +5,7 @@ import (
 	"net/http"
 	"strings"
 
-	"tasktracker/internal/models"
+	"simpletask/internal/models"
 )
 
 func (s *Server) handleExpenseVendors(w http.ResponseWriter, r *http.Request) {

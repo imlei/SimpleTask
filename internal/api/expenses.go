@@ -8,8 +8,8 @@ import (
 	"strings"
 	"time"
 
-	"tasktracker/internal/models"
-	"tasktracker/internal/store"
+	"simpletask/internal/models"
+	"simpletask/internal/store"
 )
 
 var expenseAccountCodeRx = regexp.MustCompile(`^5[0-9]{3}$`)

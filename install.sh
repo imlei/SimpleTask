@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# TaskTracker 部署脚本：按需安装 Go（低于 1.22.2 时）、编译、可选安装 systemd 服务。
+# SimpleTask 部署脚本：按需安装 Go（低于 1.22.2 时）、编译、可选安装 systemd 服务。
 # root 完整安装仅验证为 Ubuntu 24.x（如 24.04 LTS）；用法见 ./install.sh --help
 
 set -euo pipefail
@@ -152,7 +152,7 @@ install_system_files() {
 
 	cat >"$svc" <<EOF
 [Unit]
-Description=TaskTracker
+Description=SimpleTask
 After=network.target
 
 [Service]

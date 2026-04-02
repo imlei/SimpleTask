@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Settings — TaskTracker</title>
+  <title>Settings — SimpleTask</title>
   <link rel="stylesheet" href="/style.css" />
 </head>
 <body>
@@ -40,6 +40,11 @@
               <input id="set-base-currency" type="text" maxlength="8" placeholder="CAD" autocomplete="off" />
             </label>
             <p class="hint">主页 <strong>Exchange Rate</strong> 以该货币为基准；<strong>表格中仅显示</strong>在侧栏「汇率货币」中添加的币种。数据来自 <a href="https://frankfurter.dev/" target="_blank" rel="noopener">Frankfurter</a>，本地缓存。</p>
+            <label>电话 <input id="set-company-phone" type="text" maxlength="160" placeholder="可选" autocomplete="tel" /></label>
+            <label>传真 <input id="set-company-fax" type="text" maxlength="160" placeholder="可选" autocomplete="off" /></label>
+            <label>地址 <textarea id="set-company-address" rows="3" maxlength="500" placeholder="可选"></textarea></label>
+            <label>Email <input id="set-company-email" type="email" maxlength="160" placeholder="可选" autocomplete="email" /></label>
+            <p class="hint">以上联系信息为选填，可留空。</p>
             <label>Logo（PNG/JPG，建议正方形）
               <input id="set-logo-file" type="file" accept="image/png,image/jpeg,image/webp,image/gif" />
             </label>

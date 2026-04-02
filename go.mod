@@ -1,4 +1,4 @@
-module tasktracker
+module simpletask
 
 go 1.22
 

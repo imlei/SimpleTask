@@ -40,13 +40,13 @@ Options:
   NGINX_APP_PORT      反代到本机端口；不设则从 systemd tasktracker 的 LISTEN_ADDR 解析，默认 8088
 
 示例:
-  cd /path/to/TaskTracker && ./upgrade.sh
+  cd /path/to/SimpleTask && ./upgrade.sh
   sudo ./upgrade.sh                              # 推荐：便于写入 PREFIX 并重启服务
   sudo UPGRADE_NGINX=1 ./upgrade.sh              # 升级并刷新 HTTP Nginx 配置
   sudo ./upgrade.sh --nginx-ssl app.example.com # 升级并用仓库 HTTPS 模板重写站点（需证书）
 
 配合 cron（每周日 4:00，请把路径改成你的克隆目录）:
-  0 4 * * 0 cd /opt/tasktracker/TaskTracker && sudo ./upgrade.sh >>/var/log/tasktracker-upgrade.log 2>&1
+  0 4 * * 0 cd /opt/tasktracker/SimpleTask && sudo ./upgrade.sh >>/var/log/tasktracker-upgrade.log 2>&1
 EOF
 }
 

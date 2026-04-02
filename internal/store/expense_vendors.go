@@ -8,7 +8,7 @@ import (
 	"strings"
 	"time"
 
-	"tasktracker/internal/models"
+	"simpletask/internal/models"
 )
 
 func (s *Store) ListExpenseVendors() []models.ExpenseVendor {

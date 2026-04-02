@@ -10,9 +10,9 @@ import (
 	"strings"
 	"time"
 
-	"tasktracker/internal/mail"
-	"tasktracker/internal/models"
-	"tasktracker/internal/store"
+	"simpletask/internal/mail"
+	"simpletask/internal/models"
+	"simpletask/internal/store"
 )
 
 type Server struct {
@@ -450,16 +450,28 @@ type trendMonthlyPoint struct {
 	AmountNew float64 `json:"amountNew"`
 }
 
+// trendProfitTask 按「完成日期」落在所选月的非 Pending 任务盈利行
+type trendProfitTask struct {
+	TaskID       string  `json:"taskId"`
+	CompanyName  string  `json:"companyName"`
+	Revenue      float64 `json:"revenue"`
+	ExpenseTotal float64 `json:"expenseTotal"`
+	Profit       float64 `json:"profit"`
+	CompletedAt  string  `json:"completedAt"`
+}
+
 type trendReport struct {
 	Month                     string              `json:"month"`
-	MonthlyTasksTotal         int                 `json:"monthlyTasksTotal"`
-	MonthlyTasksDone          int                 `json:"monthlyTasksDone"`
 	MonthlyAmountTotal        float64             `json:"monthlyAmountTotal"`
 	MonthlyAmountDone         float64             `json:"monthlyAmountDone"`
 	PendingAmountTotal        float64             `json:"pendingAmountTotal"`
 	PendingAmountNewThisMonth float64             `json:"pendingAmountNewThisMonth"`
 	MonthlySeries             []trendMonthlyPoint `json:"monthlySeries"`
 	MonthlyInvoicedAmount     float64             `json:"monthlyInvoicedAmount"`
+	ProfitTotal               float64             `json:"profitTotal"`
+	ProfitRevenue             float64             `json:"profitRevenue"`
+	ProfitExpenses            float64             `json:"profitExpenses"`
+	ProfitTasks               []trendProfitTask   `json:"profitTasks"`
 }
 
 // GET /api/reports/trend?month=YYYY-MM
@@ -495,8 +507,6 @@ func (s *Server) handleReportTrend(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var (
-		monthlyTasksTotal         int
-		monthlyTasksDone          int
 		monthlyAmountTotal        float64
 		monthlyAmountDone         float64
 		pendingAmountTotal        float64
@@ -512,10 +522,8 @@ func (s *Server) handleReportTrend(w http.ResponseWriter, r *http.Request) {
 			series[idx].AmountNew += t.Price1
 		}
 		if dateInMonth(t.Date, month) {
-			monthlyTasksTotal++
 			monthlyAmountTotal += t.Price1
 			if t.Status != models.StatusPending {
-				monthlyTasksDone++
 				monthlyAmountDone += t.Price1
 			}
 		}
@@ -526,6 +534,48 @@ func (s *Server) handleReportTrend(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 	}
+
+	var profitTaskIDs []string
+	for _, t := range allTasks {
+		if t.Status == models.StatusPending {
+			continue
+		}
+		if t.CompletedAt == "" || !completedAtInMonth(t.CompletedAt, month) {
+			continue
+		}
+		profitTaskIDs = append(profitTaskIDs, t.ID)
+	}
+	expByTask := s.Store.SumExpensesCADByTaskIDs(profitTaskIDs)
+	var profitTotal, profitRev, profitExp float64
+	var profitRows []trendProfitTask
+	for _, t := range allTasks {
+		if t.Status == models.StatusPending {
+			continue
+		}
+		if t.CompletedAt == "" || !completedAtInMonth(t.CompletedAt, month) {
+			continue
+		}
+		rev := t.Price1 + t.Price2
+		exp := expByTask[t.ID]
+		p := rev - exp
+		profitTotal += p
+		profitRev += rev
+		profitExp += exp
+		profitRows = append(profitRows, trendProfitTask{
+			TaskID:       t.ID,
+			CompanyName:  t.CompanyName,
+			Revenue:      rev,
+			ExpenseTotal: exp,
+			Profit:       p,
+			CompletedAt:  t.CompletedAt,
+		})
+	}
+	sort.Slice(profitRows, func(i, j int) bool {
+		if profitRows[i].CompletedAt != profitRows[j].CompletedAt {
+			return profitRows[i].CompletedAt > profitRows[j].CompletedAt
+		}
+		return profitRows[i].TaskID < profitRows[j].TaskID
+	})
 
 	invs, err := s.Store.ListInvoices("")
 	if err != nil {
@@ -544,14 +594,16 @@ func (s *Server) handleReportTrend(w http.ResponseWriter, r *http.Request) {
 
 	resp := trendReport{
 		Month:                     month,
-		MonthlyTasksTotal:         monthlyTasksTotal,
-		MonthlyTasksDone:          monthlyTasksDone,
 		MonthlyAmountTotal:        monthlyAmountTotal,
 		MonthlyAmountDone:         monthlyAmountDone,
 		PendingAmountTotal:        pendingAmountTotal,
 		PendingAmountNewThisMonth: pendingAmountNewThisMonth,
 		MonthlySeries:             series,
 		MonthlyInvoicedAmount:     monthlyInvoicedAmount,
+		ProfitTotal:               profitTotal,
+		ProfitRevenue:             profitRev,
+		ProfitExpenses:            profitExp,
+		ProfitTasks:               profitRows,
 	}
 	writeJSON(w, http.StatusOK, resp)
 }

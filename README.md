@@ -1,8 +1,8 @@
-# TaskTracker
+# SimpleTask
 
 当前版本：**0.0.7**（Git 标签 `v0.0.7`；程序启动日志中也会打印版本号）。
 
-Go 实现的业务任务与价目表管理，单二进制 + 内嵌 Web，便于部署在服务器上。
+Go 实现的业务任务与价目表管理，单二进制 + 内嵌 Web，便于部署在服务器上。（GitHub 仓库名可能仍为 `TaskTracker`，克隆时可指定本地目录为 `SimpleTask`。）
 
 **编译要求：Go 1.22.2 或更高**（`go version` 查看；`go.mod` 中 `toolchain go1.22.2`）。**生产部署以 Ubuntu 24.04 LTS 为准**（见下文）。若仅用 `apt install golang-go` 且版本偏旧，请从 [Go 官方下载页](https://go.dev/dl/) 安装 **1.22.2+**，并把 `/usr/local/go/bin` 放在 `PATH` 最前（或卸载/忽略系统自带的旧 `go`）。
 
@@ -74,8 +74,8 @@ sudo CERTBOT_EMAIL=you@example.com ./enable-ssl.sh 你的域名
 sudo apt update
 sudo apt install -y git wget ca-certificates
 
-git clone https://github.com/imlei/TaskTracker.git
-cd TaskTracker
+git clone https://github.com/imlei/TaskTracker.git SimpleTask
+cd SimpleTask
 
 chmod +x install.sh
 sudo ./install.sh --with-nginx
@@ -93,10 +93,10 @@ sudo ./install.sh --with-nginx
 
 ### 后续更新 /「自己升级」（推荐流程）
 
-程序本身**不会**在运行时从互联网拉取新版本二进制；要在有新提交时自动或半自动更新，请在服务器上**保留一份 Git 克隆**（例如 `/opt/tasktracker/TaskTracker`），使用仓库里的 **`upgrade.sh`**：
+程序本身**不会**在运行时从互联网拉取新版本二进制；要在有新提交时自动或半自动更新，请在服务器上**保留一份 Git 克隆**（例如 `/opt/tasktracker/SimpleTask`），使用仓库里的 **`upgrade.sh`**：
 
 ```bash
-cd /path/to/TaskTracker   # 与首次 git clone 的目录一致
+cd /path/to/SimpleTask   # 与首次 git clone 的目录一致
 chmod +x upgrade.sh
 sudo ./upgrade.sh
 ```
@@ -113,7 +113,7 @@ sudo ./upgrade.sh
 **定时检查更新（示例）**：用 root 的 crontab 每周拉一次 main（生产环境请谨慎：**直接跟踪 main 可能引入未充分测试的提交**，更稳妥的是打 **Git tag**、在 CI 里发布再部署，或只拉指定 tag/分支）：
 
 ```cron
-0 4 * * 0 cd /opt/tasktracker/TaskTracker && sudo ./upgrade.sh >>/var/log/tasktracker-upgrade.log 2>&1
+0 4 * * 0 cd /opt/tasktracker/SimpleTask && sudo ./upgrade.sh >>/var/log/tasktracker-upgrade.log 2>&1
 ```
 
 也可用 **systemd timer** 调用同一脚本，思路与 cron 相同。
@@ -147,8 +147,8 @@ go version   # 应显示 go1.22.2 或更高
 ### 2. 获取代码并编译
 
 ```bash
-git clone https://github.com/imlei/TaskTracker.git
-cd TaskTracker
+git clone https://github.com/imlei/TaskTracker.git SimpleTask
+cd SimpleTask
 go build -o tasktracker .
 ```
 
@@ -173,7 +173,7 @@ sudo chown -R tasktracker:tasktracker /opt/tasktracker
 
 ```ini
 [Unit]
-Description=TaskTracker
+Description=SimpleTask
 After=network.target
 
 [Service]

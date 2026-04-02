@@ -60,6 +60,14 @@ async function loadSettings() {
   document.getElementById("set-baseurl").value = s.baseUrl || "";
   const bc = document.getElementById("set-base-currency");
   if (bc) bc.value = (s.baseCurrency || "CAD").toUpperCase();
+  const ph = document.getElementById("set-company-phone");
+  if (ph) ph.value = s.companyPhone || "";
+  const fx = document.getElementById("set-company-fax");
+  if (fx) fx.value = s.companyFax || "";
+  const addr = document.getElementById("set-company-address");
+  if (addr) addr.value = s.companyAddress || "";
+  const em = document.getElementById("set-company-email");
+  if (em) em.value = s.companyEmail || "";
   document.getElementById("set-smtp-host").value = s.smtpHost || "";
   document.getElementById("set-smtp-port").value = s.smtpPort || 587;
   document.getElementById("set-smtp-user").value = s.smtpUser || "";
@@ -83,6 +91,10 @@ function collectSettingsBody() {
     companyName: document.getElementById("set-company").value.trim(),
     baseUrl: document.getElementById("set-baseurl").value.trim(),
     baseCurrency: (document.getElementById("set-base-currency")?.value || "CAD").trim().toUpperCase() || "CAD",
+    companyPhone: document.getElementById("set-company-phone")?.value?.trim() || "",
+    companyFax: document.getElementById("set-company-fax")?.value?.trim() || "",
+    companyAddress: document.getElementById("set-company-address")?.value?.trim() || "",
+    companyEmail: document.getElementById("set-company-email")?.value?.trim() || "",
     logoDataUrl: logoDataUrl,
     smtpHost: document.getElementById("set-smtp-host").value.trim(),
     smtpPort: parseInt(document.getElementById("set-smtp-port").value, 10) || 587,

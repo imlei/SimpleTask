@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# 在服务器上为 TaskTracker 启用 HTTPS（Nginx 终止 TLS + Let's Encrypt）。
+# 在服务器上为 SimpleTask 启用 HTTPS（Nginx 终止 TLS + Let's Encrypt）。
 # 须在仓库根目录执行；需 root；域名 DNS 已指向本机；建议已用 install.sh --with-nginx 装好 HTTP 反代。
 #
 # 用法:
@@ -16,7 +16,7 @@ usage() {
 	cat <<'EOF'
 Usage: enable-ssl.sh [options] DOMAIN
 
-  为 TaskTracker 配置 HTTPS：安装 certbot（若缺失）、申请/检测 Let’s Encrypt 证书、
+  为 SimpleTask 配置 HTTPS：安装 certbot（若缺失）、申请/检测 Let’s Encrypt 证书、
   写入 deploy/tasktracker.nginx-https.example.conf、重载 Nginx，
   并为 tasktracker systemd 增加 AUTH_SECURE_COOKIE=true 与 BASE_URL=https://DOMAIN。
 

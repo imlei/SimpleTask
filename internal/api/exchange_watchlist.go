@@ -6,7 +6,7 @@ import (
 	"net/http"
 	"strings"
 
-	"tasktracker/internal/store"
+	"simpletask/internal/store"
 )
 
 func (s *Server) handleExchangeRateCodes(w http.ResponseWriter, r *http.Request) {

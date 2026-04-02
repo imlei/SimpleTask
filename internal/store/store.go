@@ -10,7 +10,7 @@ import (
 	"sync"
 	"time"
 
-	"tasktracker/internal/models"
+	"simpletask/internal/models"
 )
 
 var (

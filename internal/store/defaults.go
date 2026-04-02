@@ -1,6 +1,6 @@
 package store
 
-import "tasktracker/internal/models"
+import "simpletask/internal/models"
 
 func f64(v float64) *float64 { return &v }
 

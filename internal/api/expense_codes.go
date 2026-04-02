@@ -8,8 +8,8 @@ import (
 	"strings"
 	"time"
 
-	"tasktracker/internal/models"
-	"tasktracker/internal/store"
+	"simpletask/internal/models"
+	"simpletask/internal/store"
 )
 
 func (s *Server) handleExpenseCodes(w http.ResponseWriter, r *http.Request) {

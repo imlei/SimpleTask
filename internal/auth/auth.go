@@ -15,7 +15,7 @@ import (
 )
 
 const (
-	cookieName = "tasktracker_auth"
+	cookieName = "simpletask_auth"
 	maxAgeSec  = 7 * 24 * 3600 // 7 天
 )
 

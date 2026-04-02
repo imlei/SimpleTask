@@ -870,7 +870,7 @@ const phoneFormatRx = /^\+?\d{10,15}$/;
 const emailFormatRx = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
 
 // --- Trend ---
-let trendPieTasksChart = null;
+let trendPieProfitChart = null;
 let trendPieAmountChart = null;
 let trendPiePendingChart = null;
 let trendBarMonthlyChart = null;
@@ -914,14 +914,73 @@ function renderDoughnutChart(ctx, value, total, label) {
   });
 }
 
+/** Profit 圆环：盈利≥0 时为 Profit vs Expenses；亏损时为 Revenue vs Expenses */
+function renderProfitDoughnut(ctx, profit, revenue, expense) {
+  const p = Number(profit) || 0;
+  const r = Number(revenue) || 0;
+  const e = Number(expense) || 0;
+  let d1;
+  let d2;
+  let labels;
+  let colors;
+  if (r <= 0 && e <= 0) {
+    d1 = 1;
+    d2 = 0;
+    labels = ["—", ""];
+    colors = ["#1f2933", "#1f2933"];
+  } else if (p >= 0) {
+    d1 = Math.max(0, p);
+    d2 = Math.max(0, e);
+    labels = ["Profit", "Expenses"];
+    colors = ["#22c55e", "#f97316"];
+  } else {
+    d1 = Math.max(0, r);
+    d2 = Math.max(0, e);
+    labels = ["Revenue", "Expenses"];
+    colors = ["#3d8bfd", "#f97316"];
+  }
+  const sum = d1 + d2;
+  const data = sum <= 0 ? [1, 0] : [d1, d2];
+  return new Chart(ctx, {
+    type: "doughnut",
+    data: {
+      labels,
+      datasets: [
+        {
+          data,
+          backgroundColor: colors,
+          borderWidth: 0,
+        },
+      ],
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      cutout: "60%",
+      layout: {
+        padding: { top: 4, bottom: 4, left: 4, right: 4 },
+      },
+      plugins: {
+        legend: {
+          display: false,
+        },
+      },
+    },
+  });
+}
+
 async function loadTrend() {
   const month = currentMonthISO();
   try {
     const data = await api(`/api/reports/trend?month=${encodeURIComponent(month)}`);
     const monthLabel = (data && data.month) || month;
     // 更新文字
-    document.getElementById("trend-tasks-done").textContent = data.monthlyTasksDone ?? 0;
-    document.getElementById("trend-tasks-total").textContent = data.monthlyTasksTotal ?? 0;
+    const pt = document.getElementById("trend-profit-total");
+    if (pt) pt.textContent = (data.profitTotal ?? 0).toFixed(2);
+    const prv = document.getElementById("trend-profit-rev");
+    if (prv) prv.textContent = (data.profitRevenue ?? 0).toFixed(2);
+    const pex = document.getElementById("trend-profit-exp");
+    if (pex) pex.textContent = (data.profitExpenses ?? 0).toFixed(2);
     document.getElementById("trend-amount-done").textContent = (data.monthlyAmountDone || 0).toFixed(2);
     document.getElementById("trend-amount-total").textContent = (data.monthlyAmountTotal || 0).toFixed(2);
     document.getElementById("trend-pending-new").textContent = (data.pendingAmountNewThisMonth || 0).toFixed(2);
@@ -929,19 +988,42 @@ async function loadTrend() {
     document.getElementById("trend-invoiced-amount").textContent = `CAD ${(data.monthlyInvoicedAmount || 0).toFixed(2)}`;
     document.getElementById("trend-invoiced-month-label").textContent = `${monthLabel} 本月开票总额`;
 
+    const tbody = document.getElementById("trend-profit-body");
+    if (tbody) {
+      const rows = asArray(data.profitTasks);
+      tbody.innerHTML = "";
+      if (rows.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="6" class="hint">本月无已完成任务（完成日期落在本月），或尚未标记完成。</td></tr>`;
+      } else {
+        for (const row of rows) {
+          const tr = document.createElement("tr");
+          const profit = (row.profit ?? 0).toFixed(2);
+          const profitCls = Number(row.profit) < 0 ? " trend-profit-negative" : "";
+          tr.innerHTML = `
+            <td>${escapeHtml(row.taskId || "")}</td>
+            <td>${escapeHtml(row.companyName || "—")}</td>
+            <td>${escapeHtml(row.completedAt || "")}</td>
+            <td class="num">${(row.revenue ?? 0).toFixed(2)}</td>
+            <td class="num">${(row.expenseTotal ?? 0).toFixed(2)}</td>
+            <td class="num${profitCls}">${profit}</td>`;
+          tbody.appendChild(tr);
+        }
+      }
+    }
+
     // 圆图
-    const ctxTasks = document.getElementById("trend-pie-tasks")?.getContext("2d");
+    const ctxProfit = document.getElementById("trend-pie-profit")?.getContext("2d");
     const ctxAmount = document.getElementById("trend-pie-amount")?.getContext("2d");
     const ctxPending = document.getElementById("trend-pie-pending")?.getContext("2d");
-    if (ctxTasks && ctxAmount && ctxPending && window.Chart) {
-      destroyChart(trendPieTasksChart);
+    if (ctxProfit && ctxAmount && ctxPending && window.Chart) {
+      destroyChart(trendPieProfitChart);
       destroyChart(trendPieAmountChart);
       destroyChart(trendPiePendingChart);
-      trendPieTasksChart = renderDoughnutChart(
-        ctxTasks,
-        data.monthlyTasksDone || 0,
-        data.monthlyTasksTotal || 0,
-        "已完成任务",
+      trendPieProfitChart = renderProfitDoughnut(
+        ctxProfit,
+        data.profitTotal ?? 0,
+        data.profitRevenue ?? 0,
+        data.profitExpenses ?? 0,
       );
       trendPieAmountChart = renderDoughnutChart(
         ctxAmount,
@@ -1559,7 +1641,23 @@ async function ensureExchangeCurrencyList() {
     to.appendChild(o2);
   }
   if (from.querySelector('option[value="USD"]')) from.value = "USD";
-  if (to.querySelector('option[value="EUR"]')) to.value = "EUR";
+  if (to.querySelector('option[value="CAD"]')) to.value = "CAD";
+}
+
+function parseConvAmount(str) {
+  const s = String(str ?? "").trim().replace(",", ".");
+  if (s === "") return NaN;
+  const n = parseFloat(s);
+  return Number.isFinite(n) ? n : NaN;
+}
+
+/** 回填换算金额，避免科学计数法并保留合理小数 */
+function fmtConvAmountForInput(n) {
+  if (n == null || Number.isNaN(Number(n))) return "";
+  const x = Number(n);
+  if (!Number.isFinite(x)) return "";
+  const s = x.toLocaleString("en-US", { maximumFractionDigits: 12, useGrouping: false });
+  return s;
 }
 
 function initExchangeConverterDate() {
@@ -1589,8 +1687,8 @@ async function runExchangeConverter(fixed) {
     if (noteEl) noteEl.textContent = "请选择两个不同的货币。";
     return;
   }
-  const fromAmt = parseFloat(document.getElementById("exchange-conv-from-amt")?.value || "");
-  const toAmt = parseFloat(document.getElementById("exchange-conv-to-amt")?.value || "");
+  const fromAmt = parseConvAmount(document.getElementById("exchange-conv-from-amt")?.value);
+  const toAmt = parseConvAmount(document.getElementById("exchange-conv-to-amt")?.value);
   let amt = fixed === "to" ? toAmt : fromAmt;
   if (Number.isNaN(amt) || amt < 0) amt = 0;
   const params = new URLSearchParams({ date, from, to, amount: String(amt), fixed });
@@ -1598,8 +1696,8 @@ async function runExchangeConverter(fixed) {
     const data = await api(`/api/exchange-rates/convert?${params.toString()}`);
     const fa = document.getElementById("exchange-conv-from-amt");
     const ta = document.getElementById("exchange-conv-to-amt");
-    if (fa && data.amountFrom != null && !Number.isNaN(data.amountFrom)) fa.value = String(data.amountFrom);
-    if (ta && data.amountTo != null && !Number.isNaN(data.amountTo)) ta.value = String(data.amountTo);
+    if (fa && data.amountFrom != null && !Number.isNaN(Number(data.amountFrom))) fa.value = fmtConvAmountForInput(data.amountFrom);
+    if (ta && data.amountTo != null && !Number.isNaN(Number(data.amountTo))) ta.value = fmtConvAmountForInput(data.amountTo);
     if (rateEl) rateEl.textContent = (data.rateLabel || "") + (data.live ? " · 即时" : "");
     if (noteEl) noteEl.textContent = data.note || "";
   } catch (e) {

@@ -5,8 +5,8 @@ import (
 	"net/http"
 	"strings"
 
-	"tasktracker/internal/mail"
-	"tasktracker/internal/store"
+	"simpletask/internal/mail"
+	"simpletask/internal/store"
 )
 
 func (s *Server) effectiveMailer() *mail.Mailer {
@@ -66,6 +66,10 @@ func (s *Server) handleSettings(w http.ResponseWriter, r *http.Request) {
 			"micrLineOverride":      st.MICRLineOverride,
 			"defaultChequeCurrency": st.DefaultChequeCurrency,
 			"baseCurrency":          st.BaseCurrency,
+			"companyPhone":          st.CompanyPhone,
+			"companyFax":            st.CompanyFax,
+			"companyAddress":        st.CompanyAddress,
+			"companyEmail":          st.CompanyEmail,
 		}
 		writeJSON(w, http.StatusOK, out)
 	case http.MethodPut:
@@ -89,6 +93,10 @@ func (s *Server) handleSettings(w http.ResponseWriter, r *http.Request) {
 			MICRLineOverride      string `json:"micrLineOverride"`
 			DefaultChequeCurrency string `json:"defaultChequeCurrency"`
 			BaseCurrency          string `json:"baseCurrency"`
+			CompanyPhone          string `json:"companyPhone"`
+			CompanyFax            string `json:"companyFax"`
+			CompanyAddress        string `json:"companyAddress"`
+			CompanyEmail          string `json:"companyEmail"`
 		}
 		if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
 			http.Error(w, err.Error(), http.StatusBadRequest)
@@ -116,6 +124,10 @@ func (s *Server) handleSettings(w http.ResponseWriter, r *http.Request) {
 			MICRLineOverride:      body.MICRLineOverride,
 			DefaultChequeCurrency: body.DefaultChequeCurrency,
 			BaseCurrency:          body.BaseCurrency,
+			CompanyPhone:          body.CompanyPhone,
+			CompanyFax:            body.CompanyFax,
+			CompanyAddress:        body.CompanyAddress,
+			CompanyEmail:          body.CompanyEmail,
 		}
 		if body.SMTPPort <= 0 {
 			in.SMTPPort = cur.SMTPPort

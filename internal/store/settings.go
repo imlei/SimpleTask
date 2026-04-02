@@ -11,6 +11,8 @@ const maxLogoDataLen = 600000 // ~450KB base64
 
 const maxBankStrLen = 80
 const maxMICROverrideLen = 500
+const maxCompanyContactStrLen = 160
+const maxCompanyAddressLen = 500
 
 // AppSettings 存于 app_settings 单行（id=1）
 type AppSettings struct {
@@ -36,6 +38,11 @@ type AppSettings struct {
 	DefaultChequeCurrency  string `json:"defaultChequeCurrency"` // 支票金额显示币种，与 micrCountry 独立（如加拿大行 + USD）
 	// BaseCurrency 公司基准货币（ISO 4217），Exchange Rate 等以该币种为基准
 	BaseCurrency string `json:"baseCurrency"`
+	// 公司联系信息（可选）
+	CompanyPhone    string `json:"companyPhone"`
+	CompanyFax      string `json:"companyFax"`
+	CompanyAddress  string `json:"companyAddress"`
+	CompanyEmail    string `json:"companyEmail"`
 }
 
 func (s *Store) loadSettingsRow() (AppSettings, error) {
@@ -46,12 +53,14 @@ func (s *Store) loadSettingsRow() (AppSettings, error) {
 	err := s.db.QueryRow(`SELECT company_name, logo_data_url, base_url,
 		smtp_host, smtp_port, smtp_user, smtp_pass, smtp_from, smtp_starttls, smtp_tls,
 		micr_country, bank_institution, bank_transit, bank_routing_aba, bank_account, bank_cheque_number, micr_line_override,
-		default_cheque_currency, base_currency
+		default_cheque_currency, base_currency,
+		company_phone, company_fax, company_address, company_email
 		FROM app_settings WHERE id=1`).Scan(
 		&st.CompanyName, &st.LogoDataURL, &st.BaseURL,
 		&st.SMTPHost, &port, &st.SMTPUser, &pass, &st.SMTPFrom, &startTLS, &implicitTLS,
 		&st.MICRCountry, &st.BankInstitution, &st.BankTransit, &st.BankRoutingABA, &st.BankAccount, &st.BankChequeNumber, &st.MICRLineOverride,
 		&st.DefaultChequeCurrency, &st.BaseCurrency,
+		&st.CompanyPhone, &st.CompanyFax, &st.CompanyAddress, &st.CompanyEmail,
 	)
 	if err != nil {
 		return st, err
@@ -136,6 +145,10 @@ func (s *Store) UpdateSettings(in AppSettings, updateSMTPPass bool, smtpPassNew 
 		bc = bc[:8]
 	}
 	in.BaseCurrency = bc
+	in.CompanyPhone = clampLen(strings.TrimSpace(in.CompanyPhone), maxCompanyContactStrLen)
+	in.CompanyFax = clampLen(strings.TrimSpace(in.CompanyFax), maxCompanyContactStrLen)
+	in.CompanyAddress = clampLen(strings.TrimSpace(in.CompanyAddress), maxCompanyAddressLen)
+	in.CompanyEmail = clampLen(strings.TrimSpace(in.CompanyEmail), maxCompanyContactStrLen)
 	if in.SMTPPort <= 0 {
 		in.SMTPPort = 587
 	}
@@ -153,12 +166,14 @@ func (s *Store) UpdateSettings(in AppSettings, updateSMTPPass bool, smtpPassNew 
 			company_name=?, logo_data_url=?, base_url=?,
 			smtp_host=?, smtp_port=?, smtp_user=?, smtp_pass=?, smtp_from=?, smtp_starttls=?, smtp_tls=?,
 			micr_country=?, bank_institution=?, bank_transit=?, bank_routing_aba=?, bank_account=?, bank_cheque_number=?, micr_line_override=?,
-			default_cheque_currency=?, base_currency=?
+			default_cheque_currency=?, base_currency=?,
+			company_phone=?, company_fax=?, company_address=?, company_email=?
 			WHERE id=1`,
 			in.CompanyName, in.LogoDataURL, in.BaseURL,
 			strings.TrimSpace(in.SMTPHost), in.SMTPPort, strings.TrimSpace(in.SMTPUser), smtpPassNew, strings.TrimSpace(in.SMTPFrom), start, tls,
 			in.MICRCountry, in.BankInstitution, in.BankTransit, in.BankRoutingABA, in.BankAccount, in.BankChequeNumber, in.MICRLineOverride,
 			in.DefaultChequeCurrency, in.BaseCurrency,
+			in.CompanyPhone, in.CompanyFax, in.CompanyAddress, in.CompanyEmail,
 		)
 		return err
 	}
@@ -166,12 +181,14 @@ func (s *Store) UpdateSettings(in AppSettings, updateSMTPPass bool, smtpPassNew 
 		company_name=?, logo_data_url=?, base_url=?,
 		smtp_host=?, smtp_port=?, smtp_user=?, smtp_from=?, smtp_starttls=?, smtp_tls=?,
 		micr_country=?, bank_institution=?, bank_transit=?, bank_routing_aba=?, bank_account=?, bank_cheque_number=?, micr_line_override=?,
-		default_cheque_currency=?, base_currency=?
+		default_cheque_currency=?, base_currency=?,
+		company_phone=?, company_fax=?, company_address=?, company_email=?
 		WHERE id=1`,
 		in.CompanyName, in.LogoDataURL, in.BaseURL,
 		strings.TrimSpace(in.SMTPHost), in.SMTPPort, strings.TrimSpace(in.SMTPUser), strings.TrimSpace(in.SMTPFrom), start, tls,
 		in.MICRCountry, in.BankInstitution, in.BankTransit, in.BankRoutingABA, in.BankAccount, in.BankChequeNumber, in.MICRLineOverride,
 		in.DefaultChequeCurrency, in.BaseCurrency,
+		in.CompanyPhone, in.CompanyFax, in.CompanyAddress, in.CompanyEmail,
 	)
 	return err
 }

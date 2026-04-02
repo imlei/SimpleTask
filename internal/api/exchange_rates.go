@@ -32,7 +32,7 @@ func httpGetJSON(target string, v any) error {
 		return err
 	}
 	req.Header.Set("Accept", "application/json")
-	req.Header.Set("User-Agent", "TaskTracker/1.0")
+	req.Header.Set("User-Agent", "SimpleTask/1.0")
 	resp, err := client.Do(req)
 	if err != nil {
 		return err

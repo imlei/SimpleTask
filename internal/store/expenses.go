@@ -8,7 +8,7 @@ import (
 	"strings"
 	"time"
 
-	"tasktracker/internal/models"
+	"simpletask/internal/models"
 )
 
 // ErrExpenseTaskNotFound 支出关联的任务不存在（与 ErrNotFound 区分，便于 API 返回 400）
@@ -143,6 +143,50 @@ func (s *Store) UpdateExpense(id string, e models.Expense) (models.Expense, erro
 		_ = s.db.QueryRow(`SELECT name FROM expense_vendors WHERE id=?`, e.VendorID).Scan(&e.VendorName)
 	}
 	return e, nil
+}
+
+// SumExpensesCADByTaskIDs 按任务汇总 CAD 支出（currency 为空视为 CAD；非 CAD 不计入）。
+func (s *Store) SumExpensesCADByTaskIDs(taskIDs []string) map[string]float64 {
+	out := make(map[string]float64)
+	if len(taskIDs) == 0 {
+		return out
+	}
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	uniq := make([]string, 0, len(taskIDs))
+	seen := map[string]bool{}
+	for _, id := range taskIDs {
+		id = strings.TrimSpace(id)
+		if id == "" || seen[id] {
+			continue
+		}
+		seen[id] = true
+		uniq = append(uniq, id)
+	}
+	if len(uniq) == 0 {
+		return out
+	}
+	ph := make([]string, len(uniq))
+	args := make([]any, len(uniq))
+	for i, id := range uniq {
+		ph[i] = "?"
+		args[i] = id
+	}
+	q := `SELECT task_id, COALESCE(SUM(amount), 0) FROM expenses WHERE task_id IN (` + strings.Join(ph, ",") + `) AND (UPPER(TRIM(COALESCE(currency,''))) = 'CAD' OR TRIM(COALESCE(currency,'')) = '') GROUP BY task_id`
+	rows, err := s.db.Query(q, args...)
+	if err != nil {
+		return out
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var tid string
+		var sum float64
+		if rows.Scan(&tid, &sum) != nil {
+			continue
+		}
+		out[tid] = sum
+	}
+	return out
 }
 
 func (s *Store) nextExpenseIDLocked() string {
