@@ -20,7 +20,7 @@ function formatDisplayDate(s) {
   const t = String(s || "").trim();
   if (!t) return "";
   if (t.length >= 10 && /^\d{4}-\d{2}-\d{2}/.test(t)) {
-    return t.slice(0, 4) + "/" + t.slice(5, 7) + "/" + t.slice(7, 10) + t.slice(10);
+    return t.slice(0, 4) + "/" + t.slice(5, 7) + "/" + t.slice(8, 10) + t.slice(10);
   }
   return t;
 }
