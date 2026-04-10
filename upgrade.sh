@@ -88,9 +88,40 @@ build_if_needed() {
 }
 
 ensure_service_stopped() {
+	log "检查并停止 SimpleTask 进程..."
+	
+	# 停止 systemd 服务
 	if systemctl is-active SimpleTask >/dev/null 2>&1; then
-		log "Stopping SimpleTask service..."
-		systemctl stop SimpleTask || die "停止服务失败"
+		log "正在停止 SimpleTask systemd 服务..."
+		systemctl stop SimpleTask || die "停止 systemd 服务失败"
+	fi
+	
+	# 检查并杀死任何直接的 SimpleTask 进程
+	local pids=$(pgrep -f "SimpleTask")
+	if [[ -n "$pids" ]]; then
+		log "发现正在运行的 SimpleTask 进程，正在强制关闭..."
+		echo "$pids" | xargs kill -9 2>/dev/null || true
+		sleep 2  # 等待进程彻底关闭
+		
+		# 再次检查进程是否仍在运行
+		local remaining_pids=$(pgrep -f "SimpleTask")
+		if [[ -n "$remaining_pids" ]]; then
+			log "警告: 仍有 SimpleTask 进程在运行: $remaining_pids"
+		else
+			log "SimpleTask 进程已成功关闭"
+		fi
+	fi
+	
+	# 检查是否还有占用指定端口的进程
+	local port=$(listen_port_from_addr "$LISTEN_ADDR")
+	if [[ "$port" != "" && "$port" != "8088" ]]; then
+		local port_pids=$(lsof -ti:"$port" 2>/dev/null || true)
+		if [[ -n "$port_pids" ]]; then
+			log "发现占用端口 $port 的进程，正在强制关闭..."
+			echo "$port_pids" | xargs kill -9 2>/dev/null || true
+			sleep 1
+			log "端口 $port 已释放"
+		fi
 	fi
 }
 
