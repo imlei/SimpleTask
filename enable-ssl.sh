@@ -16,9 +16,9 @@ usage() {
 	cat <<'EOF'
 Usage: enable-ssl.sh [options] DOMAIN
 
-  为 SimpleTask 配置 HTTPS：安装 certbot（若缺失）、申请/检测 Let’s Encrypt 证书、
-  写入 deploy/tasktracker.nginx-https.example.conf、重载 Nginx，
-  并为 tasktracker systemd 增加 AUTH_SECURE_COOKIE=true 与 BASE_URL=https://DOMAIN。
+  为 SimpleTask 配置 HTTPS：安装 certbot（若缺失）、申请/检测 Let's Encrypt 证书、
+  写入 deploy/SimpleTask.nginx-https.example.conf、重载 Nginx，
+  并为 SimpleTask systemd 增加 AUTH_SECURE_COOKIE=true 与 BASE_URL=https://DOMAIN。
 
   前置条件:
     - root 执行
@@ -27,11 +27,11 @@ Usage: enable-ssl.sh [options] DOMAIN
     - 防火墙放行 80/443
 
 Options:
-  --email ADDR   Let’s Encrypt 注册邮箱（非交互申请证书时必需；也可环境变量 CERTBOT_EMAIL）
+  --email ADDR   Let's Encrypt 注册邮箱（非交互申请证书时必需；也可环境变量 CERTBOT_EMAIL）
   -h, --help     显示本说明
 
 环境变量:
-  NGINX_APP_PORT  反代到本机端口（默认从 systemd tasktracker 的 LISTEN_ADDR 解析，否则 8088）
+  NGINX_APP_PORT  反代到本机端口（默认从 systemd SimpleTask 的 LISTEN_ADDR 解析，否则 8088）
   CERTBOT_EMAIL     同 --email
 
 示例:
@@ -54,9 +54,9 @@ nginx_app_port() {
 		fi
 		return 0
 	fi
-	if systemctl show tasktracker -p Environment &>/dev/null; then
+	if systemctl show SimpleTask -p Environment &>/dev/null; then
 		local line
-		line="$(systemctl show tasktracker -p Environment --value 2>/dev/null | tr ' ' '\n' | grep '^LISTEN_ADDR=' | head -1 || true)"
+		line="$(systemctl show SimpleTask -p Environment --value 2>/dev/null | tr ' ' '\n' | grep '^LISTEN_ADDR=' | head -1 || true)"
 		if [[ -n "$line" ]]; then
 			line="${line#LISTEN_ADDR=}"
 			line="${line//\"/}"
@@ -73,13 +73,13 @@ apply_nginx_https_template() {
 	local domain port tmpl avail enabled
 	domain="$1"
 	port="$(nginx_app_port)"
-	tmpl="$ROOT/deploy/tasktracker.nginx-https.example.conf"
+	tmpl="$ROOT/deploy/SimpleTask.nginx-https.example.conf"
 	[[ -f "$tmpl" ]] || die "缺少模板: $tmpl"
 	cert="/etc/letsencrypt/live/${domain}/fullchain.pem"
 	key="/etc/letsencrypt/live/${domain}/privkey.pem"
 	[[ -f "$cert" && -f "$key" ]] || die "未找到证书: $cert 与 $key"
-	avail="/etc/nginx/sites-available/tasktracker"
-	enabled="/etc/nginx/sites-enabled/tasktracker"
+	avail="/etc/nginx/sites-available/SimpleTask"
+	enabled="/etc/nginx/sites-enabled/SimpleTask"
 	sed -e "s/example.com/${domain}/g" -e "s/@PORT@/${port}/g" "$tmpl" >"$avail"
 	chmod 0644 "$avail"
 	ln -sf "$avail" "$enabled"
@@ -90,7 +90,7 @@ apply_nginx_https_template() {
 ensure_server_name_for_certbot() {
 	local domain avail f
 	domain="$1"
-	avail="/etc/nginx/sites-available/tasktracker"
+	avail="/etc/nginx/sites-available/SimpleTask"
 	[[ -f "$avail" ]] || return 0
 	if grep -q 'server_name _;' "$avail" 2>/dev/null; then
 		cp -a "$avail" "${avail}.bak.enable-ssl"
@@ -102,10 +102,10 @@ ensure_server_name_for_certbot() {
 ensure_systemd_ssl_env() {
 	local domain unit drop
 	domain="$1"
-	unit="/etc/systemd/system/tasktracker.service"
-	drop="/etc/systemd/system/tasktracker.service.d/ssl.conf"
+	unit="/etc/systemd/system/SimpleTask.service"
+	drop="/etc/systemd/system/SimpleTask.service.d/ssl.conf"
 	[[ -f "$unit" ]] || die "未找到 $unit（请先 install.sh 安装 systemd 服务）"
-	install -d -m 0755 /etc/systemd/system/tasktracker.service.d
+	install -d -m 0755 /etc/systemd/system/SimpleTask.service.d
 	cat >"$drop" <<EOF
 # 由 enable-ssl.sh 生成：HTTPS 与 Cookie Secure
 [Service]
@@ -115,8 +115,8 @@ EOF
 	chmod 0644 "$drop"
 	log "systemd: 已写入 $drop"
 	systemctl daemon-reload
-	systemctl restart tasktracker
-	log "systemd: 已重启 tasktracker（AUTH_SECURE_COOKIE=true, BASE_URL=https://${domain}）"
+	systemctl restart SimpleTask
+	log "systemd: 已重启 SimpleTask（AUTH_SECURE_COOKIE=true, BASE_URL=https://${domain}）"
 }
 
 main() {
@@ -146,7 +146,7 @@ main() {
 	[[ -d "$ROOT/deploy" ]] || die "请在仓库根目录执行（缺少 deploy/）"
 
 	command -v nginx >/dev/null 2>&1 || die "请先安装 Nginx: apt install -y nginx"
-	[[ -f /etc/nginx/sites-available/tasktracker ]] || die "未找到 /etc/nginx/sites-available/tasktracker。请先执行: sudo ./install.sh --with-nginx"
+	[[ -f /etc/nginx/sites-available/SimpleTask ]] || die "未找到 /etc/nginx/sites-available/SimpleTask。请先执行: sudo ./install.sh --with-nginx"
 
 	export DEBIAN_FRONTEND=noninteractive
 	apt-get update -qq
@@ -154,7 +154,7 @@ main() {
 
 	if [[ -e /etc/nginx/sites-enabled/default ]]; then
 		rm -f /etc/nginx/sites-enabled/default
-		log "nginx: 已禁用 /etc/nginx/sites-enabled/default（避免与 tasktracker 抢占 80）"
+		log "nginx: 已禁用 /etc/nginx/sites-enabled/default（避免与 SimpleTask 抢占 80）"
 	fi
 
 	local cert_path="/etc/letsencrypt/live/${DOMAIN}/fullchain.pem"
@@ -163,7 +163,7 @@ main() {
 		if nginx -t 2>/dev/null; then
 			systemctl reload nginx 2>/dev/null || true
 		fi
-		log "正在申请 Let’s Encrypt 证书（域名须已解析到本机）..."
+		log "正在申请 Let's Encrypt 证书（域名须已解析到本机）..."
 		if [[ -n "$EMAIL" ]]; then
 			certbot certonly --nginx -d "$DOMAIN" --non-interactive --agree-tos \
 				-m "$EMAIL"
@@ -180,10 +180,10 @@ main() {
 	systemctl reload nginx
 	log "nginx: 已检测配置并重载。"
 
-	if systemctl is-enabled tasktracker &>/dev/null; then
+	if systemctl is-enabled SimpleTask &>/dev/null; then
 		ensure_systemd_ssl_env "$DOMAIN"
 	else
-		log "提示: 未检测到 tasktracker 服务，请手动设置 AUTH_SECURE_COOKIE=true 与 BASE_URL=https://${DOMAIN}"
+		log "提示: 未检测到 SimpleTask 服务，请手动设置 AUTH_SECURE_COOKIE=true 与 BASE_URL=https://${DOMAIN}"
 	fi
 
 	log ""

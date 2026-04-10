@@ -6,6 +6,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
@@ -86,16 +87,22 @@ func (u *UserStore) CreateFirstUser(username, password string) error {
 		return errors.New("user already exists")
 	}
 	username = strings.TrimSpace(username)
-	if username == "" || len(password) < 6 {
-		return errors.New("invalid username or password (min 6 chars)")
+	if username == "" {
+		return errors.New("username cannot be empty")
 	}
-	pwhash, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+	// 验证密码强度
+	if err := ValidatePasswordStrength(password); err != nil {
+		return fmt.Errorf("invalid password: %w. %s", err, GetPasswordStrengthHint())
+	}
+
+	// 使用更高的 bcrypt 成本以提高安全性
+	pwhash, err := bcrypt.GenerateFromPassword([]byte(password), bcryptCost)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to hash password: %w", err)
 	}
 	sec := make([]byte, 32)
 	if _, err := rand.Read(sec); err != nil {
-		return err
+		return fmt.Errorf("failed to generate session secret: %w", err)
 	}
 	secret := hex.EncodeToString(sec)
 	_, err = u.db.Exec(`UPDATE app_user SET username=?, password_hash=?, session_secret=? WHERE id=1`,
@@ -141,9 +148,6 @@ func (u *UserStore) Username() string {
 
 // ChangePassword 验证旧密码后更新密码并轮换 session_secret（使其它端会话失效）
 func (u *UserStore) ChangePassword(oldPassword, newPassword string) error {
-	if len(newPassword) < 6 {
-		return errors.New("新密码至少 6 位")
-	}
 	u.mu.Lock()
 	defer u.mu.Unlock()
 	name, hash, _, err := u.loadLocked()
@@ -153,13 +157,18 @@ func (u *UserStore) ChangePassword(oldPassword, newPassword string) error {
 	if bcrypt.CompareHashAndPassword([]byte(hash), []byte(oldPassword)) != nil {
 		return errors.New("当前密码错误")
 	}
-	newHash, err := bcrypt.GenerateFromPassword([]byte(newPassword), bcrypt.DefaultCost)
+	// 验证新密码强度
+	if err := ValidatePasswordStrength(newPassword); err != nil {
+		return fmt.Errorf("invalid new password: %w. %s", err, GetPasswordStrengthHint())
+	}
+
+	newHash, err := bcrypt.GenerateFromPassword([]byte(newPassword), bcryptCost)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to hash new password: %w", err)
 	}
 	sec := make([]byte, 32)
 	if _, err := rand.Read(sec); err != nil {
-		return err
+		return fmt.Errorf("failed to generate session secret: %w", err)
 	}
 	secret := hex.EncodeToString(sec)
 	_, err = u.db.Exec(`UPDATE app_user SET password_hash=?, session_secret=? WHERE id=1`, string(newHash), secret)

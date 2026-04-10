@@ -78,7 +78,7 @@ CREATE TABLE IF NOT EXISTS invoices (
 )
 
 func resolveSQLitePath(dir string) string {
-	current := filepath.Join(dir, "tasktracker.db")
+	current := filepath.Join(dir, "SimpleTask.db")
 	legacy := filepath.Join(dir, "biztracker.db")
 	if _, err := os.Stat(current); err == nil {
 		return current
@@ -89,7 +89,7 @@ func resolveSQLitePath(dir string) string {
 	return current
 }
 
-// Open 打开 SQLite（DATA_DIR/tasktracker.db，若仅存在旧版 biztracker.db 则沿用），建表并从旧版 data.json / users.json 导入一次（若库为空）。
+// Open 打开 SQLite（DATA_DIR/SimpleTask.db，若仅存在旧版 biztracker.db 则沿用），建表并从旧版 data.json / users.json 导入一次（若库为空）。
 func Open(dir string) (*sql.DB, error) {
 	if err := os.MkdirAll(dir, 0755); err != nil {
 		return nil, err

@@ -523,7 +523,7 @@ func (s *Server) handleReportTrend(w http.ResponseWriter, r *http.Request) {
 	months := make([]string, 12)
 	base, _ := time.Parse("2006-01", month)
 	for i := 11; i >= 0; i-- {
-		m := base.AddDate(0, -(11-i), 0)
+		m := base.AddDate(0, -(11 - i), 0)
 		months[i] = m.Format("2006-01")
 	}
 	monthIdx := make(map[string]int, len(months))

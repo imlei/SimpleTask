@@ -12,6 +12,7 @@ import (
 	"unicode/utf8"
 
 	"simpletask/internal/models"
+	"simpletask/internal/money"
 )
 
 var (
@@ -91,7 +92,8 @@ func parseNumericSuffix(id string) int {
 	return n
 }
 
-func (s *Store) nextTaskID(prefix string) string {
+// nextTaskIDLocked 生成下一个任务ID，调用者必须持有 s.mu
+func (s *Store) nextTaskIDLocked(prefix string) string {
 	s.taskSeq++
 	if prefix == "" {
 		prefix = "AC"
@@ -243,7 +245,7 @@ func (s *Store) CreateTask(t models.Task) models.Task {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	if t.ID == "" {
-		t.ID = s.nextTaskID("AC")
+		t.ID = s.nextTaskIDLocked("AC")
 	}
 	if t.Status == "" {
 		t.Status = models.StatusPending
@@ -453,12 +455,13 @@ func (s *Store) UpdateCustomer(id string, patch models.Customer) (models.Custome
 }
 
 // RequireCustomerActive 新建任务或更换客户时：客户须存在且非 inactive
+// 注意：调用此方法前必须先获取锁，否则会导致死锁
 func (s *Store) RequireCustomerActive(customerID string) error {
 	cid := strings.TrimSpace(customerID)
 	if cid == "" {
 		return ErrNotFound
 	}
-	c, err := s.GetCustomer(cid)
+	c, err := s.getCustomerUnlocked(cid)
 	if err != nil {
 		return err
 	}
@@ -466,6 +469,13 @@ func (s *Store) RequireCustomerActive(customerID string) error {
 		return ErrCustomerInactive
 	}
 	return nil
+}
+
+// RequireCustomerActiveLocked 线程安全版本，自动处理锁
+func (s *Store) RequireCustomerActiveLocked(customerID string) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	return s.RequireCustomerActive(customerID)
 }
 
 func (s *Store) validateInvoiceTasksCustomersActiveLocked(inv *models.Invoice) error {
@@ -685,16 +695,30 @@ func (s *Store) CreateInvoice(inv models.Invoice) (models.Invoice, error) {
 	if inv.CreatedAt == "" {
 		inv.CreatedAt = now.Format(time.RFC3339)
 	}
-	var subtotal float64
+	// 使用精确的 Decimal 类型进行财务计算，避免浮点数精度问题
+	var subtotal money.Decimal
 	for i := range inv.Items {
 		if inv.Items[i].Amount == 0 {
 			inv.Items[i].Amount = inv.Items[i].Qty * inv.Items[i].Rate
 		}
-		subtotal += inv.Items[i].Amount
+		amount, err := money.NewFromFloat(inv.Items[i].Amount)
+		if err != nil {
+			return models.Invoice{}, fmt.Errorf("invalid amount for item %d: %w", i, err)
+		}
+		subtotal = subtotal.Add(amount)
 	}
-	inv.Subtotal = subtotal
-	inv.TaxAmount = subtotal * (inv.TaxRate / 100.0)
-	inv.Total = inv.Subtotal + inv.TaxAmount
+	inv.Subtotal = subtotal.RoundToCents().Float64()
+
+	// 计算税额（精确到分）
+	taxAmount, err := subtotal.Percent(inv.TaxRate)
+	if err != nil {
+		return models.Invoice{}, fmt.Errorf("invalid tax rate: %w", err)
+	}
+	inv.TaxAmount = taxAmount.RoundToCents().Float64()
+
+	// 计算总额
+	total := subtotal.Add(taxAmount)
+	inv.Total = total.RoundToCents().Float64()
 	inv.BalanceDue = inv.Total
 	itemsJSON, _ := json.Marshal(inv.Items)
 	if inv.Status == "" {
@@ -702,7 +726,7 @@ func (s *Store) CreateInvoice(inv models.Invoice) (models.Invoice, error) {
 	}
 	normalizeInvoiceTaskIDs(&inv)
 	taskIDsJSON, _ := json.Marshal(inv.TaskIDs)
-	_, err := s.db.Exec(`INSERT INTO invoices (id, invoice_no, task_id, invoice_date, terms, due_date, bill_to_name, bill_to_addr, ship_to_name, ship_to_addr, bill_to_email, currency, tax_rate, items_json, subtotal, tax_amount, total, balance_due, status, sent_at, paid_amount, paid_at, created_at, task_ids_json)
+	_, err = s.db.Exec(`INSERT INTO invoices (id, invoice_no, task_id, invoice_date, terms, due_date, bill_to_name, bill_to_addr, ship_to_name, ship_to_addr, bill_to_email, currency, tax_rate, items_json, subtotal, tax_amount, total, balance_due, status, sent_at, paid_amount, paid_at, created_at, task_ids_json)
 		VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
 		inv.ID, inv.InvoiceNo, inv.TaskID, inv.InvoiceDate, inv.Terms, inv.DueDate, inv.BillToName, inv.BillToAddr, inv.ShipToName, inv.ShipToAddr, inv.BillToEmail, inv.Currency, inv.TaxRate, string(itemsJSON), inv.Subtotal, inv.TaxAmount, inv.Total, inv.BalanceDue, inv.Status, inv.SentAt, inv.PaidAmount, inv.PaidAt, inv.CreatedAt, string(taskIDsJSON))
 	if err != nil {
@@ -788,6 +812,10 @@ func (s *Store) AddInvoicePayment(id string, amount float64, paidAt string) (mod
 	if amount <= 0 {
 		return models.Invoice{}, errors.New("amount must be > 0")
 	}
+	// 验证金额
+	if err := money.ValidateAmount(amount); err != nil {
+		return models.Invoice{}, fmt.Errorf("invalid payment amount: %w", err)
+	}
 	if paidAt == "" {
 		paidAt = time.Now().Format("2006-01-02")
 	}
@@ -799,11 +827,16 @@ func (s *Store) AddInvoicePayment(id string, amount float64, paidAt string) (mod
 	if err != nil {
 		return models.Invoice{}, err
 	}
-	// 更新 balance_due / status
-	bal := inv.Total - inv.PaidAmount
-	if bal < 0 {
-		bal = 0
+	// 使用精确的 Decimal 计算 balance_due
+	total, _ := money.NewFromFloat(inv.Total)
+	paid, _ := money.NewFromFloat(inv.PaidAmount)
+	balanceDue := total.Sub(paid)
+	// 确保余额不为负
+	if balanceDue.IsNegative() {
+		balanceDue = money.Zero()
 	}
+	bal := balanceDue.RoundToCents().Float64()
+
 	newStatus := inv.Status
 	tids := invoiceLinkedTaskIDs(inv)
 	if inv.PaidAmount >= inv.Total && inv.Total > 0 {

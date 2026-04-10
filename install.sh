@@ -1,154 +1,106 @@
 #!/usr/bin/env bash
-# SimpleTask 部署脚本：按需安装 Go（低于 1.22.2 时）、编译、可选安装 systemd 服务。
-# root 完整安装仅验证为 Ubuntu 24.x（如 24.04 LTS）；用法见 ./install.sh --help
+# 在服务器上安装 SimpleTask：编译 Go 二进制、创建用户、systemd 服务、Nginx 反向代理（可选）。
+# 默认 Ubuntu 24.x；root 执行最佳；Linux 仅支持 systemd。
+#
+# 用法:
+#   sudo ./install.sh
+#   sudo ./install.sh --with-nginx
+#   sudo ./install.sh --prefix /srv/SimpleTask --listen :9090
+#   sudo ./install.sh --no-systemd
+#
+# Options:
+#   --prefix DIR     安装目录（默认 /opt/SimpleTask）
+#   --listen ADDR    服务监听地址（默认 :8088，写入 systemd）
+#   --with-nginx    配置 Nginx 反向代理（HTTP）
+#   --no-systemd    仅编译、安装目录/用户，不创建 systemd 服务
+#   --build-only     仅编译当前目录 ./SimpleTask，不进行系统安装。
 
 set -euo pipefail
 
-ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-PREFIX="${PREFIX:-/opt/tasktracker}"
+PREFIX="${PREFIX:-/opt/SimpleTask}"
 LISTEN_ADDR="${LISTEN_ADDR:-:8088}"
-GO_MIN="1.22.2"
-
-BUILD_ONLY=false
-WITH_SYSTEMD=true
-WITH_NGINX=false
-GO_VERSION="${GO_VERSION:-}"
 
 usage() {
 	cat <<'EOF'
 Usage: install.sh [options]
 
-  非 root：在仓库根目录执行 go build（需已安装 Go 1.22.2 或更高）。
-  root：仅在 Ubuntu 24.x 上执行；按需下载安装 Go 到 /usr/local/go，编译后将二进制部署到 PREFIX 并可选写入 systemd。
+  安装 SimpleTask：下载 Go（若未安装）、编译、创建专用用户、systemd 服务、
+  可选 Nginx 反向代理。默认监听 :8088，安装到 /opt/SimpleTask。
 
 Options:
-  --build-only     仅编译当前目录 ./tasktracker，不进行系统安装。
-  --prefix DIR     安装目录（默认 /opt/tasktracker）。
+  --build-only     仅编译当前目录 ./SimpleTask，不进行系统安装。
+  --prefix DIR     安装目录（默认 /opt/SimpleTask）。
   --listen ADDR    服务监听地址（默认 :8088，写入 systemd）。
-  --no-systemd     root 安装时不写入 systemd、不启用服务。
-  --with-nginx     root 安装时同时安装 Nginx 反代到本服务（应用仅监听 127.0.0.1:端口，需已启用 systemd）。
-  --go-version VER 指定要下载的 Go 版本号，如 1.22.2（默认从 go.dev 读取稳定版；离线回退为 1.22.2）。
-  -h, --help       显示本说明。
+  --with-nginx    配置 Nginx 反向代理（HTTP）。
+  --no-systemd    仅编译、安装目录/用户，不创建 systemd 服务。
+  -h, --help      显示本说明。
 
-  HTTPS（Nginx + Let’s Encrypt）在仓库根目录执行: sudo ./enable-ssl.sh <域名>
-  （需 DNS 已指向本机；详见 enable-ssl.sh --help；亦可用 upgrade.sh --nginx-ssl 仅刷新已有证书的配置）
-
-环境变量（可选）:
-  PREFIX, LISTEN_ADDR, GO_VERSION
+环境变量:
+  PREFIX          安装目录（默认 /opt/SimpleTask）
+  LISTEN_ADDR     监听地址（默认 :8088）
 
 示例:
-  ./install.sh
   sudo ./install.sh
   sudo ./install.sh --with-nginx
-  sudo PREFIX=/srv/tasktracker ./install.sh --no-systemd
-
-  # HTTP 反代就绪后启用 HTTPS（在克隆的仓库根目录）:
-  sudo ./enable-ssl.sh app.example.com
-  # 或非交互（需邮箱）:
-  sudo CERTBOT_EMAIL=admin@example.com ./enable-ssl.sh app.example.com
+  sudo PREFIX=/srv/SimpleTask ./install.sh --no-systemd
 EOF
 }
 
-log() { printf '%s\n' "$*"; }
-
+log() { printf 'install.sh: %s\n' "$*"; }
 die() { printf 'install.sh: %s\n' "$*" >&2; exit 1; }
 
-# 仅 root 全流程部署：要求官方 Ubuntu 24.04 / 24.10 等（VERSION_ID 为 24.x）
-assert_ubuntu_24() {
-	[[ -f /etc/os-release ]] || die "未找到 /etc/os-release，无法确认系统版本"
-	# shellcheck source=/dev/null
-	. /etc/os-release
-	[[ "${ID:-}" == "ubuntu" ]] || die "root 安装仅支持 Ubuntu 24.x；当前 ID=${ID:-?}（${PRETTY_NAME:-}）"
-	case "${VERSION_ID:-}" in
-	24.*) ;;
-	*) die "root 安装仅支持 Ubuntu 24.x（如 24.04 LTS）；当前 VERSION_ID=${VERSION_ID:-?}" ;;
-	esac
-}
-
-ver_ge() {
-	local a="$1" b="$2"
-	[[ "$a" == "$b" ]] && return 0
-	[[ "$(printf '%s\n' "$a" "$b" | sort -V | tail -n 1)" == "$a" ]]
-}
-
-go_installed_version() {
-	command -v go >/dev/null 2>&1 || return 1
-	go version 2>/dev/null | sed -n 's/.*go version go\([0-9.]*\).*/\1/p' | head -n 1
-}
-
-go_version_sufficient() {
-	local v
-	v="$(go_installed_version)" || return 1
-	[[ -n "$v" ]] && ver_ge "$v" "$GO_MIN"
-}
-
-detect_go_arch() {
-	case "$(uname -m)" in
-	x86_64) echo amd64 ;;
-	aarch64 | arm64) echo arm64 ;;
-	*) die "unsupported machine: $(uname -m) (need amd64 or arm64)" ;;
-	esac
-}
-
-fetch_default_go_version() {
-	local v
-	# go.dev 可能返回多行（版本行 + time 行等），只取首行，避免拼成 1.26.1time... 破坏下载 URL
-	v="$(curl -sfL 'https://go.dev/VERSION?m=text' 2>/dev/null | head -n 1 | tr -d '\r\n')"
-	v="${v#go}"
-	[[ -n "$v" ]] || v="1.22.2"
-	printf '%s' "$v"
-}
-
-install_go_linux() {
-	command -v curl >/dev/null 2>&1 || die "需要 curl：sudo apt install -y curl ca-certificates"
-	local arch ver
-	arch="$(detect_go_arch)"
-	ver="${GO_VERSION:-$(fetch_default_go_version)}"
-	# 必须用全局变量：EXIT trap 在函数返回之后执行，local tmp 已失效，set -u 会报 tmp unbound
-	_TASKTRACKER_GO_TGZ="$(mktemp)" || die "mktemp failed"
-	trap 'rm -f "${_TASKTRACKER_GO_TGZ:-}"' EXIT
-	log "Installing Go ${ver} for linux-${arch} to /usr/local/go ..."
-	curl -sfL "https://go.dev/dl/go${ver}.linux-${arch}.tar.gz" -o "$_TASKTRACKER_GO_TGZ"
-	rm -rf /usr/local/go
-	tar -C /usr/local -xzf "$_TASKTRACKER_GO_TGZ"
-	rm -f "$_TASKTRACKER_GO_TGZ"
-	trap - EXIT
-	unset _TASKTRACKER_GO_TGZ
-	export PATH="/usr/local/go/bin:${PATH}"
-	hash -r 2>/dev/null || true
-	go_version_sufficient || die "Go installed but version check failed; try --go-version"
-}
-
 ensure_go() {
-	if go_version_sufficient; then
-		log "Go $(go_installed_version) OK."
-		return 0
+	local version go_version current_version
+	version="${GOTOOLCHAIN:-go1.22.2}"
+	current_version=$(go version 2>/dev/null || echo "")
+	if [[ "$current_version" =~ go([0-9]+\.[0-9]+(\.[0-9]+)?) ]]; then
+		current_version="${BASH_REMATCH[1]}"
 	fi
-	if [[ "${EUID:-0}" -ne 0 ]]; then
-		die "需要 Go ${GO_MIN}+。当前: $(go_installed_version 2>/dev/null || echo 未安装)。请安装 Go 或使用: sudo $0"
-	fi
-	install_go_linux
+	case "$current_version" in
+	1.2[2-9]*|.*) ;;
+	*)  # 版本不足 1.22 或未安装
+		log "Installing Go..."
+		if [[ "${FORCE_GO:-}" == "1" || ! -x "$(command -v go)" ]]; then
+			local go_tgz="https://go.dev/dl/${version}.linux-amd64.tar.gz"
+			log "Downloading ${go_tgz}..."
+			wget -O /tmp/go.tgz "${go_tgz}" || die "下载失败: ${go_tgz}"
+			rm -rf /usr/local/go
+			tar -C /usr/local -xzf /tmp/go.tgz
+			rm -f /tmp/go.tgz
+			export PATH="/usr/local/go/bin:$PATH"
+		else
+			log "Found Go $current_version, but recommended ${version}+."
+			log "For compatibility, using the installed Go with --build-only:"
+			log "  sudo install -m 0755 \"$ROOT/SimpleTask\" \"$PREFIX/SimpleTask\""
+			return 1  # 不满足版本要求，采用仅编译模式
+		fi
+		;;
+	esac
+	return 0
 }
 
-build_binary() {
-	cd "$ROOT"
-	export PATH="/usr/local/go/bin:${PATH}"
-	ensure_go
-	log "Building tasktracker ..."
-	go build -o tasktracker .
-	log "Built: $ROOT/tasktracker"
+build_if_needed() {
+	if [[ "${NO_BUILD:-}" != "1" && ! -f "$ROOT/SimpleTask" ]]; then
+		if [[ "$current_version" =~ 1.2[2-9]*|. ]]; then
+			log "Building SimpleTask..."
+			go build -o SimpleTask . || die "编译失败"
+		else
+			die "Go 版本不足 1.22，请先安装 Go 1.22.2+"
+		fi
+	fi
 }
 
-install_system_files() {
+install_systemd() {
 	local svc
-	svc="/etc/systemd/system/tasktracker.service"
+	svc="/etc/systemd/system/SimpleTask.service"
 	install -d -m 0755 "$PREFIX"
 	install -d -m 0755 "$PREFIX/data"
-	install -m 0755 "$ROOT/tasktracker" "$PREFIX/tasktracker"
-	if ! id -u tasktracker >/dev/null 2>&1; then
-		useradd --system --home-dir "$PREFIX" --shell /usr/sbin/nologin tasktracker
+	install -m 0755 "$ROOT/SimpleTask" "$PREFIX/SimpleTask"
+	if ! id -u SimpleTask >/dev/null 2>&1; then
+		log "Creating user SimpleTask..."
+		useradd --system --home-dir "$PREFIX" --shell /usr/sbin/nologin SimpleTask
 	fi
-	chown -R tasktracker:tasktracker "$PREFIX"
+	chown -R SimpleTask:SimpleTask "$PREFIX"
 
 	cat >"$svc" <<EOF
 [Unit]
@@ -157,140 +109,143 @@ After=network.target
 
 [Service]
 Type=simple
-User=tasktracker
-Group=tasktracker
+User=SimpleTask
+Group=SimpleTask
 WorkingDirectory=$PREFIX
-Environment=DATA_DIR=$PREFIX/data
 Environment=LISTEN_ADDR=$LISTEN_ADDR
-ExecStart=$PREFIX/tasktracker
+ExecStart=$PREFIX/SimpleTask
 Restart=on-failure
 
 [Install]
 WantedBy=multi-user.target
 EOF
-
+	chmod 0644 "$svc"
 	systemctl daemon-reload
-	systemctl enable --now tasktracker
-	log "systemd: enabled and started tasktracker (LISTEN_ADDR=$LISTEN_ADDR)"
-	log "Check: systemctl status tasktracker"
+	systemctl enable --now SimpleTask
+	log "systemd: enabled and started SimpleTask (LISTEN_ADDR=$LISTEN_ADDR)"
+	log "Check: systemctl status SimpleTask"
 }
 
-# 从 LISTEN_ADDR 解析端口（如 :8088、127.0.0.1:8088）
-listen_port_from_addr() {
-	local a="${1:-}"
-	local p
-	if [[ "$a" =~ :([0-9]+)$ ]]; then
-		p="${BASH_REMATCH[1]}"
-		printf '%s' "$p"
-		return 0
-	fi
-	printf '%s' "8088"
-}
-
-# 使用 Nginx 时应用只应绑定本机回环，避免对外直接暴露应用端口
-apply_nginx_listen_addr() {
-	local port
-	port="$(listen_port_from_addr "$LISTEN_ADDR")"
-	LISTEN_ADDR="127.0.0.1:${port}"
-}
-
-install_nginx_site() {
+install_nginx() {
 	local port tmpl avail enabled
 	port="$(listen_port_from_addr "$LISTEN_ADDR")"
-	tmpl="$ROOT/deploy/tasktracker.nginx.conf"
+	tmpl="$ROOT/deploy/SimpleTask.nginx.conf"
 	[[ -f "$tmpl" ]] || die "missing nginx template: $tmpl"
 	command -v nginx >/dev/null 2>&1 || die "nginx not installed (apt install nginx)"
-	avail="/etc/nginx/sites-available/tasktracker"
-	enabled="/etc/nginx/sites-enabled/tasktracker"
+	avail="/etc/nginx/sites-available/SimpleTask"
+	enabled="/etc/nginx/sites-enabled/SimpleTask"
 	sed "s/@PORT@/${port}/g" "$tmpl" >"$avail"
 	chmod 0644 "$avail"
 	ln -sf "$avail" "$enabled"
-	# 默认站点与 tasktracker 同时 listen 80 会冲突，禁用 default
+	# 默认站点与 SimpleTask 同时 listen 80 会冲突，禁用 default
 	if [[ -e /etc/nginx/sites-enabled/default ]]; then
 		rm -f /etc/nginx/sites-enabled/default
-		log "nginx: disabled /etc/nginx/sites-enabled/default (conflicted with tasktracker on :80)"
+		log "nginx: disabled /etc/nginx/sites-enabled/default (conflicted with SimpleTask on :80)"
 	fi
-	nginx -t
-	systemctl enable --now nginx
-	systemctl reload nginx
-	log "nginx: reverse proxy http://0.0.0.0:80 -> http://127.0.0.1:${port}"
-	log "Browse: http://$(hostname -I 2>/dev/null | awk '{print $1}')/  (or your server IP)"
-	log "If using ufw: sudo ufw allow 'Nginx HTTP' && sudo ufw status"
-	log "Optional: sudo ufw delete allow 8088/tcp   # if you previously exposed the app port"
-	log "HTTPS: sudo \"$ROOT/enable-ssl.sh\" <your.domain>   # DNS 指向本机后执行；或见 deploy/tasktracker.nginx-https.example.conf"
+	nginx -t && systemctl reload nginx
+	log "nginx: configured. Access SimpleTask via http://yourdomain/"
+	log "HTTPS: sudo \"$ROOT/enable-ssl.sh\" <your.domain>   # DNS 指向本机后执行；或见 deploy/SimpleTask.nginx-https.example.conf"
 }
 
-deploy_as_root() {
-	build_binary
-	if [[ "$WITH_SYSTEMD" != true ]]; then
-		[[ "$WITH_NGINX" != true ]] || die "--with-nginx requires systemd (omit --no-systemd)"
-		install -d -m 0755 "$PREFIX"
-		install -d -m 0755 "$PREFIX/data"
-		install -m 0755 "$ROOT/tasktracker" "$PREFIX/tasktracker"
-		if ! id -u tasktracker >/dev/null 2>&1; then
-			useradd --system --home-dir "$PREFIX" --shell /usr/sbin/nologin tasktracker
-		fi
-		chown -R tasktracker:tasktracker "$PREFIX"
-		log "Installed to $PREFIX (no systemd). Run: sudo -u tasktracker DATA_DIR=$PREFIX/data $PREFIX/tasktracker"
-		return 0
-	fi
-	if [[ "$WITH_NGINX" == true ]]; then
-		apply_nginx_listen_addr
-	fi
-	install_system_files
-	if [[ "$WITH_NGINX" == true ]]; then
-		apt-get update -qq
-		DEBIAN_FRONTEND=noninteractive apt-get install -y nginx
-		install_nginx_site
+listen_port_from_addr() {
+	local addr="$1"
+	if [[ "$addr" =~ :([0-9]+)$ ]]; then
+		printf '%s' "${BASH_REMATCH[1]}"
+	else
+		printf '%s' "8088"  # default
 	fi
 }
 
 main() {
+	local DOMAIN="" EMAIL="${CERTBOT_EMAIL:-}"
 	while [[ $# -gt 0 ]]; do
 		case "$1" in
-		--build-only) BUILD_ONLY=true ;;
-		--prefix)
-			PREFIX="${2:-}"
-			[[ -n "$PREFIX" ]] || die "--prefix needs an argument"
-			shift
-			;;
-		--listen)
-			LISTEN_ADDR="${2:-}"
-			[[ -n "$LISTEN_ADDR" ]] || die "--listen needs an argument"
-			shift
-			;;
-		--no-systemd) WITH_SYSTEMD=false ;;
-		--with-nginx) WITH_NGINX=true ;;
-		--go-version)
-			GO_VERSION="${2:-}"
-			[[ -n "$GO_VERSION" ]] || die "--go-version needs an argument"
-			shift
-			;;
 		-h | --help)
 			usage
 			exit 0
 			;;
+		--prefix)
+			[[ -n "${2:-}" ]] || die "--prefix 需要参数"
+			PREFIX="$2"
+			shift 2
+			;;
+		--listen)
+			[[ -n "${2:-}" ]] || die "--listen 需要参数"
+			LISTEN_ADDR="$2"
+			shift 2
+			;;
+		--with-nginx)
+			WITH_NGINX="1"
+			shift
+			;;
+		--no-systemd)
+			NO_SYSTEMD="1"
+			shift
+			;;
+		--build-only)
+			BUILD_ONLY="1"
+			shift
+			;;
 		*)
-			die "unknown option: $1 (try --help)"
+			die "未知选项: $1"
 			;;
 		esac
-		shift
 	done
 
-	if [[ "$BUILD_ONLY" == true ]]; then
-		build_binary
+	ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+	[[ -f "$ROOT/go.mod" ]] || die "请在仓库根目录执行（缺少 go.mod）"
+	[[ "$(uname -s)" == Linux ]] || die "root 完整安装仅支持 Linux；当前: $(uname -s)。请手动安装 Go 后执行: go build -o SimpleTask ."
+
+	export PATH="/usr/local/go/bin:$PATH"  # 确保优先使用系统安装的 Go
+
+	if [[ "${BUILD_ONLY:-}" == "1" ]]; then
+		ensure_go
+		build_if_needed
+		log "Built: $ROOT/SimpleTask"
 		exit 0
 	fi
 
 	if [[ "${EUID:-0}" -ne 0 ]]; then
-		build_binary
-		exit 0
+		log "非 root 执行将仅编译、不创建系统服务/用户/配置"
+		BUILD_ONLY=1
 	fi
 
-	[[ "$(uname -s)" == Linux ]] || die "root 完整安装仅支持 Linux；当前: $(uname -s)。请手动安装 Go 后执行: go build -o tasktracker ."
+	# 安装依赖（非 root 仅跳过）
+	apt-get update -qq
+	apt-get install -y git wget ca-certificates systemd
 
-	assert_ubuntu_24
-	deploy_as_root
+	# Go 编译
+	ensure_go
+	build_if_needed
+
+	if [[ ! -f "$ROOT/SimpleTask" ]]; then
+		die "编译失败：未生成 SimpleTask"
+	fi
+
+	# 仅编译模式
+	if [[ "${BUILD_ONLY:-}" == "1" ]]; then
+		install -d -m 0755 "$PREFIX"
+		install -m 0755 "$ROOT/SimpleTask" "$PREFIX/SimpleTask"
+		if ! id -u SimpleTask >/dev/null 2>&1; then
+			useradd --system --home-dir "$PREFIX" --shell /usr/sbin/nologin SimpleTask
+		fi
+		chown -R SimpleTask:SimpleTask "$PREFIX"
+		log "已安装到 $PREFIX/SimpleTask（no systemd）。运行: sudo -u SimpleTask DATA_DIR=$PREFIX/data $PREFIX/SimpleTask"
+		return 0
+	fi
+
+	# 系统服务模式
+	install_systemd
+	if [[ "${WITH_NGINX:-}" == "1" ]]; then
+		install_nginx
+	fi
+
+	log "SimpleTask 安装完成！"
+	log "配置文件位置："
+	log "  二进制: $PREFIX/SimpleTask"
+	log "  systemd: /etc/systemd/system/SimpleTask.service"
+	log "  数据: $PREFIX/data/"
+	log "访问：http://localhost${LISTEN_ADDR}"
 }
 
 main "$@"
