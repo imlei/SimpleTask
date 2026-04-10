@@ -304,6 +304,9 @@ func isPublicPath(c *Config, path string, r *http.Request) bool {
 	if c.Disabled {
 		return true
 	}
+	if path == "/api/version" && r.Method == http.MethodGet {
+		return true
+	}
 	if c.NeedsSetup() {
 		switch path {
 		case "/setup.html", "/setup", "/setup.js", "/style.css":
