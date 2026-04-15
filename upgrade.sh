@@ -337,7 +337,11 @@ NGINX
 	ln -sf "$avail" "$enabled"
 
 	nginx -t || die "Nginx 配置检查失败，请查看: $avail"
-	systemctl reload nginx
+	if systemctl is-active --quiet nginx; then
+		systemctl reload nginx
+	else
+		systemctl enable --now nginx
+	fi
 	ok "Nginx HTTP 配置已更新 (域名: ${server_name})"
 }
 
