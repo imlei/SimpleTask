@@ -31,11 +31,13 @@
       </header>
 
       <aside class="sidebar">
-        <a href="dashboard.html" class="nav-item active"><span>⌂</span> Home</a>
+        <a href="dashboard.html" class="nav-item active" id="nav-dashboard"><span>⌂</span> Home</a>
         <a href="run-payroll.html" class="nav-item"><span>▤</span> Run Payroll</a>
         <a href="#" class="nav-item" onclick="return false"><span>☰</span> Actions</a>
         <a href="reports/payrun.html" class="nav-item"><span>▦</span> Reports</a>
-        <a href="employees.html" class="nav-item"><span>👤</span> Employees</a>
+        <a href="employees.html" class="nav-item" id="nav-employees"><span>👤</span> Employees</a>
+        <span style="flex:1"></span>
+        <a href="index.html" class="nav-item muted"><span>←</span> All Companies</a>
       </aside>
 
       <main class="main">
@@ -90,11 +92,32 @@
             <a href="run-payroll.html" class="btn btn-primary" style="text-decoration: none; display: inline-flex"
               >Run Payroll →</a
             >
-            <a href="index.html" class="btn" style="text-decoration: none; margin-left: 0.5rem">Multi-company list</a>
+            <a href="employees.html" class="btn" id="btn-employees" style="text-decoration: none; margin-left: 0.5rem">Employees →</a>
             <a href="reports/payrun.html" class="btn" style="text-decoration: none; margin-left: 0.5rem">Reports →</a>
           </p>
         </div>
       </main>
+      <script>
+        (function() {
+          var companyId = new URLSearchParams(location.search).get('company') || '';
+          function withC(href) { return companyId ? href + '?company=' + encodeURIComponent(companyId) : href; }
+          var empLinks = ['nav-employees', 'btn-employees'];
+          empLinks.forEach(function(id) {
+            var el = document.getElementById(id);
+            if (el) el.href = withC('employees.html');
+          });
+          if (companyId) {
+            // Show company name
+            fetch('/api/payroll/companies/' + encodeURIComponent(companyId), { credentials: 'same-origin' })
+              .then(function(r) { return r.ok ? r.json() : null; })
+              .then(function(c) {
+                if (!c) return;
+                var brand = document.querySelector('.brand span:last-of-type');
+                if (brand) brand.textContent = c.name;
+              }).catch(function() {});
+          }
+        })();
+      </script>
     </div>
   </body>
 </html>

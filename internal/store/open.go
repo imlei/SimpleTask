@@ -200,6 +200,10 @@ func Open(dir string) (*sql.DB, error) {
 		_ = db.Close()
 		return nil, err
 	}
+	if err := ensurePayrollEmployeesTable(db); err != nil {
+		_ = db.Close()
+		return nil, err
+	}
 	return db, nil
 }
 
@@ -892,5 +896,39 @@ CREATE TABLE IF NOT EXISTS payroll_companies (
   created_at TEXT NOT NULL DEFAULT '',
   updated_at TEXT NOT NULL DEFAULT ''
 );`)
+	return err
+}
+
+func ensurePayrollEmployeesTable(db *sql.DB) error {
+	_, err := db.Exec(`
+CREATE TABLE IF NOT EXISTS payroll_employees (
+  id TEXT PRIMARY KEY,
+  company_id TEXT NOT NULL DEFAULT '',
+  legal_name TEXT NOT NULL DEFAULT '',
+  nickname TEXT NOT NULL DEFAULT '',
+  email TEXT NOT NULL DEFAULT '',
+  mobile TEXT NOT NULL DEFAULT '',
+  member_type INTEGER NOT NULL DEFAULT 0,
+  position TEXT NOT NULL DEFAULT '',
+  status TEXT NOT NULL DEFAULT 'active',
+  province TEXT NOT NULL DEFAULT '',
+  sin_encrypted TEXT NOT NULL DEFAULT '',
+  date_of_birth TEXT NOT NULL DEFAULT '',
+  hire_date TEXT NOT NULL DEFAULT '',
+  salary_type INTEGER NOT NULL DEFAULT 1,
+  pay_rate REAL NOT NULL DEFAULT 0,
+  pay_rate_unit TEXT NOT NULL DEFAULT 'Hourly',
+  pays_per_year INTEGER NOT NULL DEFAULT 26,
+  pay_frequency TEXT NOT NULL DEFAULT 'biweekly',
+  hours_per_week REAL NOT NULL DEFAULT 0,
+  td1_federal REAL NOT NULL DEFAULT 16129,
+  td1_provincial REAL NOT NULL DEFAULT 0,
+  paid_ytd_other_payroll INTEGER NOT NULL DEFAULT 0,
+  auto_vacation INTEGER NOT NULL DEFAULT 0,
+  created_at TEXT NOT NULL DEFAULT '',
+  updated_at TEXT NOT NULL DEFAULT ''
+);
+CREATE INDEX IF NOT EXISTS idx_payroll_employees_company ON payroll_employees (company_id);
+`)
 	return err
 }

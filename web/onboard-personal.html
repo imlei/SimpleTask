@@ -71,20 +71,20 @@
           <div class="pe-field">
             <label for="province">Province of employment</label>
             <select class="pe-input-line" id="province" style="border: 1px solid var(--pe-border); border-radius: 4px; padding: 0.4rem">
-              <option value="0">Alberta</option>
-              <option value="1" selected>British Columbia</option>
-              <option value="2">Manitoba</option>
-              <option value="3">New Brunswick</option>
-              <option value="4">Newfoundland and Labrador</option>
-              <option value="5">Nova Scotia</option>
-              <option value="6">Northwest Territories</option>
-              <option value="7">Nunavut</option>
-              <option value="8">Ontario</option>
-              <option value="9">Prince Edward Island</option>
-              <option value="10">Quebec</option>
-              <option value="11">Saskatchewan</option>
-              <option value="12">Yukon</option>
-              <option value="13">Outside Canada</option>
+              <option value="AB">Alberta</option>
+              <option value="BC" selected>British Columbia</option>
+              <option value="MB">Manitoba</option>
+              <option value="NB">New Brunswick</option>
+              <option value="NL">Newfoundland and Labrador</option>
+              <option value="NS">Nova Scotia</option>
+              <option value="NT">Northwest Territories</option>
+              <option value="NU">Nunavut</option>
+              <option value="ON">Ontario</option>
+              <option value="PE">Prince Edward Island</option>
+              <option value="QC">Quebec — QPP/QPIP applies</option>
+              <option value="SK">Saskatchewan</option>
+              <option value="YT">Yukon</option>
+              <option value="">Outside Canada</option>
             </select>
           </div>
           <div class="pe-field">
@@ -107,14 +107,14 @@
       (function () {
         var d = pwOnboard.load();
         if (d.hireDate) document.getElementById("hireDate").value = d.hireDate;
-        if (d.province !== undefined) document.getElementById("province").value = String(d.province);
+        if (d.province) document.getElementById("province").value = d.province;
         if (d.sin) document.getElementById("sin").value = d.sin;
         if (d.dob) document.getElementById("dob").value = d.dob;
 
         document.getElementById("btn-continue").addEventListener("click", function () {
           pwOnboard.save({
             hireDate: document.getElementById("hireDate").value,
-            province: parseInt(document.getElementById("province").value, 10),
+            province: document.getElementById("province").value,  // 2-letter code
             sin: document.getElementById("sin").value.replace(/\D/g, ""),
             dob: document.getElementById("dob").value,
           });

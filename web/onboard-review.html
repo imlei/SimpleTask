@@ -97,47 +97,51 @@
           var mt = typeof d.memberType === "number" ? d.memberType : 0;
           var st = typeof d.salaryType === "number" && !isNaN(d.salaryType) ? d.salaryType : 1;
           var body = {
-            legalName: d.legalName || "",
-            nickname: d.nickname || "",
-            email: d.email || "",
-            mobile: d.mobile || "",
-            memberType: mt,
-            position: "",
+            companyId:    d.companyId || "",
+            legalName:    d.legalName || "",
+            nickname:     d.nickname || "",
+            email:        d.email || "",
+            mobile:       d.mobile || "",
+            memberType:   mt,
+            position:     "",
             payFrequency: d.payFrequency || "",
-            status: "active",
-            category: 0,
-            salaryType: st,
-            province: typeof d.province === "number" ? d.province : 1,
-            payRate: d.payRate || 0,
-            payRateUnit: d.payRateUnit || "",
-            paysPerYear: d.paysPerYear || 0,
+            status:       "active",
+            salaryType:   st,
+            province:     d.province || "BC",
+            payRate:      d.payRate || 0,
+            payRateUnit:  d.payRateUnit || "",
+            paysPerYear:  d.paysPerYear || 0,
             hoursPerWeek: d.hoursPerWeek || 0,
-            sin: d.sin || "",
-            hireDate: iso(d.hireDate) || new Date().toISOString(),
+            sin:          d.sin || "",
+            hireDate:     d.hireDate || new Date().toISOString().slice(0,10),
           };
-          if (d.dob) body.dateOfBirth = iso(d.dob);
+          if (d.dob) body.dateOfBirth = d.dob;
           if (typeof d.paidYTDThroughOtherPayroll === "boolean")
-            body.paidYTDThroughOtherPayroll = d.paidYTDThroughOtherPayroll;
+            body.paidYtdOtherPayroll = d.paidYTDThroughOtherPayroll;
           if (typeof d.autoVacation === "boolean") body.autoVacation = d.autoVacation;
 
-          fetch("/api/employees", {
+          if (!body.companyId) {
+            alert("No company selected. Please start the wizard from the Employees page of a specific company.");
+            return;
+          }
+
+          fetch("/api/payroll/employees", {
             method: "POST",
+            credentials: "same-origin",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(body),
           })
             .then(function (r) {
-              if (!r.ok) return r.text().then(function (t) {
-                throw new Error(t || r.statusText);
-              });
+              if (!r.ok) return r.text().then(function (t) { throw new Error(t || r.statusText); });
               return r.json();
             })
             .then(function (emp) {
               pwOnboard.clear();
-              alert("Employee saved · ID " + emp.id);
-              location.href = "employees.html";
+              alert("Employee saved · ID " + emp.id + (emp.sinMasked ? "\nSIN " + emp.sinMasked : ""));
+              location.href = "employees.html?company=" + encodeURIComponent(emp.companyId);
             })
             .catch(function (err) {
-              alert("Could not save (run payroll-web from repo root): " + err.message);
+              alert("Could not save: " + err.message);
             });
         });
       })();

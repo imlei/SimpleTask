@@ -151,6 +151,67 @@ type PayrollCompany struct {
 	UpdatedAt      string `json:"updatedAt,omitempty"`
 }
 
+// MemberType 员工/承包商类型
+type MemberType int
+
+const (
+	MemberTypeEmployee             MemberType = 0 // T4 — full source deductions
+	MemberTypeContractor           MemberType = 1 // T4A — no source deductions
+	MemberTypeConstructionContractor MemberType = 2 // T5018
+)
+
+// SalaryType 薪资类型
+type SalaryType int
+
+const (
+	SalaryTypeSalaried  SalaryType = 0
+	SalaryTypeTimeBased SalaryType = 1
+)
+
+// PayrollEmployee Payroll 模块中的员工/承包商（隶属于某家公司）
+// CRA T4001 §8：SIN 必须在入职 3 天内收集，加密存储
+type PayrollEmployee struct {
+	ID          string `json:"id"`
+	CompanyID   string `json:"companyId"`
+
+	// Personal / contact
+	LegalName string `json:"legalName"`
+	Nickname  string `json:"nickname"`
+	Email     string `json:"email"`
+	Mobile    string `json:"mobile"`
+	Position  string `json:"position"`
+
+	// CRA required (T4001 §8)
+	Province    string `json:"province"`    // 2-letter code: BC / ON / QC …
+	SIN         string `json:"sin,omitempty"`    // write-only input, never returned after save
+	SINMasked   string `json:"sinMasked,omitempty"` // ***-***-XXX, read-only
+	DateOfBirth string `json:"dateOfBirth"` // YYYY-MM-DD
+	HireDate    string `json:"hireDate"`    // YYYY-MM-DD
+
+	// Employment classification
+	MemberType int    `json:"memberType"` // 0=Employee 1=Contractor 2=Construction
+	SalaryType int    `json:"salaryType"` // 0=Salaried 1=Time-Based
+	Status     string `json:"status"`     // active | terminated
+
+	// Payroll setup
+	PayRate      float64 `json:"payRate"`
+	PayRateUnit  string  `json:"payRateUnit"`  // Hourly | Annually | Monthly
+	PaysPerYear  int     `json:"paysPerYear"`  // 52 | 26 | 24 | 12
+	PayFrequency string  `json:"payFrequency"` // Weekly | Bi-weekly | Semi-Monthly | Monthly
+	HoursPerWeek float64 `json:"hoursPerWeek"`
+
+	// TD1 tax credits (T4001 §4.3)
+	TD1Federal    float64 `json:"td1Federal"`    // default 16129 (2025 basic personal amount)
+	TD1Provincial float64 `json:"td1Provincial"` // province-specific
+
+	// Flags
+	PaidYTDOtherPayroll bool `json:"paidYtdOtherPayroll"`
+	AutoVacation        bool `json:"autoVacation"`
+
+	CreatedAt string `json:"createdAt,omitempty"`
+	UpdatedAt string `json:"updatedAt,omitempty"`
+}
+
 // BankAccount 支票打印 / MICR 银行账户（支持多账户）
 type BankAccount struct {
 	ID                   string `json:"id"`

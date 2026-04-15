@@ -778,4 +778,6 @@ func Register(mux *http.ServeMux, s *Server) {
 	mux.HandleFunc("/api/exchange-rate-codes", s.handleExchangeRateCodes)
 	mux.HandleFunc("/api/payroll/companies/", s.handlePayrollCompanyByID)
 	mux.HandleFunc("/api/payroll/companies", s.handlePayrollCompanies)
+	mux.HandleFunc("/api/payroll/employees/", s.handlePayrollEmployeeByID)
+	mux.HandleFunc("/api/payroll/employees", s.handlePayrollEmployees)
 }

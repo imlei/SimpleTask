@@ -104,12 +104,23 @@
     </div>
     <script src="js/onboard.js"></script>
     <script>
-      document.getElementById("btn-continue").addEventListener("click", function () {
-        var v = document.querySelector('input[name="memberType"]:checked').value;
-        var map = { employee: 0, contractor: 1, construction_contractor: 2 };
-        pwOnboard.save({ memberType: map[v], memberTypeKey: v });
-        location.href = "onboard-setup.html";
-      });
+      // Capture company context from URL and persist through wizard
+      (function() {
+        var companyId = new URLSearchParams(location.search).get('company') || '';
+        if (companyId) pwOnboard.save({ companyId: companyId });
+
+        // Update back link
+        var backLink = document.querySelector('.pe-wizard-sub .pe-back, a[href="employees.html"]');
+        if (backLink && companyId) backLink.href = 'employees.html?company=' + encodeURIComponent(companyId);
+
+        document.getElementById("btn-continue").addEventListener("click", function () {
+          var v = document.querySelector('input[name="memberType"]:checked').value;
+          var map = { employee: 0, contractor: 1, construction_contractor: 2 };
+          var cid = pwOnboard.load().companyId || companyId;
+          pwOnboard.save({ memberType: map[v], memberTypeKey: v, companyId: cid });
+          location.href = "onboard-setup.html";
+        });
+      })();
     </script>
   </body>
 </html>

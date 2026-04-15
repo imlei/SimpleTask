@@ -20,12 +20,9 @@
           <a href="run-payroll.html" class="pe-topbar-nav-item">Payroll</a>
         </nav>
         <div class="pe-topbar-right">
-          <span class="pe-badge-admin">Admin</span>
-          <span>RORO HOLDING LTD</span>
-          <button type="button" class="pe-icon-btn" title="Support">📞</button>
-          <button type="button" class="pe-icon-btn" title="Notifications">🔔</button>
+          <span id="company-label" style="font-size:0.8rem;opacity:0.75"></span>
           <button type="button" class="pe-icon-btn" title="Help">?</button>
-          <div class="pe-avatar">LH</div>
+          <div class="pe-avatar" id="topbar-avatar">—</div>
         </div>
       </header>
 
@@ -33,36 +30,32 @@
         <div class="pe-strip-tabs">
           <span class="pe-strip-tab active">Team</span>
         </div>
-        <span style="opacity: 0.85">Employee list</span>
+        <span style="opacity:0.85">Employee list</span>
       </div>
 
       <aside class="pe-sidebar">
-        <a class="pe-nav" href="dashboard.html"><span>⌂</span> Home</a>
+        <a class="pe-nav" id="nav-home" href="dashboard.html"><span>⌂</span> Home</a>
         <a class="pe-nav" href="run-payroll.html"><span>▤</span> Run payroll</a>
-        <a class="pe-nav" href="#"><span>☰</span> Actions</a>
         <a class="pe-nav" href="reports/payrun.html"><span>▦</span> Reports</a>
-        <a class="pe-nav active" href="employees.html"><span>👤</span> Employees</a>
+        <a class="pe-nav active" href="#"><span>👤</span> Employees</a>
         <span class="pe-nav spacer"></span>
-        <a class="pe-nav" href="#"><span>⚙</span> Settings</a>
+        <a class="pe-nav" href="index.html"><span>⌂</span> All Companies</a>
       </aside>
 
       <main class="pe-main">
         <div class="pe-page-head">
           <h1 class="pe-page-title">Team</h1>
           <div class="pe-toolbar">
-            <button type="button" class="pe-icon-btn" title="Search">🔍</button>
-            <a class="pe-btn pe-btn-primary" href="onboard-type.html">Add member +</a>
+            <select id="status-filter" style="font-size:0.82rem;padding:0.25rem 0.5rem;border-radius:4px">
+              <option value="active">Active</option>
+              <option value="all">All</option>
+            </select>
+            <a class="pe-btn pe-btn-primary" id="btn-add" href="#">Add member +</a>
           </div>
         </div>
 
-        <div class="pe-banner" id="onboard-banner">
-          There are <strong id="pending-count">0</strong> employee(s) pending to be onboarded.
-          <a href="onboard-type.html">Click here to complete the onboarding.</a>
-        </div>
-
-        <div class="pe-filter-row">
-          <span class="muted" style="color: var(--pe-text-secondary)">Status:</span>
-          <span class="pe-chip">Active <strong>×</strong></span>
+        <div id="onboard-banner" class="pe-banner" style="display:none">
+          No employees yet. <a id="banner-add" href="#">Click here to add the first one.</a>
         </div>
 
         <div class="pe-table-wrap">
@@ -71,54 +64,146 @@
               <tr>
                 <th>Name</th>
                 <th>Position</th>
-                <th>Pay frequency</th>
+                <th>Pay Frequency</th>
+                <th>Province</th>
                 <th>Status</th>
                 <th>Type</th>
                 <th></th>
               </tr>
             </thead>
             <tbody id="employee-rows">
-              <tr>
-                <td>
-                  <div class="pe-name-cell">
-                    <span class="pe-avatar-sm">OH</span>
-                    <div class="pe-name-block">
-                      <span class="name">OU, HONGCHENG</span>
-                      <span class="id">000002</span>
-                    </div>
-                  </div>
-                </td>
-                <td></td>
-                <td>Semi-Monthly</td>
-                <td><span class="pe-dot-active">Active</span></td>
-                <td class="pe-type-cell">Time-Based<br />PERMANENT</td>
-                <td><button type="button" class="pe-kebab" aria-label="Actions">⋮</button></td>
-              </tr>
-              <tr>
-                <td>
-                  <div class="pe-name-cell">
-                    <span class="pe-avatar-sm">SJ</span>
-                    <div class="pe-name-block">
-                      <span class="name">SAWAENGPON, JIRAYU</span>
-                      <span class="id">000016</span>
-                    </div>
-                  </div>
-                </td>
-                <td></td>
-                <td>Semi-Monthly</td>
-                <td><span class="pe-dot-active">Active</span></td>
-                <td class="pe-type-cell">Time-Based<br />PERMANENT</td>
-                <td><button type="button" class="pe-kebab" aria-label="Actions">⋮</button></td>
-              </tr>
+              <tr><td colspan="7" style="text-align:center;padding:2rem;opacity:0.4">Loading…</td></tr>
             </tbody>
           </table>
           <div class="pe-pagination">
-            <span>← 1 / 1 →</span>
-            <span>Per page <select><option>10</option></select></span>
+            <span id="emp-count"></span>
           </div>
         </div>
       </main>
     </div>
-    <script src="js/employees-list.js"></script>
+
+    <script>
+      var companyId = new URLSearchParams(location.search).get('company') || '';
+
+      // Point nav links to company-scoped URLs
+      function withCompany(href) {
+        return companyId ? href + '?company=' + encodeURIComponent(companyId) : href;
+      }
+      document.getElementById('nav-home').href = withCompany('dashboard.html');
+      document.getElementById('btn-add').href  = withCompany('onboard-type.html');
+      document.getElementById('banner-add').href = withCompany('onboard-type.html');
+
+      var MEMBER_LABEL = ['Employee', 'Contractor', 'Construction'];
+      var SALARY_LABEL = ['Salaried', 'Time-Based'];
+
+      function escHtml(s) {
+        var d = document.createElement('div');
+        d.textContent = String(s ?? '');
+        return d.innerHTML;
+      }
+
+      function initials(name) {
+        if (!name || !name.trim()) return '?';
+        var parts = name.split(/[\s,]+/).filter(Boolean);
+        return parts.length >= 2
+          ? (parts[0][0] + parts[parts.length - 1][0]).toUpperCase()
+          : name.slice(0, 2).toUpperCase();
+      }
+
+      function renderRows(list) {
+        var tbody = document.getElementById('employee-rows');
+        document.getElementById('emp-count').textContent =
+          list.length + ' member' + (list.length === 1 ? '' : 's');
+
+        if (list.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:2rem;opacity:0.4">No team members found.</td></tr>';
+          document.getElementById('onboard-banner').style.display = 'block';
+          return;
+        }
+        document.getElementById('onboard-banner').style.display = 'none';
+
+        tbody.innerHTML = list.map(function(e) {
+          var dot = e.status === 'active'
+            ? '<span class="pe-dot-active">Active</span>'
+            : '<span style="color:#e05">Terminated</span>';
+          return '<tr>' +
+            '<td><div class="pe-name-cell">' +
+              '<span class="pe-avatar-sm">' + escHtml(initials(e.legalName)) + '</span>' +
+              '<div class="pe-name-block">' +
+                '<span class="name">' + escHtml(e.legalName) + '</span>' +
+                '<span class="id">' + escHtml(e.id) +
+                  (e.sinMasked ? ' · SIN ' + escHtml(e.sinMasked) : '') +
+                '</span>' +
+              '</div>' +
+            '</div></td>' +
+            '<td>' + escHtml(e.position || '—') + '</td>' +
+            '<td>' + escHtml(e.payFrequency || '—') + '</td>' +
+            '<td>' + escHtml(e.province || '—') + '</td>' +
+            '<td>' + dot + '</td>' +
+            '<td>' + escHtml(SALARY_LABEL[e.salaryType] || '—') + '<br>' +
+              escHtml(MEMBER_LABEL[e.memberType] || '—') + '</td>' +
+            '<td>' +
+              '<button type="button" class="pe-kebab btn-terminate" ' +
+                'data-id="' + escHtml(e.id) + '" ' +
+                'data-name="' + escHtml(e.legalName) + '" ' +
+                'data-status="' + escHtml(e.status) + '" ' +
+                'title="Actions">⋮</button>' +
+            '</td>' +
+            '</tr>';
+        }).join('');
+
+        tbody.querySelectorAll('.btn-terminate').forEach(function(btn) {
+          btn.addEventListener('click', function() {
+            if (btn.dataset.status === 'terminated') return;
+            if (!confirm('Terminate "' + btn.dataset.name + '"?\n\nThis sets their status to Terminated. Records are retained per CRA 6-year requirement.')) return;
+            fetch('/api/payroll/employees/' + btn.dataset.id, {
+              method: 'DELETE', credentials: 'same-origin'
+            }).then(function(r) {
+              if (!r.ok) throw new Error(r.statusText);
+              loadEmployees();
+            }).catch(function(err) { alert('Error: ' + err.message); });
+          });
+        });
+      }
+
+      function loadEmployees() {
+        if (!companyId) {
+          document.getElementById('employee-rows').innerHTML =
+            '<tr><td colspan="7" style="text-align:center;padding:2rem;color:#e05">No company selected. <a href="index.html">Go to Companies →</a></td></tr>';
+          return;
+        }
+        var status = document.getElementById('status-filter').value;
+        fetch('/api/payroll/employees?company_id=' + encodeURIComponent(companyId) + '&status=' + status, {
+          credentials: 'same-origin'
+        })
+          .then(function(r) { if (!r.ok) throw new Error(r.statusText); return r.json(); })
+          .then(function(list) { renderRows(list || []); })
+          .catch(function(err) {
+            document.getElementById('employee-rows').innerHTML =
+              '<tr><td colspan="7" style="text-align:center;padding:2rem;color:#e05">Failed to load: ' + escHtml(err.message) + '</td></tr>';
+          });
+      }
+
+      // Set company label and load company name
+      if (companyId) {
+        fetch('/api/payroll/companies/' + encodeURIComponent(companyId), { credentials: 'same-origin' })
+          .then(function(r) { return r.ok ? r.json() : null; })
+          .then(function(c) {
+            if (c) document.getElementById('company-label').textContent = c.name;
+          }).catch(function() {});
+      }
+
+      // Auth
+      fetch('/api/me', { credentials: 'same-origin' })
+        .then(function(r) { return r.json(); })
+        .then(function(me) {
+          if (!me.authenticated) { window.location.href = '/'; return; }
+          var av = document.getElementById('topbar-avatar');
+          if (av && me.user) av.textContent = me.user.slice(0, 2).toUpperCase();
+        }).catch(function() {});
+
+      document.getElementById('status-filter').addEventListener('change', loadEmployees);
+      loadEmployees();
+    </script>
   </body>
 </html>
