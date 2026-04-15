@@ -294,8 +294,18 @@ upgrade_nginx() {
 		systemctl enable --now nginx
 	fi
 
+	# 清理 sites-enabled 中所有失效的软链接（指向不存在文件），避免 nginx -t 报错
+	local broken
+	for broken in /etc/nginx/sites-enabled/*; do
+		# 是符号链接但目标不存在
+		if [[ -L "$broken" && ! -e "$broken" ]]; then
+			log "移除失效 nginx 链接: $broken"
+			rm -f "$broken"
+		fi
+	done
+
 	# 禁用 default 站点（避免 80 端口冲突）
-	[[ -f /etc/nginx/sites-enabled/default ]] && {
+	[[ -L /etc/nginx/sites-enabled/default || -f /etc/nginx/sites-enabled/default ]] && {
 		rm -f /etc/nginx/sites-enabled/default
 		log "已禁用 nginx default 站点"
 	}
