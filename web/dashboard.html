@@ -4,123 +4,435 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Dashboard — Payroll Works</title>
-    <link rel="stylesheet" href="theme.css" />
-    <link rel="stylesheet" href="app.css" />
-    <link rel="stylesheet" href="pages.css" />
+    <script>(function(){var t=localStorage.getItem('pw-theme')||(window.matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');document.documentElement.setAttribute('data-theme',t);})();</script>
+    <link href="/vendor/daisyui-themes.css" rel="stylesheet" />
+    <link href="/vendor/daisyui-components.css" rel="stylesheet" />
+    <script src="/vendor/tailwind-browser.js"></script>
+    <style type="text/tailwindcss">@import "tailwindcss";</style>
   </head>
-  <body>
-    <div class="app-shell">
-      <header class="topbar">
-        <div class="brand">
-          <a href="index.html" class="muted" style="margin-right: 0.35rem">←</a>
-          <span>PAYROLL WORKS</span>
-          <span class="muted">Payroll</span>
-          <span class="brand-flag">🇨🇦</span>
-          <span class="tax-year"><span>2026</span></span>
-        </div>
-        <nav class="topbar-nav">
-          <a href="run-payroll.html" class="topbar-nav-item">Payroll</a>
-        </nav>
-        <div class="topbar-actions">
-          <span class="badge-admin muted" style="font-size: 0.75rem">Admin</span>
-          <span class="muted" style="font-size: 0.8rem">RORO HOLDING LTD · Lei Huang</span>
-          <button type="button" class="icon-btn">🔔</button>
-          <button type="button" class="icon-btn">?</button>
-          <div class="avatar">LH</div>
-        </div>
-      </header>
+  <body class="bg-base-200 min-h-screen">
 
-      <aside class="sidebar">
-        <a href="dashboard.html" class="nav-item active" id="nav-dashboard"><span>⌂</span> Home</a>
-        <a href="run-payroll.html" class="nav-item"><span>▤</span> Run Payroll</a>
-        <a href="#" class="nav-item" onclick="return false"><span>☰</span> Actions</a>
-        <a href="reports/payrun.html" class="nav-item" id="nav-reports"><span>▦</span> Reports</a>
-        <a href="employees.html" class="nav-item" id="nav-employees"><span>👤</span> Employees</a>
-        <span style="flex:1"></span>
-        <a href="index.html" class="nav-item muted"><span>←</span> All Companies</a>
+    <!-- Top Navbar -->
+    <div class="navbar bg-primary text-primary-content px-4 min-h-12 sticky top-0 z-30 shadow-md">
+      <div class="navbar-start gap-3">
+        <span class="font-extrabold text-base tracking-tight">PAYROLL WORKS</span>
+        <div class="divider divider-horizontal m-0 opacity-40"></div>
+        <span class="text-sm opacity-80">Payroll</span>
+        <span class="opacity-40 text-sm">›</span>
+        <span class="text-sm font-medium">Multi-Company List</span>
+      </div>
+      <div class="navbar-end gap-2">
+        <button onclick="toggleTheme()" class="btn btn-ghost btn-sm btn-circle" title="Toggle dark mode">
+          <svg id="iconSun" class="w-4 h-4 hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364-6.364l-.707.707M6.343 17.657l-.707.707M17.657 17.657l-.707-.707M6.343 6.343l-.707-.707M12 5a7 7 0 100 14A7 7 0 0012 5z"/></svg>
+          <svg id="iconMoon" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/></svg>
+        </button>
+        <button class="btn btn-ghost btn-sm btn-circle font-bold" title="Help">?</button>
+        <div class="avatar placeholder">
+          <div class="bg-primary-content text-primary rounded-full w-8 text-xs font-bold">
+            <span id="topbar-avatar">PW</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="flex">
+
+      <!-- Left Sidebar -->
+      <aside class="w-44 bg-base-100 border-r border-base-300 min-h-[calc(100vh-3rem)] hidden md:flex flex-col pt-3 shrink-0">
+        <nav class="flex flex-col gap-0.5 px-2">
+
+          <a href="dashboard.html" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium bg-primary/10 text-primary">
+            <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
+            Home
+          </a>
+
+          <a href="#" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-base-content/60 hover:bg-base-200 hover:text-base-content transition-colors">
+            <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/></svg>
+            Billing
+          </a>
+
+          <a href="#" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-base-content/60 hover:bg-base-200 hover:text-base-content transition-colors">
+            <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+            Setting
+          </a>
+
+        </nav>
       </aside>
 
-      <main class="main">
-        <div class="hero-banner">
-          <span>Dashboard</span>
-          <span class="muted">Last pay run · 01-Feb-2026 — 15-Feb-2026 · Finalized</span>
-        </div>
+      <!-- Main Content -->
+      <main class="flex-1 p-5 min-w-0">
 
-        <div class="content">
-          <div class="layout-2col">
-            <div>
-              <div class="cutoff" style="margin-bottom: 1rem; display: inline-block">
-                e-Pay cutoff Mon Apr 06 · payment Thu Apr 09
-              </div>
-
-              <div class="kpi-grid">
-                <div class="kpi-card">
-                  <div class="kpi-value">22</div>
-                  <div class="kpi-label">Active employees</div>
-                </div>
-                <div class="kpi-card">
-                  <div class="kpi-value">Apr 15</div>
-                  <div class="kpi-label">Next remittance due</div>
-                </div>
-                <div class="kpi-card">
-                  <div class="kpi-value">2026</div>
-                  <div class="kpi-label">Tax year (RateBook)</div>
-                </div>
-              </div>
-
-              <h1 class="page-title" style="margin-top: 0.5rem">Payroll cost history</h1>
-              <div class="chart-placeholder">Chart · Wages / Co CPP / Co EI / Vac pay (placeholder)</div>
-
-              <div class="news-block" style="margin-top: 1.25rem">
-                <h3>News &amp; updates</h3>
-                <ul>
-                  <li>Small business benefits audit</li>
-                  <li>The T4 hangover — year-end checklist</li>
-                </ul>
-              </div>
-            </div>
-
-            <aside>
-              <div class="tips-box">
-                <strong>Tasks</strong><br />
-                Add ePay direct deposit — <span style="color: var(--danger)">Not started</span>
-              </div>
-            </aside>
+        <!-- Page header -->
+        <div class="flex items-center justify-between mb-4">
+          <div>
+            <h1 class="text-lg font-bold">Multi-Company List</h1>
+            <p class="text-xs text-base-content/50 mt-0.5" id="company-count">Loading…</p>
           </div>
-
-          <p class="muted" style="margin-top: 1.5rem">
-            <a href="run-payroll.html" class="btn btn-primary" style="text-decoration: none; display: inline-flex"
-              >Run Payroll →</a
-            >
-            <a href="employees.html" class="btn" id="btn-employees" style="text-decoration: none; margin-left: 0.5rem">Employees →</a>
-            <a href="reports/payrun.html" class="btn" id="btn-reports" style="text-decoration: none; margin-left: 0.5rem">Reports →</a>
-          </p>
+          <div class="flex items-center gap-3">
+            <label class="flex items-center gap-2 text-xs text-base-content/60">
+              Filter Status:
+              <select class="select select-bordered select-xs" id="status-filter">
+                <option value="active">Active</option>
+                <option value="all">All</option>
+              </select>
+            </label>
+            <button type="button" class="btn btn-primary btn-sm gap-1" id="btn-add-company">
+              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"/></svg>
+              Add a New Company
+            </button>
+          </div>
         </div>
+
+        <!-- Alert -->
+        <div id="alertBox" class="hidden mb-3"></div>
+
+        <!-- Company table -->
+        <div class="bg-base-100 rounded-xl shadow-sm overflow-x-auto border border-base-300">
+          <table class="table table-sm w-full">
+            <thead>
+              <tr class="bg-base-300/50 text-xs font-semibold text-base-content/60 uppercase tracking-wide border-b border-base-300">
+                <th class="pl-4 py-3">Login to Company</th>
+                <th class="py-3">Email Address</th>
+                <th class="py-3">Tel No</th>
+                <th class="py-3">Province</th>
+                <th class="py-3">Status</th>
+                <th class="py-3 text-center w-28">Actions</th>
+              </tr>
+            </thead>
+            <tbody id="companies-body">
+              <tr><td colspan="6" class="text-center py-10 text-base-content/40 text-sm">Loading…</td></tr>
+            </tbody>
+          </table>
+        </div>
+
       </main>
-      <script>
-        (function() {
-          var companyId = new URLSearchParams(location.search).get('company') || '';
-          function withC(href) { return companyId ? href + '?company=' + encodeURIComponent(companyId) : href; }
-          ['nav-employees', 'btn-employees'].forEach(function(id) {
-            var el = document.getElementById(id);
-            if (el) el.href = withC('employees.html');
-          });
-          ['nav-reports', 'btn-reports'].forEach(function(id) {
-            var el = document.getElementById(id);
-            if (el) el.href = withC('reports/payrun.html');
-          });
-          if (companyId) {
-            // Show company name
-            fetch('/api/payroll/companies/' + encodeURIComponent(companyId), { credentials: 'same-origin' })
-              .then(function(r) { return r.ok ? r.json() : null; })
-              .then(function(c) {
-                if (!c) return;
-                var brand = document.querySelector('.brand span:last-of-type');
-                if (brand) brand.textContent = c.name;
-              }).catch(function() {});
-          }
-        })();
-      </script>
     </div>
+
+    <!-- ══ New / Edit Company Modal ══════════════════════════════════════════ -->
+    <dialog id="companyModal" class="modal modal-bottom sm:modal-middle">
+      <div class="modal-box w-full max-w-lg p-0 overflow-hidden">
+        <div class="bg-primary px-5 py-4 text-primary-content">
+          <h3 class="font-bold text-base" id="modal-title">Create Company Profile</h3>
+        </div>
+        <form id="company-form" novalidate class="px-5 py-4">
+          <input type="hidden" id="f-id" />
+          <div class="grid grid-cols-2 gap-x-4 gap-y-3">
+            <div class="form-control col-span-2">
+              <label class="label py-0.5"><span class="label-text text-xs font-semibold">Company Name <span class="text-error">*</span></span></label>
+              <input id="f-name" type="text" class="input input-bordered input-sm" placeholder="e.g. RORO Holdings Ltd." required />
+            </div>
+            <div class="form-control col-span-2">
+              <label class="label py-0.5"><span class="label-text text-xs">CRA Legal Name</span></label>
+              <input id="f-legal-name" type="text" class="input input-bordered input-sm" placeholder="Full registered name (if different)" />
+            </div>
+            <div class="form-control">
+              <label class="label py-0.5"><span class="label-text text-xs">Business Number (BN)</span></label>
+              <input id="f-bn" type="text" class="input input-bordered input-sm" placeholder="123456789" maxlength="15" />
+            </div>
+            <div class="form-control">
+              <label class="label py-0.5"><span class="label-text text-xs">Province</span></label>
+              <select id="f-province" class="select select-bordered select-sm">
+                <option value="">— select —</option>
+                <option value="AB">Alberta</option>
+                <option value="BC">British Columbia</option>
+                <option value="MB">Manitoba</option>
+                <option value="NB">New Brunswick</option>
+                <option value="NL">Newfoundland &amp; Labrador</option>
+                <option value="NS">Nova Scotia</option>
+                <option value="NT">Northwest Territories</option>
+                <option value="NU">Nunavut</option>
+                <option value="ON">Ontario</option>
+                <option value="PE">Prince Edward Island</option>
+                <option value="QC">Quebec</option>
+                <option value="SK">Saskatchewan</option>
+                <option value="YT">Yukon</option>
+              </select>
+            </div>
+            <div class="form-control">
+              <label class="label py-0.5"><span class="label-text text-xs">Email</span></label>
+              <input id="f-email" type="email" class="input input-bordered input-sm" placeholder="pay@example.com" />
+            </div>
+            <div class="form-control">
+              <label class="label py-0.5"><span class="label-text text-xs">Phone</span></label>
+              <input id="f-phone" type="tel" class="input input-bordered input-sm" placeholder="(604) 555-0100" />
+            </div>
+            <div class="form-control col-span-2">
+              <label class="label py-0.5"><span class="label-text text-xs">Address</span></label>
+              <input id="f-address" type="text" class="input input-bordered input-sm" placeholder="123 Main St, Vancouver BC V6B 1A1" />
+            </div>
+            <div class="form-control">
+              <label class="label py-0.5"><span class="label-text text-xs">Pay Frequency</span></label>
+              <select id="f-freq" class="select select-bordered select-sm">
+                <option value="biweekly">Bi-weekly (26/yr)</option>
+                <option value="semimonthly">Semi-monthly (24/yr)</option>
+                <option value="monthly">Monthly (12/yr)</option>
+                <option value="weekly">Weekly (52/yr)</option>
+              </select>
+            </div>
+            <div class="form-control">
+              <label class="label py-0.5"><span class="label-text text-xs">Status</span></label>
+              <select id="f-status" class="select select-bordered select-sm">
+                <option value="active">Active</option>
+                <option value="inactive">Inactive</option>
+              </select>
+            </div>
+          </div>
+          <div id="form-error" class="alert alert-error text-xs py-2 px-3 mt-3 hidden"></div>
+          <div class="modal-action mt-4 gap-2">
+            <button type="button" class="btn btn-ghost btn-sm" id="btn-cancel-modal">Cancel</button>
+            <button type="submit" class="btn btn-primary btn-sm" id="btn-save-modal">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+              Save Company
+            </button>
+          </div>
+        </form>
+      </div>
+      <form method="dialog" class="modal-backdrop"><button>close</button></form>
+    </dialog>
+
+    <!-- Delete confirm modal -->
+    <dialog id="deleteModal" class="modal modal-middle">
+      <div class="modal-box max-w-sm">
+        <div class="text-center mb-4">
+          <div class="w-12 h-12 bg-error/20 rounded-full flex items-center justify-center mx-auto mb-3">
+            <svg class="w-6 h-6 text-error" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+          </div>
+          <h3 class="font-bold text-base">Delete Company</h3>
+          <p class="text-sm text-base-content/60 mt-1">Are you sure you want to delete <strong id="deleteCompanyName">—</strong>?</p>
+          <p class="text-xs text-base-content/40 mt-1">This cannot be undone.</p>
+        </div>
+        <div class="modal-action justify-between">
+          <form method="dialog"><button class="btn btn-ghost btn-sm">Cancel</button></form>
+          <button type="button" class="btn btn-error btn-sm" id="btn-confirm-delete">Delete</button>
+        </div>
+      </div>
+      <form method="dialog" class="modal-backdrop"><button>close</button></form>
+    </dialog>
+
+    <script>
+      function toggleTheme() {
+        var html = document.documentElement;
+        var next = html.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+        html.setAttribute('data-theme', next);
+        localStorage.setItem('pw-theme', next);
+        document.getElementById('iconSun').classList.toggle('hidden', next !== 'dark');
+        document.getElementById('iconMoon').classList.toggle('hidden', next === 'dark');
+      }
+      document.addEventListener('DOMContentLoaded', function() {
+        var isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+        document.getElementById('iconSun').classList.toggle('hidden', !isDark);
+        document.getElementById('iconMoon').classList.toggle('hidden', isDark);
+      });
+
+      var companyModal = document.getElementById('companyModal');
+      var deleteModal  = document.getElementById('deleteModal');
+      var deleteTarget = { id: '', name: '' };
+      var allCompanies = [];
+
+      // ── Auth ──────────────────────────────────────────────────────────────
+      fetch('/api/me', { credentials: 'same-origin' })
+        .then(function(r) { return r.json(); })
+        .then(function(me) {
+          if (!me.authenticated) { window.location.href = '/'; return; }
+          var av = document.getElementById('topbar-avatar');
+          if (av && me.user) av.textContent = me.user.slice(0, 2).toUpperCase();
+        })
+        .catch(function() {});
+
+      document.getElementById('status-filter').addEventListener('change', loadCompanies);
+      loadCompanies();
+
+      // ── Load & render ─────────────────────────────────────────────────────
+      function loadCompanies() {
+        var filter = document.getElementById('status-filter').value;
+        apiFetch('/api/payroll/companies?status=' + encodeURIComponent(filter))
+          .then(function(list) {
+            allCompanies = list || [];
+            renderCompanies(allCompanies);
+          })
+          .catch(function(err) {
+            document.getElementById('companies-body').innerHTML =
+              '<tr><td colspan="6" class="text-center py-8 text-error text-sm">' + esc(err.message) + '</td></tr>';
+          });
+      }
+
+      function renderCompanies(list) {
+        var tbody = document.getElementById('companies-body');
+        var count = document.getElementById('company-count');
+        count.textContent = list.length + ' compan' + (list.length === 1 ? 'y' : 'ies');
+
+        if (!list.length) {
+          tbody.innerHTML =
+            '<tr><td colspan="6" class="text-center py-14">' +
+            '<div class="flex flex-col items-center gap-2 text-base-content/40">' +
+            '<svg class="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/></svg>' +
+            '<p class="text-sm font-medium">No companies yet</p>' +
+            '<p class="text-xs">Click <strong>Add a New Company</strong> to get started.</p>' +
+            '</div></td></tr>';
+          return;
+        }
+
+        tbody.innerHTML = list.map(function(c) {
+          var empUrl  = 'employees.html?company=' + encodeURIComponent(c.id);
+          var payUrl  = 'run-payroll.html?company=' + encodeURIComponent(c.id);
+          var isActive = c.status !== 'inactive';
+          var statusBadge = isActive
+            ? '<span class="badge badge-success badge-sm gap-1"><span class="w-1.5 h-1.5 rounded-full bg-success-content inline-block"></span>Active</span>'
+            : '<span class="badge badge-ghost badge-sm">Inactive</span>';
+
+          return '<tr class="hover:bg-base-200/40 border-b border-base-200 last:border-0">' +
+            // Company name — clickable link
+            '<td class="pl-4 py-3">' +
+              '<a href="' + empUrl + '" class="font-semibold text-sm text-primary hover:underline">' +
+                esc(c.name) +
+              '</a>' +
+              (c.legalName && c.legalName !== c.name
+                ? '<div class="text-xs text-base-content/40 mt-0.5">' + esc(c.legalName) + '</div>' : '') +
+            '</td>' +
+            // Email
+            '<td class="text-sm text-base-content/70 py-3">' + esc(c.email || '—') + '</td>' +
+            // Tel
+            '<td class="text-sm text-base-content/70 py-3">' + esc(c.phone || '—') + '</td>' +
+            // Province
+            '<td class="text-sm text-base-content/70 py-3">' + esc(c.province || '—') + '</td>' +
+            // Status
+            '<td class="py-3">' + statusBadge + '</td>' +
+            // Actions — 3 icon buttons
+            '<td class="py-2 text-center">' +
+              '<div class="flex items-center justify-center gap-0.5">' +
+                // Employees
+                '<a href="' + empUrl + '" class="btn btn-ghost btn-xs btn-square tooltip" data-tip="Employees">' +
+                  '<svg class="w-4 h-4 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg>' +
+                '</a>' +
+                // Run Payroll
+                '<a href="' + payUrl + '" class="btn btn-ghost btn-xs btn-square tooltip" data-tip="Run Payroll">' +
+                  '<svg class="w-4 h-4 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"/></svg>' +
+                '</a>' +
+                // Edit / Settings
+                '<button type="button" onclick="openEdit(\'' + esc(c.id) + '\')" class="btn btn-ghost btn-xs btn-square tooltip" data-tip="Edit Company">' +
+                  '<svg class="w-4 h-4 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>' +
+                '</button>' +
+              '</div>' +
+            '</td>' +
+            '</tr>';
+        }).join('');
+      }
+
+      // ── Modal: New / Edit Company ─────────────────────────────────────────
+      document.getElementById('btn-add-company').addEventListener('click', function() { openModal(null); });
+
+      function openEdit(id) {
+        var c = allCompanies.find(function(x) { return x.id === id; });
+        if (c) openModal(c);
+      }
+
+      function openModal(company) {
+        document.getElementById('company-form').reset();
+        document.getElementById('form-error').classList.add('hidden');
+        document.getElementById('modal-title').textContent = company ? 'Edit Company' : 'Create Company Profile';
+        document.getElementById('f-id').value           = company ? company.id : '';
+        document.getElementById('f-name').value         = company ? (company.name || '') : '';
+        document.getElementById('f-legal-name').value   = company ? (company.legalName || '') : '';
+        document.getElementById('f-bn').value           = company ? (company.businessNumber || '') : '';
+        document.getElementById('f-email').value        = company ? (company.email || '') : '';
+        document.getElementById('f-phone').value        = company ? (company.phone || '') : '';
+        document.getElementById('f-address').value      = company ? (company.address || '') : '';
+        document.getElementById('f-province').value     = company ? (company.province || '') : '';
+        document.getElementById('f-freq').value         = company ? (company.payFrequency || 'biweekly') : 'biweekly';
+        document.getElementById('f-status').value       = company ? (company.status || 'active') : 'active';
+        companyModal.showModal();
+      }
+
+      document.getElementById('btn-cancel-modal').addEventListener('click', function() { companyModal.close(); });
+
+      document.getElementById('company-form').addEventListener('submit', function(e) {
+        e.preventDefault();
+        var errEl   = document.getElementById('form-error');
+        var saveBtn = document.getElementById('btn-save-modal');
+        errEl.classList.add('hidden');
+
+        var id      = document.getElementById('f-id').value;
+        var payload = {
+          name:           document.getElementById('f-name').value.trim(),
+          legalName:      document.getElementById('f-legal-name').value.trim(),
+          businessNumber: document.getElementById('f-bn').value.trim(),
+          email:          document.getElementById('f-email').value.trim(),
+          phone:          document.getElementById('f-phone').value.trim(),
+          address:        document.getElementById('f-address').value.trim(),
+          province:       document.getElementById('f-province').value,
+          payFrequency:   document.getElementById('f-freq').value,
+          status:         document.getElementById('f-status').value,
+        };
+
+        if (!payload.name) {
+          errEl.textContent = 'Company Name is required.';
+          errEl.classList.remove('hidden');
+          document.getElementById('f-name').focus();
+          return;
+        }
+
+        saveBtn.disabled = true;
+        var url    = id ? '/api/payroll/companies/' + encodeURIComponent(id) : '/api/payroll/companies';
+        var method = id ? 'PUT' : 'POST';
+
+        apiFetch(url, { method: method, body: JSON.stringify(payload) })
+          .then(function() {
+            companyModal.close();
+            loadCompanies();
+            showAlert(id ? 'Company updated.' : 'Company created.', false);
+          })
+          .catch(function(err) {
+            errEl.textContent = err.message || 'Save failed';
+            errEl.classList.remove('hidden');
+          })
+          .finally(function() { saveBtn.disabled = false; });
+      });
+
+      // ── Delete ────────────────────────────────────────────────────────────
+      function confirmDelete(id, name) {
+        deleteTarget = { id: id, name: name };
+        document.getElementById('deleteCompanyName').textContent = name;
+        deleteModal.showModal();
+      }
+
+      document.getElementById('btn-confirm-delete').addEventListener('click', function() {
+        deleteModal.close();
+        apiFetch('/api/payroll/companies/' + encodeURIComponent(deleteTarget.id), { method: 'DELETE' })
+          .then(function() { loadCompanies(); showAlert('Company deleted.', false); })
+          .catch(function(err) { showAlert('Delete failed: ' + err.message, true); });
+      });
+
+      // ── Helpers ───────────────────────────────────────────────────────────
+      function apiFetch(path, opts) {
+        opts = opts || {};
+        return fetch(path, Object.assign({ credentials: 'same-origin',
+          headers: Object.assign({ 'Content-Type': 'application/json' }, opts.headers || {}) }, opts))
+          .then(function(r) {
+            return r.text().then(function(text) {
+              if (!r.ok) {
+                var msg = text;
+                try { msg = JSON.parse(text).error || text; } catch(e) {}
+                throw new Error(msg || r.statusText);
+              }
+              return text ? JSON.parse(text) : null;
+            });
+          });
+      }
+
+      function showAlert(msg, isErr) {
+        var el = document.getElementById('alertBox');
+        el.className = isErr ? 'alert alert-error text-sm py-2 px-4 mb-3' : 'alert alert-success text-sm py-2 px-4 mb-3';
+        el.textContent = msg;
+        el.classList.remove('hidden');
+        clearTimeout(el._t);
+        el._t = setTimeout(function() { el.classList.add('hidden'); }, 4000);
+      }
+
+      function esc(s) {
+        return String(s == null ? '' : s)
+          .replace(/&/g,'&amp;').replace(/"/g,'&quot;')
+          .replace(/</g,'&lt;').replace(/>/g,'&gt;');
+      }
+    </script>
   </body>
 </html>
