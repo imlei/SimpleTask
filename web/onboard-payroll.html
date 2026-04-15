@@ -3,139 +3,192 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Payroll details — Payroll Works</title>
-    <link rel="stylesheet" href="employees-theme.css" />
+    <title>Payroll Details — Payroll Works</title>
+    <script>(function(){var t=localStorage.getItem('pw-theme')||(window.matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');document.documentElement.setAttribute('data-theme',t);})();</script>
+    <link href="https://cdn.jsdelivr.net/npm/daisyui@5/themes.css" rel="stylesheet" />
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <script src="https://cdn.jsdelivr.net/npm/daisyui@5/cdn.js"></script>
+    <style type="text/tailwindcss">@import "tailwindcss";</style>
   </head>
-  <body class="pe-app">
-    <div class="pe-shell">
-      <header class="pe-topbar">
-        <div class="pe-brand">
-          <span>PAYROLL WORKS</span>
-          <span class="sep">|</span>
-          <span class="sub">Payroll</span>
-          <span class="pe-flag">🇨🇦</span>
-          <span class="pe-tax-pill">2026</span>
-        </div>
-        <nav class="pe-topbar-nav">
-          <a href="run-payroll.html" class="pe-topbar-nav-item">Payroll</a>
-        </nav>
-        <div class="pe-topbar-right">
-          <span class="pe-badge-admin">Admin</span>
-          <span>RORO HOLDING LTD</span>
-          <button type="button" class="pe-icon-btn">📞</button>
-          <button type="button" class="pe-icon-btn">🔔</button>
-          <button type="button" class="pe-icon-btn">?</button>
-          <div class="pe-avatar">LH</div>
-        </div>
-      </header>
+  <body class="bg-base-200 min-h-screen">
 
-      <div class="pe-wizard-bar">
-        <div class="pe-wizard-steps">
-          <div class="pe-wstep done">
-            <span class="circle">✓</span>
-            <span>Employee</span>
-          </div>
-          <div class="pe-wstep active">
-            <span class="circle">💵</span>
-            <span>Payroll</span>
-          </div>
-          <div class="pe-wstep">
-            <span class="circle">📋</span>
-            <span>Checklist</span>
-          </div>
-        </div>
-        <div class="pe-wizard-sub">
-          <span></span>
-          <div class="pe-progress"><i style="width: 55%"></i></div>
-          <span>Onboard employee</span>
+    <!-- Navbar -->
+    <div class="navbar bg-base-100 border-b border-base-300 px-4 min-h-12 sticky top-0 z-30 shadow-sm">
+      <div class="navbar-start gap-2">
+        <a href="onboard-personal.html" class="btn btn-ghost btn-sm btn-circle" title="Back">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+        </a>
+        <span class="font-bold text-sm tracking-wide">PAYROLL WORKS</span>
+        <span class="badge badge-ghost badge-sm">🇨🇦</span>
+      </div>
+      <div class="navbar-center">
+        <span class="text-sm font-medium text-base-content/70">Add Team Member</span>
+      </div>
+      <div class="navbar-end gap-3">
+        <button onclick="toggleTheme()" class="btn btn-ghost btn-sm btn-circle" title="Toggle dark mode">
+          <svg id="iconSun" class="w-4 h-4 hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364-6.364l-.707.707M6.343 17.657l-.707.707M17.657 17.657l-.707-.707M6.343 6.343l-.707-.707M12 5a7 7 0 100 14A7 7 0 0012 5z"/></svg>
+          <svg id="iconMoon" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/></svg>
+        </button>
+        <div class="avatar placeholder">
+          <div class="bg-primary text-primary-content rounded-full w-8 text-xs"><span>PW</span></div>
         </div>
       </div>
+    </div>
 
-      <aside class="pe-sidebar">
-        <a class="pe-nav" href="dashboard.html"><span>⌂</span> Home</a>
-        <a class="pe-nav" href="run-payroll.html"><span>▤</span> Run payroll</a>
-        <a class="pe-nav" href="#"><span>☰</span> Actions</a>
-        <a class="pe-nav" href="reports/payrun.html"><span>▦</span> Reports</a>
-        <a class="pe-nav active" href="employees.html"><span>👤</span> Employees</a>
-        <span class="pe-nav spacer"></span>
-        <a class="pe-nav" href="#"><span>⚙</span> Settings</a>
-      </aside>
+    <!-- Wizard progress -->
+    <div class="bg-base-100 border-b border-base-300 px-6 py-3">
+      <ul class="steps steps-horizontal w-full max-w-lg mx-auto text-xs">
+        <li class="step step-primary" data-content="✓">Member Type</li>
+        <li class="step step-primary" data-content="✓">Personal Info</li>
+        <li class="step step-primary" data-content="3">Payroll</li>
+        <li class="step" data-content="4">YTD &amp; Benefits</li>
+        <li class="step" data-content="5">Review</li>
+      </ul>
+    </div>
 
-      <main class="pe-main">
-        <div class="pe-card">
-          <h2>Payroll details</h2>
-          <div class="pe-field">
-            <label for="salaryType">Salary type</label>
-            <select class="pe-input-line" id="salaryType" style="border: 1px solid var(--pe-border); border-radius: 4px; padding: 0.4rem">
-              <option value="">Select</option>
-              <option value="0">Salaried</option>
-              <option value="1" selected>Time-Based</option>
-            </select>
-          </div>
-          <div class="pe-field">
-            <label for="payRate">Pay rate</label>
-            <input class="pe-input-line" id="payRate" type="text" value="17.85" />
-          </div>
-          <div class="pe-field">
-            <label for="payRateUnit">Pay rate unit</label>
-            <select class="pe-input-line" id="payRateUnit" style="border: 1px solid var(--pe-border); border-radius: 4px; padding: 0.4rem">
-              <option value="">Select</option>
-              <option value="Hourly" selected>Hourly</option>
-              <option value="Annually">Annually</option>
-              <option value="Monthly">Monthly</option>
-            </select>
-          </div>
-          <div class="pe-field">
-            <label for="paysPerYear">Pays/year</label>
-            <select class="pe-input-line" id="paysPerYear" style="border: 1px solid var(--pe-border); border-radius: 4px; padding: 0.4rem">
-              <option value="">Select</option>
-              <option value="52">Weekly</option>
-              <option value="26">Bi-weekly</option>
-              <option value="24" selected>Semi-monthly</option>
-              <option value="12">Monthly</option>
-            </select>
-          </div>
-          <div class="pe-field">
-            <label for="hoursWeek">Hours/week</label>
-            <input class="pe-input-line" id="hoursWeek" type="text" placeholder="40" />
-          </div>
-          <p><a class="pe-link" href="#">Need more options? Advanced payroll options</a></p>
-          <div class="pe-foot-actions">
-            <a class="pe-btn" href="onboard-personal.html">Back</a>
-            <button type="button" class="pe-btn pe-btn-primary" id="btn-continue">Continue</button>
+    <div class="flex justify-center px-4 py-8">
+      <div class="w-full max-w-2xl flex flex-col gap-5">
+
+        <!-- Pay details card -->
+        <div class="card bg-base-100 shadow-sm">
+          <div class="card-body gap-4">
+            <h3 class="font-semibold text-base">Pay Details</h3>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div class="form-control">
+                <label class="label"><span class="label-text font-medium">Salary Type</span></label>
+                <select id="salaryType" class="select select-bordered select-sm">
+                  <option value="0">Salaried</option>
+                  <option value="1" selected>Time-Based (Hourly)</option>
+                </select>
+              </div>
+              <div class="form-control">
+                <label class="label"><span class="label-text font-medium">Pay Rate</span></label>
+                <label class="input input-bordered input-sm flex items-center gap-1">
+                  <span class="text-base-content/50 text-sm">$</span>
+                  <input type="number" id="payRate" class="grow" step="0.01" min="0" placeholder="17.85" />
+                </label>
+              </div>
+              <div class="form-control">
+                <label class="label"><span class="label-text font-medium">Rate Unit</span></label>
+                <select id="payRateUnit" class="select select-bordered select-sm">
+                  <option value="Hourly" selected>Hourly</option>
+                  <option value="Annually">Annually</option>
+                  <option value="Monthly">Monthly</option>
+                </select>
+              </div>
+              <div class="form-control">
+                <label class="label"><span class="label-text font-medium">Pay Frequency</span></label>
+                <select id="paysPerYear" class="select select-bordered select-sm">
+                  <option value="52">Weekly (52×/year)</option>
+                  <option value="26" selected>Bi-weekly (26×/year)</option>
+                  <option value="24">Semi-monthly (24×/year)</option>
+                  <option value="12">Monthly (12×/year)</option>
+                </select>
+              </div>
+              <div class="form-control">
+                <label class="label"><span class="label-text font-medium">Hours / Week</span></label>
+                <input type="number" id="hoursWeek" class="input input-bordered input-sm" step="0.5" min="0" max="80" placeholder="40" />
+              </div>
+            </div>
           </div>
         </div>
-      </main>
+
+        <!-- Advanced Options card (collapsible) -->
+        <div class="collapse collapse-arrow bg-base-100 shadow-sm rounded-xl border border-base-300">
+          <input type="checkbox" id="advanced-toggle" />
+          <label for="advanced-toggle" class="collapse-title font-semibold text-sm cursor-pointer">
+            Advanced Options — TD1 tax credits &amp; exemptions
+          </label>
+          <div class="collapse-content">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
+              <div class="form-control">
+                <label class="label">
+                  <span class="label-text font-medium">TD1 Federal</span>
+                  <span class="label-text-alt text-xs text-base-content/50">Default $16,129</span>
+                </label>
+                <label class="input input-bordered input-sm flex items-center gap-1">
+                  <span class="text-base-content/50 text-sm">$</span>
+                  <input type="number" id="td1Federal" class="grow" step="1" min="0" placeholder="16129" />
+                </label>
+              </div>
+              <div class="form-control">
+                <label class="label">
+                  <span class="label-text font-medium">TD1 Provincial</span>
+                  <span class="label-text-alt text-xs text-base-content/50">Province-specific</span>
+                </label>
+                <label class="input input-bordered input-sm flex items-center gap-1">
+                  <span class="text-base-content/50 text-sm">$</span>
+                  <input type="number" id="td1Provincial" class="grow" step="1" min="0" placeholder="0" />
+                </label>
+              </div>
+              <div class="form-control">
+                <label class="label"><span class="label-text font-medium">Auto Vacation Pay</span></label>
+                <label class="label cursor-pointer justify-start gap-3">
+                  <input type="checkbox" id="autoVacation" class="checkbox checkbox-sm" checked />
+                  <span class="label-text text-sm">Calculate vacation pay automatically each period</span>
+                </label>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Footer actions -->
+        <div class="flex justify-between items-center bg-base-100 rounded-xl px-5 py-3 shadow-sm">
+          <a href="onboard-personal.html" class="btn btn-ghost btn-sm">Back</a>
+          <button type="button" id="btn-continue" class="btn btn-primary btn-sm gap-2">
+            Continue
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+          </button>
+        </div>
+      </div>
     </div>
+
     <script src="js/onboard.js"></script>
     <script>
-      (function () {
+      function toggleTheme() {
+        var html = document.documentElement;
+        var next = html.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+        html.setAttribute('data-theme', next);
+        localStorage.setItem('pw-theme', next);
+        document.getElementById('iconSun').classList.toggle('hidden', next !== 'dark');
+        document.getElementById('iconMoon').classList.toggle('hidden', next === 'dark');
+      }
+      document.addEventListener('DOMContentLoaded', function() {
+        var isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+        document.getElementById('iconSun').classList.toggle('hidden', !isDark);
+        document.getElementById('iconMoon').classList.toggle('hidden', isDark);
+      });
+
+      (function() {
         var d = pwOnboard.load();
-        if (d.salaryType !== undefined) document.getElementById("salaryType").value = String(d.salaryType);
-        if (d.payRate) document.getElementById("payRate").value = d.payRate;
-        if (d.payRateUnit) document.getElementById("payRateUnit").value = d.payRateUnit;
-        if (d.paysPerYear) document.getElementById("paysPerYear").value = String(d.paysPerYear);
-        if (d.hoursPerWeek) document.getElementById("hoursWeek").value = d.hoursPerWeek;
+        if (d.salaryType !== undefined) document.getElementById('salaryType').value = String(d.salaryType);
+        if (d.payRate)      document.getElementById('payRate').value     = d.payRate;
+        if (d.payRateUnit)  document.getElementById('payRateUnit').value = d.payRateUnit;
+        if (d.paysPerYear)  document.getElementById('paysPerYear').value = String(d.paysPerYear);
+        if (d.hoursPerWeek) document.getElementById('hoursWeek').value   = d.hoursPerWeek;
+        if (d.td1Federal)   document.getElementById('td1Federal').value  = d.td1Federal;
+        if (d.td1Provincial) document.getElementById('td1Provincial').value = d.td1Provincial;
+        if (typeof d.autoVacation === 'boolean') document.getElementById('autoVacation').checked = d.autoVacation;
 
-        document.getElementById("btn-continue").addEventListener("click", function () {
-          var stRaw = document.getElementById("salaryType").value;
-          var st = parseInt(stRaw, 10);
-          if (isNaN(st)) st = 1;
-          pwOnboard.save({
-            salaryType: st,
-            payRate: parseFloat(document.getElementById("payRate").value) || 0,
-            payRateUnit: document.getElementById("payRateUnit").value,
-            paysPerYear: parseInt(document.getElementById("paysPerYear").value, 10) || 0,
-            hoursPerWeek: parseFloat(document.getElementById("hoursWeek").value) || 0,
-            payFrequency: labelFrequency(document.getElementById("paysPerYear").value),
-          });
-          location.href = "onboard-ytd.html";
-        });
-
-        function labelFrequency(v) {
-          var m = { 52: "Weekly", 26: "Bi-weekly", 24: "Semi-Monthly", 12: "Monthly" };
-          return m[v] || "";
+        function freqLabel(v) {
+          return { 52:'Weekly', 26:'Bi-weekly', 24:'Semi-Monthly', 12:'Monthly' }[v] || '';
         }
+
+        document.getElementById('btn-continue').addEventListener('click', function() {
+          var ppy = parseInt(document.getElementById('paysPerYear').value, 10) || 26;
+          pwOnboard.save({
+            salaryType:    parseInt(document.getElementById('salaryType').value, 10) || 1,
+            payRate:       parseFloat(document.getElementById('payRate').value) || 0,
+            payRateUnit:   document.getElementById('payRateUnit').value,
+            paysPerYear:   ppy,
+            payFrequency:  freqLabel(ppy),
+            hoursPerWeek:  parseFloat(document.getElementById('hoursWeek').value) || 0,
+            td1Federal:    parseFloat(document.getElementById('td1Federal').value) || 16129,
+            td1Provincial: parseFloat(document.getElementById('td1Provincial').value) || 0,
+            autoVacation:  document.getElementById('autoVacation').checked,
+          });
+          location.href = 'onboard-ytd.html';
+        });
       })();
     </script>
   </body>

@@ -3,122 +3,132 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Select team member type — Payroll Works</title>
-    <link rel="stylesheet" href="employees-theme.css" />
+    <title>Add Team Member — Payroll Works</title>
+    <script>(function(){var t=localStorage.getItem('pw-theme')||(window.matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');document.documentElement.setAttribute('data-theme',t);})();</script>
+    <link href="https://cdn.jsdelivr.net/npm/daisyui@5/themes.css" rel="stylesheet" />
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <script src="https://cdn.jsdelivr.net/npm/daisyui@5/cdn.js"></script>
+    <style type="text/tailwindcss">@import "tailwindcss";</style>
   </head>
-  <body class="pe-app">
-    <div class="pe-shell">
-      <header class="pe-topbar">
-        <div class="pe-brand">
-          <span>PAYROLL WORKS</span>
-          <span class="sep">|</span>
-          <span class="sub">Payroll</span>
-          <span class="pe-flag">🇨🇦</span>
-          <span class="pe-tax-pill">2026</span>
-        </div>
-        <nav class="pe-topbar-nav">
-          <a href="run-payroll.html" class="pe-topbar-nav-item">Payroll</a>
-        </nav>
-        <div class="pe-topbar-right">
-          <span class="pe-badge-admin">Admin</span>
-          <span>RORO HOLDING LTD · Dan Luo</span>
-          <button type="button" class="pe-icon-btn">📞</button>
-          <button type="button" class="pe-icon-btn">🔔</button>
-          <button type="button" class="pe-icon-btn">?</button>
-          <div class="pe-avatar">LH</div>
-        </div>
-      </header>
+  <body class="bg-base-200 min-h-screen">
 
-      <div class="pe-wizard-bar">
-        <div class="pe-wizard-steps">
-          <div class="pe-wstep active">
-            <span class="circle">👤</span>
-            <span>Employee</span>
-          </div>
-          <div class="pe-wstep">
-            <span class="circle">💵</span>
-            <span>Payroll</span>
-          </div>
-          <div class="pe-wstep">
-            <span class="circle">📋</span>
-            <span>Checklist</span>
-          </div>
-        </div>
-        <div class="pe-wizard-sub">
-          <a class="pe-back" href="employees.html" style="color: #fff; opacity: 0.95">← Employees</a>
-          <span>Onboard employee</span>
+    <!-- Navbar -->
+    <div class="navbar bg-base-100 border-b border-base-300 px-4 min-h-12 sticky top-0 z-30 shadow-sm">
+      <div class="navbar-start gap-2">
+        <a id="backBtn" href="employees.html" class="btn btn-ghost btn-sm btn-circle" title="Back">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+        </a>
+        <span class="font-bold text-sm tracking-wide">PAYROLL WORKS</span>
+        <span class="badge badge-ghost badge-sm">🇨🇦</span>
+      </div>
+      <div class="navbar-center">
+        <span class="text-sm font-medium text-base-content/70">Add Team Member</span>
+      </div>
+      <div class="navbar-end gap-3">
+        <button onclick="toggleTheme()" class="btn btn-ghost btn-sm btn-circle" title="Toggle dark mode">
+          <svg id="iconSun" class="w-4 h-4 hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364-6.364l-.707.707M6.343 17.657l-.707.707M17.657 17.657l-.707-.707M6.343 6.343l-.707-.707M12 5a7 7 0 100 14A7 7 0 0012 5z"/></svg>
+          <svg id="iconMoon" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/></svg>
+        </button>
+        <div class="avatar placeholder">
+          <div class="bg-primary text-primary-content rounded-full w-8 text-xs"><span>PW</span></div>
         </div>
       </div>
+    </div>
 
-      <aside class="pe-sidebar">
-        <a class="pe-nav" href="dashboard.html"><span>⌂</span> Home</a>
-        <a class="pe-nav" href="run-payroll.html"><span>▤</span> Run payroll</a>
-        <a class="pe-nav" href="#"><span>☰</span> Actions</a>
-        <a class="pe-nav" href="reports/payrun.html"><span>▦</span> Reports</a>
-        <a class="pe-nav active" href="employees.html"><span>👤</span> Employees</a>
-        <span class="pe-nav spacer"></span>
-        <a class="pe-nav" href="#"><span>⚙</span> Settings</a>
-      </aside>
+    <!-- Wizard progress bar -->
+    <div class="bg-base-100 border-b border-base-300 px-6 py-3">
+      <ul class="steps steps-horizontal w-full max-w-lg mx-auto text-xs">
+        <li class="step step-primary" data-content="1">Member Type</li>
+        <li class="step" data-content="2">Personal Info</li>
+        <li class="step" data-content="3">Payroll</li>
+        <li class="step" data-content="4">YTD &amp; Benefits</li>
+        <li class="step" data-content="5">Review</li>
+      </ul>
+    </div>
 
-      <main class="pe-main">
-        <a class="pe-back" href="employees.html">← Select team member type</a>
+    <div class="flex justify-center px-4 py-8">
+      <div class="w-full max-w-2xl">
+        <!-- Card -->
+        <div class="card bg-base-100 shadow-sm">
+          <div class="card-body gap-6">
+            <div>
+              <h2 class="text-lg font-bold">Select team member type</h2>
+              <p class="text-sm text-base-content/60 mt-1">Choose the type that best describes this team member's employment relationship.</p>
+            </div>
 
-        <div class="pe-card">
-          <h2>Select team member type</h2>
-          <div class="pe-radio-list">
-            <label class="pe-radio-card">
-              <input type="radio" name="memberType" value="employee" checked />
-              <div>
-                <strong>Employee</strong>
-                <p style="margin: 0.35rem 0 0; color: var(--pe-text-secondary); font-size: 0.88rem">
-                  Standard source deductions will be applied. Optional benefits and other deductions can be added in the
-                  on-boarding wizard.
-                </p>
-              </div>
-            </label>
-            <label class="pe-radio-card">
-              <input type="radio" name="memberType" value="contractor" />
-              <div>
-                <strong>Contractor</strong>
-                <p style="margin: 0.35rem 0 0; color: var(--pe-text-secondary); font-size: 0.88rem">
-                  No source deductions will be calculated. T4A contractor tax slips will be generated.
-                </p>
-              </div>
-            </label>
-            <label class="pe-radio-card">
-              <input type="radio" name="memberType" value="construction_contractor" />
-              <div>
-                <strong>Construction contractor</strong>
-                <p style="margin: 0.35rem 0 0; color: var(--pe-text-secondary); font-size: 0.88rem">
-                  No source deductions will be calculated. T5018 contractor tax slips will be generated.
-                </p>
-              </div>
-            </label>
-          </div>
-          <div class="pe-foot-actions">
-            <a class="pe-btn" href="employees.html">Cancel</a>
-            <button type="button" class="pe-btn pe-btn-primary" id="btn-continue">Continue</button>
+            <div class="flex flex-col gap-3" id="type-list">
+              <label class="flex items-start gap-4 p-4 border-2 border-base-300 rounded-xl cursor-pointer hover:border-primary/40 transition-colors has-[:checked]:border-primary has-[:checked]:bg-primary/5">
+                <input type="radio" name="memberType" value="0" class="radio radio-primary mt-0.5" checked />
+                <div>
+                  <div class="font-semibold">Employee (T4)</div>
+                  <p class="text-sm text-base-content/60 mt-1">Standard source deductions apply — CPP, EI, and income tax will be calculated. T4 slips generated at year-end.</p>
+                </div>
+              </label>
+              <label class="flex items-start gap-4 p-4 border-2 border-base-300 rounded-xl cursor-pointer hover:border-primary/40 transition-colors has-[:checked]:border-primary has-[:checked]:bg-primary/5">
+                <input type="radio" name="memberType" value="1" class="radio radio-primary mt-0.5" />
+                <div>
+                  <div class="font-semibold">Contractor (T4A)</div>
+                  <p class="text-sm text-base-content/60 mt-1">No source deductions calculated. T4A contractor tax slips will be generated at year-end.</p>
+                </div>
+              </label>
+              <label class="flex items-start gap-4 p-4 border-2 border-base-300 rounded-xl cursor-pointer hover:border-primary/40 transition-colors has-[:checked]:border-primary has-[:checked]:bg-primary/5">
+                <input type="radio" name="memberType" value="2" class="radio radio-primary mt-0.5" />
+                <div>
+                  <div class="font-semibold">Construction Contractor (T5018)</div>
+                  <p class="text-sm text-base-content/60 mt-1">No source deductions calculated. T5018 statement of contract payments generated at year-end.</p>
+                </div>
+              </label>
+            </div>
+
+            <!-- Footer actions -->
+            <div class="flex justify-between items-center pt-2 border-t border-base-200">
+              <a id="cancelBtn" href="employees.html" class="btn btn-ghost btn-sm">Cancel</a>
+              <button type="button" id="btn-continue" class="btn btn-primary btn-sm gap-2">
+                Continue
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+              </button>
+            </div>
           </div>
         </div>
-      </main>
+      </div>
     </div>
+
     <script src="js/onboard.js"></script>
     <script>
-      // Capture company context from URL and persist through wizard
+      function toggleTheme() {
+        var html = document.documentElement;
+        var next = html.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+        html.setAttribute('data-theme', next);
+        localStorage.setItem('pw-theme', next);
+        document.getElementById('iconSun').classList.toggle('hidden', next !== 'dark');
+        document.getElementById('iconMoon').classList.toggle('hidden', next === 'dark');
+      }
+      document.addEventListener('DOMContentLoaded', function() {
+        var isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+        document.getElementById('iconSun').classList.toggle('hidden', !isDark);
+        document.getElementById('iconMoon').classList.toggle('hidden', isDark);
+      });
+
       (function() {
         var companyId = new URLSearchParams(location.search).get('company') || '';
-        if (companyId) pwOnboard.save({ companyId: companyId });
+        if (companyId) {
+          pwOnboard.save({ companyId: companyId });
+          document.getElementById('backBtn').href = 'employees.html?company=' + encodeURIComponent(companyId);
+          document.getElementById('cancelBtn').href = 'employees.html?company=' + encodeURIComponent(companyId);
+        }
 
-        // Update back link
-        var backLink = document.querySelector('.pe-wizard-sub .pe-back, a[href="employees.html"]');
-        if (backLink && companyId) backLink.href = 'employees.html?company=' + encodeURIComponent(companyId);
+        // Restore previous selection
+        var d = pwOnboard.load();
+        if (d.memberType !== undefined) {
+          var radio = document.querySelector('input[name="memberType"][value="' + d.memberType + '"]');
+          if (radio) radio.checked = true;
+        }
 
-        document.getElementById("btn-continue").addEventListener("click", function () {
-          var v = document.querySelector('input[name="memberType"]:checked').value;
-          var map = { employee: 0, contractor: 1, construction_contractor: 2 };
+        document.getElementById('btn-continue').addEventListener('click', function() {
+          var val = parseInt(document.querySelector('input[name="memberType"]:checked').value, 10);
           var cid = pwOnboard.load().companyId || companyId;
-          pwOnboard.save({ memberType: map[v], memberTypeKey: v, companyId: cid });
-          location.href = "onboard-setup.html";
+          pwOnboard.save({ memberType: val, companyId: cid });
+          location.href = 'onboard-personal.html';
         });
       })();
     </script>

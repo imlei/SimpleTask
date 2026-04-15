@@ -3,122 +3,238 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Personal details — Payroll Works</title>
-    <link rel="stylesheet" href="employees-theme.css" />
+    <title>Personal Info — Payroll Works</title>
+    <script>(function(){var t=localStorage.getItem('pw-theme')||(window.matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');document.documentElement.setAttribute('data-theme',t);})();</script>
+    <link href="https://cdn.jsdelivr.net/npm/daisyui@5/themes.css" rel="stylesheet" />
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <script src="https://cdn.jsdelivr.net/npm/daisyui@5/cdn.js"></script>
+    <style type="text/tailwindcss">@import "tailwindcss";</style>
   </head>
-  <body class="pe-app">
-    <div class="pe-shell">
-      <header class="pe-topbar">
-        <div class="pe-brand">
-          <span>PAYROLL WORKS</span>
-          <span class="sep">|</span>
-          <span class="sub">Payroll</span>
-          <span class="pe-flag">🇨🇦</span>
-          <span class="pe-tax-pill">2026</span>
-        </div>
-        <nav class="pe-topbar-nav">
-          <a href="run-payroll.html" class="pe-topbar-nav-item">Payroll</a>
-        </nav>
-        <div class="pe-topbar-right">
-          <span class="pe-badge-admin">Admin</span>
-          <span>RORO HOLDING LTD</span>
-          <button type="button" class="pe-icon-btn">📞</button>
-          <button type="button" class="pe-icon-btn">🔔</button>
-          <button type="button" class="pe-icon-btn">?</button>
-          <div class="pe-avatar">LH</div>
-        </div>
-      </header>
+  <body class="bg-base-200 min-h-screen">
 
-      <div class="pe-wizard-bar">
-        <div class="pe-wizard-steps">
-          <div class="pe-wstep active">
-            <span class="circle">👤</span>
-            <span>Employee</span>
-          </div>
-          <div class="pe-wstep">
-            <span class="circle">💵</span>
-            <span>Payroll</span>
-          </div>
-          <div class="pe-wstep">
-            <span class="circle">📋</span>
-            <span>Checklist</span>
-          </div>
-        </div>
-        <div class="pe-wizard-sub">
-          <span></span>
-          <div class="pe-progress"><i style="width: 36%"></i></div>
-          <span>Onboard employee</span>
+    <!-- Navbar -->
+    <div class="navbar bg-base-100 border-b border-base-300 px-4 min-h-12 sticky top-0 z-30 shadow-sm">
+      <div class="navbar-start gap-2">
+        <a href="onboard-type.html" class="btn btn-ghost btn-sm btn-circle" title="Back">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+        </a>
+        <span class="font-bold text-sm tracking-wide">PAYROLL WORKS</span>
+        <span class="badge badge-ghost badge-sm">🇨🇦</span>
+      </div>
+      <div class="navbar-center">
+        <span class="text-sm font-medium text-base-content/70">Add Team Member</span>
+      </div>
+      <div class="navbar-end gap-3">
+        <button onclick="toggleTheme()" class="btn btn-ghost btn-sm btn-circle" title="Toggle dark mode">
+          <svg id="iconSun" class="w-4 h-4 hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364-6.364l-.707.707M6.343 17.657l-.707.707M17.657 17.657l-.707-.707M6.343 6.343l-.707-.707M12 5a7 7 0 100 14A7 7 0 0012 5z"/></svg>
+          <svg id="iconMoon" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/></svg>
+        </button>
+        <div class="avatar placeholder">
+          <div class="bg-primary text-primary-content rounded-full w-8 text-xs"><span>PW</span></div>
         </div>
       </div>
+    </div>
 
-      <aside class="pe-sidebar">
-        <a class="pe-nav" href="dashboard.html"><span>⌂</span> Home</a>
-        <a class="pe-nav" href="run-payroll.html"><span>▤</span> Run payroll</a>
-        <a class="pe-nav" href="#"><span>☰</span> Actions</a>
-        <a class="pe-nav" href="reports/payrun.html"><span>▦</span> Reports</a>
-        <a class="pe-nav active" href="employees.html"><span>👤</span> Employees</a>
-        <span class="pe-nav spacer"></span>
-        <a class="pe-nav" href="#"><span>⚙</span> Settings</a>
-      </aside>
+    <!-- Wizard progress -->
+    <div class="bg-base-100 border-b border-base-300 px-6 py-3">
+      <ul class="steps steps-horizontal w-full max-w-lg mx-auto text-xs">
+        <li class="step step-primary" data-content="✓">Member Type</li>
+        <li class="step step-primary" data-content="2">Personal Info</li>
+        <li class="step" data-content="3">Payroll</li>
+        <li class="step" data-content="4">YTD &amp; Benefits</li>
+        <li class="step" data-content="5">Review</li>
+      </ul>
+    </div>
 
-      <main class="pe-main">
-        <div class="pe-card">
-          <h2>Personal details</h2>
-          <div class="pe-field">
-            <label for="hireDate">Date of hire</label>
-            <input class="pe-input-line" id="hireDate" type="date" value="2026-04-06" />
-          </div>
-          <div class="pe-field">
-            <label for="province">Province of employment</label>
-            <select class="pe-input-line" id="province" style="border: 1px solid var(--pe-border); border-radius: 4px; padding: 0.4rem">
-              <option value="AB">Alberta</option>
-              <option value="BC" selected>British Columbia</option>
-              <option value="MB">Manitoba</option>
-              <option value="NB">New Brunswick</option>
-              <option value="NL">Newfoundland and Labrador</option>
-              <option value="NS">Nova Scotia</option>
-              <option value="NT">Northwest Territories</option>
-              <option value="NU">Nunavut</option>
-              <option value="ON">Ontario</option>
-              <option value="PE">Prince Edward Island</option>
-              <option value="QC">Quebec — QPP/QPIP applies</option>
-              <option value="SK">Saskatchewan</option>
-              <option value="YT">Yukon</option>
-              <option value="">Outside Canada</option>
-            </select>
-          </div>
-          <div class="pe-field">
-            <label for="sin">SIN (Social Insurance Number)</label>
-            <input class="pe-input-line" id="sin" type="text" placeholder="###-###-###" autocomplete="off" />
-          </div>
-          <div class="pe-field">
-            <label for="dob">Date of birth</label>
-            <input class="pe-input-line" id="dob" type="date" />
-          </div>
-          <div class="pe-foot-actions">
-            <a class="pe-btn" href="onboard-setup.html">Back</a>
-            <button type="button" class="pe-btn pe-btn-primary" id="btn-continue">Continue</button>
+    <div class="flex justify-center px-4 py-8">
+      <div class="w-full max-w-2xl flex flex-col gap-5">
+
+        <!-- Contact Info Card -->
+        <div class="card bg-base-100 shadow-sm">
+          <div class="card-body gap-4">
+            <div class="alert alert-info py-2 px-4">
+              <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+              <span class="text-sm">Email or mobile is required to invite this member to view pay statements.</span>
+            </div>
+            <h3 class="font-semibold text-base">Contact &amp; Identity</h3>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div class="form-control md:col-span-2">
+                <label class="label"><span class="label-text font-medium">Legal Name <span class="text-error">*</span></span></label>
+                <input type="text" id="legalName" class="input input-bordered input-sm" placeholder="LAST, First (as on SIN card)" autocomplete="name" />
+                <div class="text-error text-xs mt-1 hidden" id="err-name">Legal name is required.</div>
+              </div>
+              <div class="form-control">
+                <label class="label"><span class="label-text font-medium">Preferred Name</span></label>
+                <input type="text" id="nickname" class="input input-bordered input-sm" placeholder="Nickname / display name" />
+              </div>
+              <div class="form-control">
+                <label class="label"><span class="label-text font-medium">Position</span></label>
+                <input type="text" id="position" class="input input-bordered input-sm" placeholder="e.g. Software Developer" />
+              </div>
+              <div class="form-control">
+                <label class="label"><span class="label-text font-medium">Email</span></label>
+                <input type="email" id="email" class="input input-bordered input-sm" placeholder="employee@example.com" autocomplete="email" />
+              </div>
+              <div class="form-control">
+                <label class="label"><span class="label-text font-medium">Mobile</span></label>
+                <input type="tel" id="mobile" class="input input-bordered input-sm" placeholder="(416) 555-0100" autocomplete="tel" />
+              </div>
+              <div class="text-error text-xs col-span-2 hidden" id="err-contact">Please enter either email or mobile phone number.</div>
+            </div>
           </div>
         </div>
-      </main>
+
+        <!-- CRA / Personal Details Card -->
+        <div class="card bg-base-100 shadow-sm">
+          <div class="card-body gap-4">
+            <h3 class="font-semibold text-base">Employment &amp; CRA Details</h3>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div class="form-control">
+                <label class="label"><span class="label-text font-medium">Hire Date</span></label>
+                <input type="date" id="hireDate" class="input input-bordered input-sm" />
+              </div>
+              <div class="form-control">
+                <label class="label"><span class="label-text font-medium">Province of Employment</span></label>
+                <select id="province" class="select select-bordered select-sm">
+                  <option value="AB">Alberta (AB)</option>
+                  <option value="BC" selected>British Columbia (BC)</option>
+                  <option value="MB">Manitoba (MB)</option>
+                  <option value="NB">New Brunswick (NB)</option>
+                  <option value="NL">Newfoundland and Labrador (NL)</option>
+                  <option value="NS">Nova Scotia (NS)</option>
+                  <option value="NT">Northwest Territories (NT)</option>
+                  <option value="NU">Nunavut (NU)</option>
+                  <option value="ON">Ontario (ON)</option>
+                  <option value="PE">Prince Edward Island (PE)</option>
+                  <option value="QC">Quebec (QC) — QPP/QPIP applies</option>
+                  <option value="SK">Saskatchewan (SK)</option>
+                  <option value="YT">Yukon (YT)</option>
+                  <option value="">Outside Canada</option>
+                </select>
+              </div>
+              <div class="form-control">
+                <label class="label">
+                  <span class="label-text font-medium">SIN (Social Insurance Number)</span>
+                  <span class="label-text-alt text-xs text-base-content/50">Required within 3 days of hire (T4001 §8)</span>
+                </label>
+                <input type="text" id="sin" class="input input-bordered input-sm font-mono" placeholder="###-###-###" maxlength="11" autocomplete="off" />
+              </div>
+              <div class="form-control">
+                <label class="label"><span class="label-text font-medium">Date of Birth</span></label>
+                <input type="date" id="dob" class="input input-bordered input-sm" />
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Optional Details Card -->
+        <div class="card bg-base-100 shadow-sm">
+          <div class="card-body gap-4">
+            <h3 class="font-semibold text-base">Optional Details</h3>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div class="form-control">
+                <label class="label"><span class="label-text font-medium">Gender</span></label>
+                <select id="gender" class="select select-bordered select-sm">
+                  <option value="">Prefer not to say</option>
+                  <option value="Male">Male</option>
+                  <option value="Female">Female</option>
+                  <option value="Non-binary">Non-binary</option>
+                  <option value="Other">Other</option>
+                </select>
+              </div>
+              <div class="form-control">
+                <label class="label"><span class="label-text font-medium">Marital Status</span></label>
+                <select id="maritalStatus" class="select select-bordered select-sm">
+                  <option value="">Not specified</option>
+                  <option value="Single">Single</option>
+                  <option value="Married">Married</option>
+                  <option value="Common-law">Common-law</option>
+                  <option value="Separated">Separated</option>
+                  <option value="Divorced">Divorced</option>
+                  <option value="Widowed">Widowed</option>
+                </select>
+              </div>
+              <div class="form-control md:col-span-2">
+                <label class="label"><span class="label-text font-medium">Home Address</span></label>
+                <input type="text" id="address" class="input input-bordered input-sm" placeholder="Street, City, Province, Postal Code" />
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Footer actions -->
+        <div class="flex justify-between items-center bg-base-100 rounded-xl px-5 py-3 shadow-sm">
+          <a href="onboard-type.html" class="btn btn-ghost btn-sm">Back</a>
+          <button type="button" id="btn-continue" class="btn btn-primary btn-sm gap-2">
+            Continue
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+          </button>
+        </div>
+      </div>
     </div>
+
     <script src="js/onboard.js"></script>
     <script>
-      (function () {
-        var d = pwOnboard.load();
-        if (d.hireDate) document.getElementById("hireDate").value = d.hireDate;
-        if (d.province) document.getElementById("province").value = d.province;
-        if (d.sin) document.getElementById("sin").value = d.sin;
-        if (d.dob) document.getElementById("dob").value = d.dob;
+      function toggleTheme() {
+        var html = document.documentElement;
+        var next = html.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+        html.setAttribute('data-theme', next);
+        localStorage.setItem('pw-theme', next);
+        document.getElementById('iconSun').classList.toggle('hidden', next !== 'dark');
+        document.getElementById('iconMoon').classList.toggle('hidden', next === 'dark');
+      }
+      document.addEventListener('DOMContentLoaded', function() {
+        var isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+        document.getElementById('iconSun').classList.toggle('hidden', !isDark);
+        document.getElementById('iconMoon').classList.toggle('hidden', isDark);
+      });
 
-        document.getElementById("btn-continue").addEventListener("click", function () {
+      (function() {
+        var d = pwOnboard.load();
+        if (d.legalName)  document.getElementById('legalName').value  = d.legalName;
+        if (d.nickname)   document.getElementById('nickname').value   = d.nickname;
+        if (d.position)   document.getElementById('position').value   = d.position;
+        if (d.email)      document.getElementById('email').value      = d.email;
+        if (d.mobile)     document.getElementById('mobile').value     = d.mobile;
+        if (d.hireDate)   document.getElementById('hireDate').value   = d.hireDate;
+        if (d.province)   document.getElementById('province').value   = d.province;
+        if (d.dob)        document.getElementById('dob').value        = d.dob;
+        if (d.gender)     document.getElementById('gender').value     = d.gender;
+        if (d.maritalStatus) document.getElementById('maritalStatus').value = d.maritalStatus;
+        if (d.address)    document.getElementById('address').value    = d.address;
+
+        // Default hire date to today
+        if (!d.hireDate) {
+          document.getElementById('hireDate').value = new Date().toISOString().slice(0,10);
+        }
+
+        document.getElementById('btn-continue').addEventListener('click', function() {
+          var name  = document.getElementById('legalName').value.trim();
+          var email = document.getElementById('email').value.trim();
+          var mob   = document.getElementById('mobile').value.trim();
+          var errName = document.getElementById('err-name');
+          var errContact = document.getElementById('err-contact');
+          var ok = true;
+
+          if (!name) { errName.classList.remove('hidden'); ok = false; } else { errName.classList.add('hidden'); }
+          if (!email && !mob) { errContact.classList.remove('hidden'); ok = false; } else { errContact.classList.add('hidden'); }
+          if (!ok) return;
+
           pwOnboard.save({
-            hireDate: document.getElementById("hireDate").value,
-            province: document.getElementById("province").value,  // 2-letter code
-            sin: document.getElementById("sin").value.replace(/\D/g, ""),
-            dob: document.getElementById("dob").value,
+            legalName:    name,
+            nickname:     document.getElementById('nickname').value.trim(),
+            position:     document.getElementById('position').value.trim(),
+            email:        email,
+            mobile:       mob,
+            hireDate:     document.getElementById('hireDate').value,
+            province:     document.getElementById('province').value,
+            sin:          document.getElementById('sin').value.replace(/\D/g,''),
+            dob:          document.getElementById('dob').value,
+            gender:       document.getElementById('gender').value,
+            maritalStatus: document.getElementById('maritalStatus').value,
+            address:      document.getElementById('address').value.trim(),
           });
-          location.href = "onboard-payroll.html";
+          location.href = 'onboard-payroll.html';
         });
       })();
     </script>

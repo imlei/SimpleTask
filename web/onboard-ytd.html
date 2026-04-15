@@ -3,81 +3,119 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Payroll year to date — Payroll Works</title>
-    <link rel="stylesheet" href="employees-theme.css" />
+    <title>Payroll YTD — Payroll Works</title>
+    <script>(function(){var t=localStorage.getItem('pw-theme')||(window.matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');document.documentElement.setAttribute('data-theme',t);})();</script>
+    <link href="https://cdn.jsdelivr.net/npm/daisyui@5/themes.css" rel="stylesheet" />
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <script src="https://cdn.jsdelivr.net/npm/daisyui@5/cdn.js"></script>
+    <style type="text/tailwindcss">@import "tailwindcss";</style>
   </head>
-  <body class="pe-app">
-    <div class="pe-shell">
-      <header class="pe-topbar">
-        <div class="pe-brand">
-          <span>PAYROLL WORKS</span>
-          <span class="sep">|</span>
-          <span class="sub">Payroll</span>
-          <span class="pe-flag">🇨🇦</span>
-          <span class="pe-tax-pill">2026</span>
-        </div>
-        <nav class="pe-topbar-nav">
-          <a href="run-payroll.html" class="pe-topbar-nav-item">Payroll</a>
-        </nav>
-        <div class="pe-topbar-right">
-          <span class="pe-badge-admin">Admin</span>
-          <span>RORO HOLDING LTD</span>
-          <button type="button" class="pe-icon-btn">📞</button>
-          <button type="button" class="pe-icon-btn">🔔</button>
-          <button type="button" class="pe-icon-btn">?</button>
-          <div class="pe-avatar">LH</div>
-        </div>
-      </header>
+  <body class="bg-base-200 min-h-screen">
 
-      <div class="pe-wizard-bar">
-        <div class="pe-wizard-steps">
-          <div class="pe-wstep done"><span class="circle">✓</span><span>Employee</span></div>
-          <div class="pe-wstep active"><span class="circle">💵</span><span>Payroll</span></div>
-          <div class="pe-wstep"><span class="circle">📋</span><span>Checklist</span></div>
-        </div>
-        <div class="pe-wizard-sub">
-          <span></span>
-          <div class="pe-progress"><i style="width: 62%"></i></div>
-          <span>Onboard employee</span>
+    <!-- Navbar -->
+    <div class="navbar bg-base-100 border-b border-base-300 px-4 min-h-12 sticky top-0 z-30 shadow-sm">
+      <div class="navbar-start gap-2">
+        <a href="onboard-payroll.html" class="btn btn-ghost btn-sm btn-circle" title="Back">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+        </a>
+        <span class="font-bold text-sm tracking-wide">PAYROLL WORKS</span>
+        <span class="badge badge-ghost badge-sm">🇨🇦</span>
+      </div>
+      <div class="navbar-center">
+        <span class="text-sm font-medium text-base-content/70">Add Team Member</span>
+      </div>
+      <div class="navbar-end gap-3">
+        <button onclick="toggleTheme()" class="btn btn-ghost btn-sm btn-circle" title="Toggle dark mode">
+          <svg id="iconSun" class="w-4 h-4 hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364-6.364l-.707.707M6.343 17.657l-.707.707M17.657 17.657l-.707-.707M6.343 6.343l-.707-.707M12 5a7 7 0 100 14A7 7 0 0012 5z"/></svg>
+          <svg id="iconMoon" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/></svg>
+        </button>
+        <div class="avatar placeholder">
+          <div class="bg-primary text-primary-content rounded-full w-8 text-xs"><span>PW</span></div>
         </div>
       </div>
+    </div>
 
-      <aside class="pe-sidebar">
-        <a class="pe-nav" href="dashboard.html"><span>⌂</span> Home</a>
-        <a class="pe-nav" href="run-payroll.html"><span>▤</span> Run payroll</a>
-        <a class="pe-nav" href="#"><span>☰</span> Actions</a>
-        <a class="pe-nav" href="reports/payrun.html"><span>▦</span> Reports</a>
-        <a class="pe-nav active" href="employees.html"><span>👤</span> Employees</a>
-        <span class="pe-nav spacer"></span>
-        <a class="pe-nav" href="#"><span>⚙</span> Settings</a>
-      </aside>
+    <!-- Wizard progress -->
+    <div class="bg-base-100 border-b border-base-300 px-6 py-3">
+      <ul class="steps steps-horizontal w-full max-w-lg mx-auto text-xs">
+        <li class="step step-primary" data-content="✓">Member Type</li>
+        <li class="step step-primary" data-content="✓">Personal Info</li>
+        <li class="step step-primary" data-content="✓">Payroll</li>
+        <li class="step step-primary" data-content="4">YTD &amp; Benefits</li>
+        <li class="step" data-content="5">Review</li>
+      </ul>
+    </div>
 
-      <main class="pe-main">
-        <div class="pe-card">
-          <h2>Payroll year to date</h2>
-          <p style="color: var(--pe-text-secondary); margin-top: 0">
-            Have you paid <strong id="emp-name">this employee</strong> this year (2026) through another payroll service?
-          </p>
-          <div class="pe-field" style="grid-template-columns: 1fr">
-            <label><input type="radio" name="ytd" value="yes" /> Yes</label>
-            <label style="margin-top: 0.5rem"><input type="radio" name="ytd" value="no" checked /> No</label>
-          </div>
-          <div class="pe-foot-actions">
-            <a class="pe-btn" href="onboard-payroll.html">Back</a>
-            <button type="button" class="pe-btn pe-btn-primary" id="btn-continue">Continue</button>
+    <div class="flex justify-center px-4 py-8">
+      <div class="w-full max-w-2xl flex flex-col gap-5">
+
+        <div class="card bg-base-100 shadow-sm">
+          <div class="card-body gap-5">
+            <h3 class="font-semibold text-base">Payroll Year to Date</h3>
+            <p class="text-sm text-base-content/70">
+              Have you paid <strong id="emp-name">this employee</strong> this year through another payroll service?
+            </p>
+            <p class="text-sm text-base-content/60">
+              If yes, you'll need to enter their YTD gross wages, CPP contributions, EI premiums, and income taxes so deductions are calculated correctly for the rest of the year.
+            </p>
+
+            <div class="flex flex-col gap-3">
+              <label class="flex items-center gap-4 p-4 border-2 border-base-300 rounded-xl cursor-pointer hover:border-primary/40 transition-colors has-[:checked]:border-primary has-[:checked]:bg-primary/5">
+                <input type="radio" name="ytd" value="no" class="radio radio-primary" checked />
+                <div>
+                  <div class="font-semibold">No — this is their first payroll this year</div>
+                  <p class="text-sm text-base-content/60 mt-0.5">Deductions will be calculated from zero YTD.</p>
+                </div>
+              </label>
+              <label class="flex items-center gap-4 p-4 border-2 border-base-300 rounded-xl cursor-pointer hover:border-primary/40 transition-colors has-[:checked]:border-primary has-[:checked]:bg-primary/5">
+                <input type="radio" name="ytd" value="yes" class="radio radio-primary" />
+                <div>
+                  <div class="font-semibold">Yes — previously paid through another payroll service</div>
+                  <p class="text-sm text-base-content/60 mt-0.5">YTD balances can be entered after onboarding in the employee's payroll tab.</p>
+                </div>
+              </label>
+            </div>
           </div>
         </div>
-      </main>
+
+        <!-- Footer actions -->
+        <div class="flex justify-between items-center bg-base-100 rounded-xl px-5 py-3 shadow-sm">
+          <a href="onboard-payroll.html" class="btn btn-ghost btn-sm">Back</a>
+          <button type="button" id="btn-continue" class="btn btn-primary btn-sm gap-2">
+            Continue
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+          </button>
+        </div>
+      </div>
     </div>
+
     <script src="js/onboard.js"></script>
     <script>
-      (function () {
+      function toggleTheme() {
+        var html = document.documentElement;
+        var next = html.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+        html.setAttribute('data-theme', next);
+        localStorage.setItem('pw-theme', next);
+        document.getElementById('iconSun').classList.toggle('hidden', next !== 'dark');
+        document.getElementById('iconMoon').classList.toggle('hidden', next === 'dark');
+      }
+      document.addEventListener('DOMContentLoaded', function() {
+        var isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+        document.getElementById('iconSun').classList.toggle('hidden', !isDark);
+        document.getElementById('iconMoon').classList.toggle('hidden', isDark);
+      });
+
+      (function() {
         var d = pwOnboard.load();
-        if (d.legalName) document.getElementById("emp-name").textContent = d.legalName;
-        document.getElementById("btn-continue").addEventListener("click", function () {
-          var y = document.querySelector('input[name="ytd"]:checked').value;
-          pwOnboard.save({ paidYTDThroughOtherPayroll: y === "yes" });
-          location.href = "onboard-benefits.html";
+        if (d.legalName) document.getElementById('emp-name').textContent = d.legalName;
+        if (typeof d.paidYTDThroughOtherPayroll === 'boolean') {
+          document.querySelector('input[name="ytd"][value="' + (d.paidYTDThroughOtherPayroll ? 'yes' : 'no') + '"]').checked = true;
+        }
+
+        document.getElementById('btn-continue').addEventListener('click', function() {
+          var ytd = document.querySelector('input[name="ytd"]:checked').value;
+          pwOnboard.save({ paidYTDThroughOtherPayroll: ytd === 'yes' });
+          location.href = 'onboard-benefits.html';
         });
       })();
     </script>

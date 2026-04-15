@@ -236,6 +236,10 @@ func Open(dir string) (*sql.DB, error) {
 		_ = db.Close()
 		return nil, err
 	}
+	if err := ensureEmployeeExtraColumns(db); err != nil {
+		_ = db.Close()
+		return nil, err
+	}
 	return db, nil
 }
 
@@ -1134,4 +1138,40 @@ CREATE TABLE IF NOT EXISTS payroll_employees (
 CREATE INDEX IF NOT EXISTS idx_payroll_employees_company ON payroll_employees (company_id);
 `)
 	return err
+}
+
+func ensureEmployeeExtraColumns(db *sql.DB) error {
+	want := []struct {
+		Name string
+		DDL  string
+	}{
+		{Name: "address", DDL: "ALTER TABLE payroll_employees ADD COLUMN address TEXT NOT NULL DEFAULT ''"},
+		{Name: "gender", DDL: "ALTER TABLE payroll_employees ADD COLUMN gender TEXT NOT NULL DEFAULT ''"},
+		{Name: "marital_status", DDL: "ALTER TABLE payroll_employees ADD COLUMN marital_status TEXT NOT NULL DEFAULT ''"},
+		{Name: "notes", DDL: "ALTER TABLE payroll_employees ADD COLUMN notes TEXT NOT NULL DEFAULT ''"},
+	}
+	rows, err := db.Query(`PRAGMA table_info(payroll_employees)`)
+	if err != nil {
+		return err
+	}
+	existing := map[string]bool{}
+	defer rows.Close()
+	for rows.Next() {
+		var cid int
+		var name, ctype string
+		var notnull int
+		var dflt sql.NullString
+		var pk int
+		if rows.Scan(&cid, &name, &ctype, &notnull, &dflt, &pk) == nil {
+			existing[name] = true
+		}
+	}
+	for _, col := range want {
+		if !existing[col.Name] {
+			if _, err := db.Exec(col.DDL); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
 }

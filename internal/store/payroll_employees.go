@@ -35,7 +35,8 @@ func (s *Store) ListPayrollEmployees(companyID, statusFilter string) []models.Pa
 	             pays_per_year, pay_frequency, hours_per_week,
 	             td1_federal, td1_provincial,
 	             paid_ytd_other_payroll, auto_vacation,
-	             created_at, updated_at
+	             created_at, updated_at,
+	             COALESCE(address,''), COALESCE(gender,''), COALESCE(marital_status,''), COALESCE(notes,'')
 	      FROM payroll_employees
 	      WHERE company_id = ?`
 	args := []any{companyID}
@@ -75,7 +76,8 @@ func (s *Store) GetPayrollEmployee(id string) (models.PayrollEmployee, error) {
 		       pays_per_year, pay_frequency, hours_per_week,
 		       td1_federal, td1_provincial,
 		       paid_ytd_other_payroll, auto_vacation,
-		       created_at, updated_at
+		       created_at, updated_at,
+		       COALESCE(address,''), COALESCE(gender,''), COALESCE(marital_status,''), COALESCE(notes,'')
 		FROM payroll_employees WHERE id = ?`, id)
 
 	var sinEnc string
@@ -123,8 +125,9 @@ func (s *Store) CreatePayrollEmployee(e models.PayrollEmployee) (models.PayrollE
 		   pays_per_year, pay_frequency, hours_per_week,
 		   td1_federal, td1_provincial,
 		   paid_ytd_other_payroll, auto_vacation,
-		   created_at, updated_at)
-		VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+		   created_at, updated_at,
+		   address, gender, marital_status, notes)
+		VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
 		e.ID, e.CompanyID, e.LegalName, e.Nickname, e.Email, e.Mobile,
 		e.MemberType, e.Position, e.Status, e.Province, sinEnc,
 		e.DateOfBirth, e.HireDate, e.SalaryType, e.PayRate, e.PayRateUnit,
@@ -132,6 +135,7 @@ func (s *Store) CreatePayrollEmployee(e models.PayrollEmployee) (models.PayrollE
 		e.TD1Federal, e.TD1Provincial,
 		boolInt(e.PaidYTDOtherPayroll), boolInt(e.AutoVacation),
 		e.CreatedAt, e.UpdatedAt,
+		e.Address, e.Gender, e.MaritalStatus, e.Notes,
 	)
 	if err != nil {
 		return e, err
@@ -175,6 +179,7 @@ func (s *Store) UpdatePayrollEmployee(id string, patch models.PayrollEmployee) (
 		  pays_per_year=?, pay_frequency=?, hours_per_week=?,
 		  td1_federal=?, td1_provincial=?,
 		  paid_ytd_other_payroll=?, auto_vacation=?,
+		  address=?, gender=?, marital_status=?, notes=?,
 		  updated_at=?
 		WHERE id=?`,
 		patch.LegalName, patch.Nickname, patch.Email, patch.Mobile,
@@ -183,6 +188,7 @@ func (s *Store) UpdatePayrollEmployee(id string, patch models.PayrollEmployee) (
 		patch.PaysPerYear, patch.PayFrequency, patch.HoursPerWeek,
 		patch.TD1Federal, patch.TD1Provincial,
 		boolInt(patch.PaidYTDOtherPayroll), boolInt(patch.AutoVacation),
+		patch.Address, patch.Gender, patch.MaritalStatus, patch.Notes,
 		now, id,
 	)
 	if err != nil {
@@ -228,6 +234,7 @@ func (s *Store) scanEmployee(scan scanFunc) (models.PayrollEmployee, string) {
 		&e.TD1Federal, &e.TD1Provincial,
 		&paidYTD, &autoVac,
 		&e.CreatedAt, &e.UpdatedAt,
+		&e.Address, &e.Gender, &e.MaritalStatus, &e.Notes,
 	)
 	e.PaidYTDOtherPayroll = paidYTD != 0
 	e.AutoVacation = autoVac != 0

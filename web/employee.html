@@ -1,0 +1,639 @@
+<!DOCTYPE html>
+<html lang="en-CA">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Employee — Payroll Works</title>
+    <script>(function(){var t=localStorage.getItem('pw-theme')||(window.matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');document.documentElement.setAttribute('data-theme',t);})();</script>
+    <link href="https://cdn.jsdelivr.net/npm/daisyui@5/themes.css" rel="stylesheet" />
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <script src="https://cdn.jsdelivr.net/npm/daisyui@5/cdn.js"></script>
+    <style type="text/tailwindcss">@import "tailwindcss";</style>
+  </head>
+  <body class="bg-base-200 min-h-screen">
+
+    <!-- Navbar -->
+    <div class="navbar bg-base-100 border-b border-base-300 px-4 min-h-12 sticky top-0 z-30 shadow-sm">
+      <div class="navbar-start gap-2">
+        <a id="backBtn" href="employees.html" class="btn btn-ghost btn-sm btn-circle" title="Back">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+        </a>
+        <span class="font-bold text-sm tracking-wide">PAYROLL WORKS</span>
+        <span class="badge badge-ghost badge-sm">🇨🇦</span>
+      </div>
+      <div class="navbar-center">
+        <span class="text-sm font-medium text-base-content/70" id="navTitle">Employee Profile</span>
+      </div>
+      <div class="navbar-end gap-3">
+        <button onclick="toggleTheme()" class="btn btn-ghost btn-sm btn-circle" id="themeToggle" title="Toggle dark mode">
+          <svg id="iconSun" class="w-4 h-4 hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364-6.364l-.707.707M6.343 17.657l-.707.707M17.657 17.657l-.707-.707M6.343 6.343l-.707-.707M12 5a7 7 0 100 14A7 7 0 0012 5z"/></svg>
+          <svg id="iconMoon" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/></svg>
+        </button>
+        <div class="avatar placeholder">
+          <div class="bg-primary text-primary-content rounded-full w-8 text-xs">
+            <span id="topbar-avatar">PW</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="flex">
+      <!-- Sidebar -->
+      <aside class="w-56 bg-base-100 border-r border-base-300 min-h-[calc(100vh-3rem)] hidden md:flex flex-col gap-1 p-3 shrink-0">
+        <a href="index.html" class="btn btn-ghost btn-sm justify-start gap-2 font-normal">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
+          Home
+        </a>
+        <a id="nav-payroll" href="run-payroll.html" class="btn btn-ghost btn-sm justify-start gap-2 font-normal">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
+          Run Payroll
+        </a>
+        <a id="nav-reports" href="reports/payrun.html" class="btn btn-ghost btn-sm justify-start gap-2 font-normal">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+          Reports
+        </a>
+        <a id="nav-employees" href="employees.html" class="btn btn-ghost btn-sm justify-start gap-2 font-normal bg-primary/10 text-primary">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+          Employees
+        </a>
+        <a id="nav-rules" href="pay-rules.html" class="btn btn-ghost btn-sm justify-start gap-2 font-normal">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+          Pay Rules
+        </a>
+      </aside>
+
+      <!-- Main -->
+      <main class="flex-1 p-6 max-w-5xl">
+
+        <!-- Profile Header Card -->
+        <div class="card bg-base-100 shadow-sm mb-5">
+          <div class="card-body py-5 px-6">
+            <div class="flex items-center gap-5">
+              <div class="avatar placeholder">
+                <div class="bg-primary/20 text-primary rounded-full w-16 text-xl font-bold">
+                  <span id="profile-initials">—</span>
+                </div>
+              </div>
+              <div class="flex-1">
+                <h2 class="text-lg font-bold text-base-content" id="profile-name">Loading…</h2>
+                <p class="text-sm text-base-content/60" id="profile-sub">—</p>
+                <div class="flex gap-2 mt-1" id="profile-badges"></div>
+              </div>
+              <!-- Edit / Save / Cancel buttons -->
+              <div class="flex gap-2" id="action-btns">
+                <button id="btn-edit" onclick="enterEdit()" class="btn btn-primary btn-sm gap-1">
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/></svg>
+                  Edit
+                </button>
+                <button id="btn-save" onclick="saveEmployee()" class="btn btn-primary btn-sm gap-1 hidden">
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                  Save
+                </button>
+                <button id="btn-cancel" onclick="cancelEdit()" class="btn btn-ghost btn-sm hidden">Cancel</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tabs -->
+        <div role="tablist" class="tabs tabs-bordered mb-5 bg-base-100 px-4 rounded-t-xl shadow-sm">
+          <a role="tab" class="tab tab-active" data-tab="basic" onclick="switchTab('basic',this)">Basic Info</a>
+          <a role="tab" class="tab" data-tab="employment" onclick="switchTab('employment',this)">Employment</a>
+          <a role="tab" class="tab" data-tab="payroll" onclick="switchTab('payroll',this)">Payroll</a>
+          <a role="tab" class="tab" data-tab="payment" onclick="switchTab('payment',this)">Payment Details</a>
+          <a role="tab" class="tab" data-tab="notes" onclick="switchTab('notes',this)">Notes</a>
+        </div>
+
+        <!-- ── Tab: Basic Info ─────────────────────────────────────────────── -->
+        <div id="tab-basic" class="tab-content card bg-base-100 shadow-sm">
+          <div class="card-body gap-5">
+            <h3 class="font-semibold text-base-content/80">Personal Details</h3>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div class="form-control">
+                <label class="label"><span class="label-text font-medium">Legal Name</span></label>
+                <span class="view-field text-sm py-2 px-3 min-h-[2.5rem]" id="v-legalName">—</span>
+                <input type="text" id="f-legalName" class="input input-bordered input-sm edit-field hidden" placeholder="Full legal name" />
+              </div>
+              <div class="form-control">
+                <label class="label"><span class="label-text font-medium">Preferred Name</span></label>
+                <span class="view-field text-sm py-2 px-3 min-h-[2.5rem]" id="v-nickname">—</span>
+                <input type="text" id="f-nickname" class="input input-bordered input-sm edit-field hidden" placeholder="Nickname / display name" />
+              </div>
+              <div class="form-control">
+                <label class="label"><span class="label-text font-medium">Date of Birth</span></label>
+                <span class="view-field text-sm py-2 px-3 min-h-[2.5rem]" id="v-dateOfBirth">—</span>
+                <input type="date" id="f-dateOfBirth" class="input input-bordered input-sm edit-field hidden" />
+              </div>
+              <div class="form-control">
+                <label class="label"><span class="label-text font-medium">Gender</span></label>
+                <span class="view-field text-sm py-2 px-3 min-h-[2.5rem]" id="v-gender">—</span>
+                <select id="f-gender" class="select select-bordered select-sm edit-field hidden">
+                  <option value="">Prefer not to say</option>
+                  <option value="Male">Male</option>
+                  <option value="Female">Female</option>
+                  <option value="Non-binary">Non-binary</option>
+                  <option value="Other">Other</option>
+                </select>
+              </div>
+              <div class="form-control">
+                <label class="label"><span class="label-text font-medium">Marital Status</span></label>
+                <span class="view-field text-sm py-2 px-3 min-h-[2.5rem]" id="v-maritalStatus">—</span>
+                <select id="f-maritalStatus" class="select select-bordered select-sm edit-field hidden">
+                  <option value="">Not specified</option>
+                  <option value="Single">Single</option>
+                  <option value="Married">Married</option>
+                  <option value="Common-law">Common-law</option>
+                  <option value="Separated">Separated</option>
+                  <option value="Divorced">Divorced</option>
+                  <option value="Widowed">Widowed</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="divider my-1"></div>
+            <h3 class="font-semibold text-base-content/80">Contact Information</h3>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div class="form-control">
+                <label class="label"><span class="label-text font-medium">Email</span></label>
+                <span class="view-field text-sm py-2 px-3 min-h-[2.5rem]" id="v-email">—</span>
+                <input type="email" id="f-email" class="input input-bordered input-sm edit-field hidden" placeholder="employee@example.com" />
+              </div>
+              <div class="form-control">
+                <label class="label"><span class="label-text font-medium">Mobile</span></label>
+                <span class="view-field text-sm py-2 px-3 min-h-[2.5rem]" id="v-mobile">—</span>
+                <input type="tel" id="f-mobile" class="input input-bordered input-sm edit-field hidden" placeholder="(416) 555-0100" />
+              </div>
+              <div class="form-control md:col-span-2">
+                <label class="label"><span class="label-text font-medium">Address</span></label>
+                <span class="view-field text-sm py-2 px-3 min-h-[2.5rem]" id="v-address">—</span>
+                <input type="text" id="f-address" class="input input-bordered input-sm edit-field hidden" placeholder="Street, City, Province, Postal Code" />
+              </div>
+            </div>
+
+            <div class="divider my-1"></div>
+            <h3 class="font-semibold text-base-content/80">CRA Information</h3>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div class="form-control">
+                <label class="label">
+                  <span class="label-text font-medium">SIN</span>
+                  <span class="label-text-alt text-base-content/50 text-xs">Write-only — never displayed in full</span>
+                </label>
+                <span class="view-field text-sm py-2 px-3 min-h-[2.5rem] font-mono" id="v-sinMasked">—</span>
+                <input type="text" id="f-sin" class="input input-bordered input-sm edit-field hidden font-mono" placeholder="Leave blank to keep existing" maxlength="11" />
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ── Tab: Employment ────────────────────────────────────────────── -->
+        <div id="tab-employment" class="tab-content card bg-base-100 shadow-sm hidden">
+          <div class="card-body gap-5">
+            <h3 class="font-semibold text-base-content/80">Employment Details</h3>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div class="form-control">
+                <label class="label"><span class="label-text font-medium">Position / Job Title</span></label>
+                <span class="view-field text-sm py-2 px-3 min-h-[2.5rem]" id="v-position">—</span>
+                <input type="text" id="f-position" class="input input-bordered input-sm edit-field hidden" placeholder="e.g. Software Developer" />
+              </div>
+              <div class="form-control">
+                <label class="label"><span class="label-text font-medium">Member Type</span></label>
+                <span class="view-field text-sm py-2 px-3 min-h-[2.5rem]" id="v-memberType">—</span>
+                <select id="f-memberType" class="select select-bordered select-sm edit-field hidden">
+                  <option value="0">Employee (T4)</option>
+                  <option value="1">Contractor (T4A)</option>
+                  <option value="2">Construction Contractor (T5018)</option>
+                </select>
+              </div>
+              <div class="form-control">
+                <label class="label"><span class="label-text font-medium">Hire Date</span></label>
+                <span class="view-field text-sm py-2 px-3 min-h-[2.5rem]" id="v-hireDate">—</span>
+                <input type="date" id="f-hireDate" class="input input-bordered input-sm edit-field hidden" />
+              </div>
+              <div class="form-control">
+                <label class="label"><span class="label-text font-medium">Status</span></label>
+                <span class="view-field text-sm py-2 px-3 min-h-[2.5rem]" id="v-status">—</span>
+                <select id="f-status" class="select select-bordered select-sm edit-field hidden">
+                  <option value="active">Active</option>
+                  <option value="terminated">Terminated</option>
+                </select>
+              </div>
+              <div class="form-control">
+                <label class="label"><span class="label-text font-medium">Province of Employment</span></label>
+                <span class="view-field text-sm py-2 px-3 min-h-[2.5rem]" id="v-province">—</span>
+                <select id="f-province" class="select select-bordered select-sm edit-field hidden">
+                  <option value="AB">Alberta (AB)</option>
+                  <option value="BC">British Columbia (BC)</option>
+                  <option value="MB">Manitoba (MB)</option>
+                  <option value="NB">New Brunswick (NB)</option>
+                  <option value="NL">Newfoundland and Labrador (NL)</option>
+                  <option value="NS">Nova Scotia (NS)</option>
+                  <option value="NT">Northwest Territories (NT)</option>
+                  <option value="NU">Nunavut (NU)</option>
+                  <option value="ON">Ontario (ON)</option>
+                  <option value="PE">Prince Edward Island (PE)</option>
+                  <option value="QC">Quebec (QC)</option>
+                  <option value="SK">Saskatchewan (SK)</option>
+                  <option value="YT">Yukon (YT)</option>
+                </select>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ── Tab: Payroll ───────────────────────────────────────────────── -->
+        <div id="tab-payroll" class="tab-content card bg-base-100 shadow-sm hidden">
+          <div class="card-body gap-5">
+            <h3 class="font-semibold text-base-content/80">Pay Details</h3>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div class="form-control">
+                <label class="label"><span class="label-text font-medium">Salary Type</span></label>
+                <span class="view-field text-sm py-2 px-3 min-h-[2.5rem]" id="v-salaryType">—</span>
+                <select id="f-salaryType" class="select select-bordered select-sm edit-field hidden">
+                  <option value="0">Salaried</option>
+                  <option value="1">Time-Based (Hourly)</option>
+                </select>
+              </div>
+              <div class="form-control">
+                <label class="label"><span class="label-text font-medium">Pay Rate</span></label>
+                <span class="view-field text-sm py-2 px-3 min-h-[2.5rem]" id="v-payRate">—</span>
+                <input type="number" id="f-payRate" class="input input-bordered input-sm edit-field hidden" step="0.01" min="0" />
+              </div>
+              <div class="form-control">
+                <label class="label"><span class="label-text font-medium">Rate Unit</span></label>
+                <span class="view-field text-sm py-2 px-3 min-h-[2.5rem]" id="v-payRateUnit">—</span>
+                <select id="f-payRateUnit" class="select select-bordered select-sm edit-field hidden">
+                  <option value="Hourly">Hourly</option>
+                  <option value="Annually">Annually</option>
+                  <option value="Monthly">Monthly</option>
+                </select>
+              </div>
+              <div class="form-control">
+                <label class="label"><span class="label-text font-medium">Pay Frequency</span></label>
+                <span class="view-field text-sm py-2 px-3 min-h-[2.5rem]" id="v-payFrequency">—</span>
+                <select id="f-payFrequency" class="select select-bordered select-sm edit-field hidden">
+                  <option value="Weekly">Weekly (52×/yr)</option>
+                  <option value="Bi-weekly">Bi-weekly (26×/yr)</option>
+                  <option value="Semi-Monthly">Semi-Monthly (24×/yr)</option>
+                  <option value="Monthly">Monthly (12×/yr)</option>
+                </select>
+              </div>
+              <div class="form-control">
+                <label class="label"><span class="label-text font-medium">Hours/Week</span></label>
+                <span class="view-field text-sm py-2 px-3 min-h-[2.5rem]" id="v-hoursPerWeek">—</span>
+                <input type="number" id="f-hoursPerWeek" class="input input-bordered input-sm edit-field hidden" step="0.5" min="0" max="80" />
+              </div>
+            </div>
+
+            <div class="divider my-1"></div>
+            <h3 class="font-semibold text-base-content/80">TD1 Tax Credits</h3>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div class="form-control">
+                <label class="label">
+                  <span class="label-text font-medium">TD1 Federal</span>
+                  <span class="label-text-alt text-xs text-base-content/50">Default: $16,129</span>
+                </label>
+                <span class="view-field text-sm py-2 px-3 min-h-[2.5rem]" id="v-td1Federal">—</span>
+                <input type="number" id="f-td1Federal" class="input input-bordered input-sm edit-field hidden" step="1" min="0" />
+              </div>
+              <div class="form-control">
+                <label class="label">
+                  <span class="label-text font-medium">TD1 Provincial</span>
+                  <span class="label-text-alt text-xs text-base-content/50">Province-specific</span>
+                </label>
+                <span class="view-field text-sm py-2 px-3 min-h-[2.5rem]" id="v-td1Provincial">—</span>
+                <input type="number" id="f-td1Provincial" class="input input-bordered input-sm edit-field hidden" step="1" min="0" />
+              </div>
+            </div>
+
+            <div class="divider my-1"></div>
+            <h3 class="font-semibold text-base-content/80">Vacation</h3>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div class="form-control">
+                <label class="label"><span class="label-text font-medium">Auto Vacation Pay</span></label>
+                <span class="view-field text-sm py-2 px-3 min-h-[2.5rem]" id="v-autoVacation">—</span>
+                <label class="label cursor-pointer justify-start gap-3 edit-field hidden">
+                  <input type="checkbox" id="f-autoVacation" class="checkbox checkbox-sm" />
+                  <span class="label-text text-sm">Auto-calculate vacation pay per period</span>
+                </label>
+              </div>
+              <div class="form-control">
+                <label class="label"><span class="label-text font-medium">YTD from Other Payroll</span></label>
+                <span class="view-field text-sm py-2 px-3 min-h-[2.5rem]" id="v-paidYtdOtherPayroll">—</span>
+                <label class="label cursor-pointer justify-start gap-3 edit-field hidden">
+                  <input type="checkbox" id="f-paidYtdOtherPayroll" class="checkbox checkbox-sm" />
+                  <span class="label-text text-sm">Has YTD earnings from another payroll system</span>
+                </label>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ── Tab: Payment Details ───────────────────────────────────────── -->
+        <div id="tab-payment" class="tab-content card bg-base-100 shadow-sm hidden">
+          <div class="card-body gap-4">
+            <h3 class="font-semibold text-base-content/80">Payment Method</h3>
+            <div class="alert alert-info">
+              <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+              <span class="text-sm">Direct deposit (EFT) banking details are managed in the Run Payroll → Payments step.</span>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div class="form-control">
+                <label class="label"><span class="label-text font-medium">Default Payment Type</span></label>
+                <span class="view-field text-sm py-2 px-3 min-h-[2.5rem]" id="v-paymentType">—</span>
+                <select id="f-paymentType" class="select select-bordered select-sm edit-field hidden">
+                  <option value="cheque">Cheque</option>
+                  <option value="direct_deposit">Direct Deposit (EFT)</option>
+                  <option value="cash">Cash</option>
+                </select>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ── Tab: Notes ─────────────────────────────────────────────────── -->
+        <div id="tab-notes" class="tab-content card bg-base-100 shadow-sm hidden">
+          <div class="card-body gap-4">
+            <h3 class="font-semibold text-base-content/80">Notes</h3>
+            <div class="form-control">
+              <span class="view-field text-sm py-2 px-3 min-h-[6rem] whitespace-pre-wrap" id="v-notes">—</span>
+              <textarea id="f-notes" class="textarea textarea-bordered text-sm edit-field hidden" rows="6" placeholder="Internal notes about this employee…"></textarea>
+            </div>
+          </div>
+        </div>
+
+        <!-- Bottom save bar (shown in edit mode) -->
+        <div id="bottom-bar" class="hidden mt-4 flex justify-end gap-3 bg-base-100 border border-base-300 rounded-xl px-6 py-3 shadow-sm">
+          <button onclick="cancelEdit()" class="btn btn-ghost btn-sm">Cancel</button>
+          <button onclick="saveEmployee()" class="btn btn-primary btn-sm gap-1" id="btn-save-bottom">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+            Save Changes
+          </button>
+        </div>
+
+        <!-- Toast -->
+        <div id="toast" class="toast toast-end hidden z-50">
+          <div class="alert alert-success shadow-lg">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+            <span id="toast-msg">Saved</span>
+          </div>
+        </div>
+
+      </main>
+    </div>
+
+    <script>
+      function toggleTheme() {
+        var html = document.documentElement;
+        var next = html.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+        html.setAttribute('data-theme', next);
+        localStorage.setItem('pw-theme', next);
+        document.getElementById('iconSun').classList.toggle('hidden', next !== 'dark');
+        document.getElementById('iconMoon').classList.toggle('hidden', next === 'dark');
+      }
+      document.addEventListener('DOMContentLoaded', function() {
+        var isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+        document.getElementById('iconSun').classList.toggle('hidden', !isDark);
+        document.getElementById('iconMoon').classList.toggle('hidden', isDark);
+      });
+
+      var params    = new URLSearchParams(location.search);
+      var empId     = params.get('id') || '';
+      var companyId = params.get('company') || '';
+      var empData   = {};
+      var editMode  = false;
+
+      var MEMBER_TYPE  = { 0:'Employee (T4)', 1:'Contractor (T4A)', 2:'Construction (T5018)' };
+      var SALARY_TYPE  = { 0:'Salaried', 1:'Time-Based (Hourly)' };
+      var FREQ_LABEL   = { 'Weekly':'Weekly','Bi-weekly':'Bi-weekly','Semi-Monthly':'Semi-Monthly','Monthly':'Monthly' };
+
+      // ── Auth + init ───────────────────────────────────────────────────────
+      fetch('/api/me', { credentials: 'same-origin' })
+        .then(r => { if (!r.ok) location.href = '/static/login.html'; return r.json(); })
+        .then(u => {
+          var av = document.getElementById('topbar-avatar');
+          if (av) av.textContent = initials(u.username || 'PW');
+        }).catch(() => location.href = '/static/login.html');
+
+      // Wire sidebar links
+      if (companyId) {
+        document.getElementById('nav-payroll').href = 'run-payroll.html?company=' + companyId;
+        document.getElementById('nav-reports').href = 'reports/payrun.html?company=' + companyId;
+        document.getElementById('nav-employees').href = 'employees.html?company=' + companyId;
+        document.getElementById('nav-rules').href = 'pay-rules.html?company=' + companyId;
+        document.getElementById('backBtn').href = 'employees.html?company=' + companyId;
+      }
+
+      if (!empId) {
+        document.getElementById('profile-name').textContent = 'Employee not found';
+      } else {
+        loadEmployee();
+      }
+
+      function loadEmployee() {
+        fetch('/api/payroll/employees/' + encodeURIComponent(empId))
+          .then(r => { if (!r.ok) throw new Error('Not found'); return r.json(); })
+          .then(e => {
+            empData = e;
+            renderView(e);
+          })
+          .catch(() => {
+            document.getElementById('profile-name').textContent = 'Employee not found';
+          });
+      }
+
+      function initials(name) {
+        return (name||'—').split(/\s+/).filter(Boolean).map(w=>w[0]).join('').toUpperCase().slice(0,2)||'—';
+      }
+
+      function renderView(e) {
+        // Header
+        document.getElementById('profile-initials').textContent = initials(e.legalName);
+        document.getElementById('profile-name').textContent = e.legalName || '—';
+        document.getElementById('navTitle').textContent = e.legalName || 'Employee Profile';
+        document.getElementById('profile-sub').textContent =
+          [e.position||'', e.payFrequency||''].filter(Boolean).join(' · ') || '—';
+        var bw = document.getElementById('profile-badges');
+        bw.innerHTML = '';
+        if (e.memberType !== undefined) {
+          var bc = e.memberType===0?'badge-primary':e.memberType===1?'badge-secondary':'badge-accent';
+          bw.innerHTML += `<span class="badge badge-sm ${bc} badge-outline">${MEMBER_TYPE[e.memberType]||'—'}</span>`;
+        }
+        if (e.status) {
+          var sc = e.status==='active'?'badge-success':'badge-neutral';
+          bw.innerHTML += `<span class="badge badge-sm ${sc}">${e.status}</span>`;
+        }
+
+        // Basic Info
+        setView('legalName', e.legalName);
+        setView('nickname', e.nickname);
+        setView('dateOfBirth', e.dateOfBirth);
+        setView('gender', e.gender || '—');
+        setView('maritalStatus', e.maritalStatus || '—');
+        setView('email', e.email);
+        setView('mobile', e.mobile);
+        setView('address', e.address || '—');
+        setView('sinMasked', e.sinMasked || '—');
+
+        // Employment
+        setView('position', e.position);
+        setView('memberType', MEMBER_TYPE[e.memberType] || '—');
+        setView('hireDate', e.hireDate);
+        setView('status', e.status);
+        setView('province', e.province);
+
+        // Payroll
+        setView('salaryType', SALARY_TYPE[e.salaryType] || '—');
+        setView('payRate', e.payRate ? '$' + Number(e.payRate).toFixed(2) : '—');
+        setView('payRateUnit', e.payRateUnit || '—');
+        setView('payFrequency', e.payFrequency || '—');
+        setView('hoursPerWeek', e.hoursPerWeek ? e.hoursPerWeek + ' hrs/week' : '—');
+        setView('td1Federal', e.td1Federal ? '$' + Number(e.td1Federal).toLocaleString() : '—');
+        setView('td1Provincial', e.td1Provincial ? '$' + Number(e.td1Provincial).toLocaleString() : '—');
+        setView('autoVacation', e.autoVacation ? 'Yes — auto-calculated per period' : 'No');
+        setView('paidYtdOtherPayroll', e.paidYtdOtherPayroll ? 'Yes' : 'No');
+
+        // Payment
+        setView('paymentType', e.paymentType || 'cheque');
+
+        // Notes
+        setView('notes', e.notes || '');
+      }
+
+      function setView(id, val) {
+        var el = document.getElementById('v-' + id);
+        if (el) el.textContent = val || '—';
+      }
+
+      // ── Tab switching ────────────────────────────────────────────────────
+      function switchTab(name, el) {
+        document.querySelectorAll('.tab-content').forEach(d => d.classList.add('hidden'));
+        document.querySelectorAll('[role=tab]').forEach(t => t.classList.remove('tab-active'));
+        document.getElementById('tab-' + name).classList.remove('hidden');
+        el.classList.add('tab-active');
+      }
+
+      // ── Edit mode ─────────────────────────────────────────────────────────
+      function enterEdit() {
+        editMode = true;
+        // Show all tabs' edit fields, hide view spans
+        document.querySelectorAll('.view-field').forEach(el => el.classList.add('hidden'));
+        document.querySelectorAll('.edit-field').forEach(el => el.classList.remove('hidden'));
+        // Show save/cancel, hide edit
+        document.getElementById('btn-edit').classList.add('hidden');
+        document.getElementById('btn-save').classList.remove('hidden');
+        document.getElementById('btn-cancel').classList.remove('hidden');
+        document.getElementById('bottom-bar').classList.remove('hidden');
+
+        // Populate form fields from empData
+        setField('legalName', empData.legalName);
+        setField('nickname', empData.nickname);
+        setField('dateOfBirth', empData.dateOfBirth);
+        setField('gender', empData.gender || '');
+        setField('maritalStatus', empData.maritalStatus || '');
+        setField('email', empData.email);
+        setField('mobile', empData.mobile);
+        setField('address', empData.address || '');
+        // SIN: leave blank (write-only)
+
+        setField('position', empData.position);
+        document.getElementById('f-memberType').value = String(empData.memberType || 0);
+        setField('hireDate', empData.hireDate);
+        document.getElementById('f-status').value = empData.status || 'active';
+        document.getElementById('f-province').value = empData.province || '';
+
+        document.getElementById('f-salaryType').value = String(empData.salaryType || 0);
+        setField('payRate', empData.payRate);
+        document.getElementById('f-payRateUnit').value = empData.payRateUnit || 'Hourly';
+        document.getElementById('f-payFrequency').value = empData.payFrequency || 'Bi-weekly';
+        setField('hoursPerWeek', empData.hoursPerWeek);
+        setField('td1Federal', empData.td1Federal);
+        setField('td1Provincial', empData.td1Provincial);
+        document.getElementById('f-autoVacation').checked = !!empData.autoVacation;
+        document.getElementById('f-paidYtdOtherPayroll').checked = !!empData.paidYtdOtherPayroll;
+
+        document.getElementById('f-paymentType').value = empData.paymentType || 'cheque';
+        setField('notes', empData.notes || '');
+      }
+
+      function setField(id, val) {
+        var el = document.getElementById('f-' + id);
+        if (el) el.value = val != null ? String(val) : '';
+      }
+
+      function cancelEdit() {
+        editMode = false;
+        document.querySelectorAll('.view-field').forEach(el => el.classList.remove('hidden'));
+        document.querySelectorAll('.edit-field').forEach(el => el.classList.add('hidden'));
+        document.getElementById('btn-edit').classList.remove('hidden');
+        document.getElementById('btn-save').classList.add('hidden');
+        document.getElementById('btn-cancel').classList.add('hidden');
+        document.getElementById('bottom-bar').classList.add('hidden');
+      }
+
+      function saveEmployee() {
+        var btnSave = document.getElementById('btn-save');
+        var btnSaveBottom = document.getElementById('btn-save-bottom');
+        btnSave.classList.add('loading');
+        btnSaveBottom.classList.add('loading');
+
+        var payload = {
+          companyId:          empData.companyId || companyId,
+          legalName:          document.getElementById('f-legalName').value.trim(),
+          nickname:           document.getElementById('f-nickname').value.trim(),
+          dateOfBirth:        document.getElementById('f-dateOfBirth').value,
+          gender:             document.getElementById('f-gender').value,
+          maritalStatus:      document.getElementById('f-maritalStatus').value,
+          email:              document.getElementById('f-email').value.trim(),
+          mobile:             document.getElementById('f-mobile').value.trim(),
+          address:            document.getElementById('f-address').value.trim(),
+          position:           document.getElementById('f-position').value.trim(),
+          memberType:         parseInt(document.getElementById('f-memberType').value, 10),
+          hireDate:           document.getElementById('f-hireDate').value,
+          status:             document.getElementById('f-status').value,
+          province:           document.getElementById('f-province').value,
+          salaryType:         parseInt(document.getElementById('f-salaryType').value, 10),
+          payRate:            parseFloat(document.getElementById('f-payRate').value) || 0,
+          payRateUnit:        document.getElementById('f-payRateUnit').value,
+          payFrequency:       document.getElementById('f-payFrequency').value,
+          hoursPerWeek:       parseFloat(document.getElementById('f-hoursPerWeek').value) || 0,
+          td1Federal:         parseFloat(document.getElementById('f-td1Federal').value) || 0,
+          td1Provincial:      parseFloat(document.getElementById('f-td1Provincial').value) || 0,
+          autoVacation:       document.getElementById('f-autoVacation').checked,
+          paidYtdOtherPayroll: document.getElementById('f-paidYtdOtherPayroll').checked,
+          notes:              document.getElementById('f-notes').value,
+        };
+
+        // Only include SIN if provided
+        var sinVal = document.getElementById('f-sin').value.trim();
+        if (sinVal) payload.sin = sinVal;
+
+        fetch('/api/payroll/employees/' + encodeURIComponent(empId), {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        })
+          .then(r => { if (!r.ok) return r.text().then(t => { throw new Error(t); }); return r.json(); })
+          .then(e => {
+            empData = e;
+            renderView(e);
+            cancelEdit();
+            showToast('Changes saved successfully');
+          })
+          .catch(err => {
+            alert('Save failed: ' + err.message);
+          })
+          .finally(() => {
+            btnSave.classList.remove('loading');
+            btnSaveBottom.classList.remove('loading');
+          });
+      }
+
+      function showToast(msg) {
+        var t = document.getElementById('toast');
+        document.getElementById('toast-msg').textContent = msg;
+        t.classList.remove('hidden');
+        setTimeout(() => t.classList.add('hidden'), 3000);
+      }
+    </script>
+  </body>
+</html>

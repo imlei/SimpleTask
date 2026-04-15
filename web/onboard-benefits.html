@@ -3,89 +3,209 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Benefit rules — Payroll Works</title>
-    <link rel="stylesheet" href="employees-theme.css" />
+    <title>Benefits — Payroll Works</title>
+    <script>(function(){var t=localStorage.getItem('pw-theme')||(window.matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');document.documentElement.setAttribute('data-theme',t);})();</script>
+    <link href="https://cdn.jsdelivr.net/npm/daisyui@5/themes.css" rel="stylesheet" />
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <script src="https://cdn.jsdelivr.net/npm/daisyui@5/cdn.js"></script>
+    <style type="text/tailwindcss">@import "tailwindcss";</style>
   </head>
-  <body class="pe-app">
-    <div class="pe-shell">
-      <header class="pe-topbar">
-        <div class="pe-brand">
-          <span>PAYROLL WORKS</span>
-          <span class="sep">|</span>
-          <span class="sub">Payroll</span>
-          <span class="pe-flag">🇨🇦</span>
-          <span class="pe-tax-pill">2026</span>
-        </div>
-        <nav class="pe-topbar-nav">
-          <a href="run-payroll.html" class="pe-topbar-nav-item">Payroll</a>
-        </nav>
-        <div class="pe-topbar-right">
-          <span class="pe-badge-admin">Admin</span>
-          <span>RORO HOLDING LTD</span>
-          <button type="button" class="pe-icon-btn">📞</button>
-          <button type="button" class="pe-icon-btn">🔔</button>
-          <button type="button" class="pe-icon-btn">?</button>
-          <div class="pe-avatar">LH</div>
-        </div>
-      </header>
+  <body class="bg-base-200 min-h-screen">
 
-      <div class="pe-wizard-bar">
-        <div class="pe-wizard-steps">
-          <div class="pe-wstep done"><span class="circle">✓</span><span>Employee</span></div>
-          <div class="pe-wstep active"><span class="circle">💵</span><span>Payroll</span></div>
-          <div class="pe-wstep"><span class="circle">📋</span><span>Checklist</span></div>
-        </div>
-        <div class="pe-wizard-sub">
-          <span></span>
-          <div class="pe-progress"><i style="width: 70%"></i></div>
-          <span>Onboard employee</span>
+    <!-- Navbar -->
+    <div class="navbar bg-base-100 border-b border-base-300 px-4 min-h-12 sticky top-0 z-30 shadow-sm">
+      <div class="navbar-start gap-2">
+        <a href="onboard-ytd.html" class="btn btn-ghost btn-sm btn-circle" title="Back">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+        </a>
+        <span class="font-bold text-sm tracking-wide">PAYROLL WORKS</span>
+        <span class="badge badge-ghost badge-sm">🇨🇦</span>
+      </div>
+      <div class="navbar-center">
+        <span class="text-sm font-medium text-base-content/70">Add Team Member</span>
+      </div>
+      <div class="navbar-end gap-3">
+        <button onclick="toggleTheme()" class="btn btn-ghost btn-sm btn-circle" title="Toggle dark mode">
+          <svg id="iconSun" class="w-4 h-4 hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364-6.364l-.707.707M6.343 17.657l-.707.707M17.657 17.657l-.707-.707M6.343 6.343l-.707-.707M12 5a7 7 0 100 14A7 7 0 0012 5z"/></svg>
+          <svg id="iconMoon" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/></svg>
+        </button>
+        <div class="avatar placeholder">
+          <div class="bg-primary text-primary-content rounded-full w-8 text-xs"><span>PW</span></div>
         </div>
       </div>
+    </div>
 
-      <aside class="pe-sidebar">
-        <a class="pe-nav" href="dashboard.html"><span>⌂</span> Home</a>
-        <a class="pe-nav" href="run-payroll.html"><span>▤</span> Run payroll</a>
-        <a class="pe-nav" href="#"><span>☰</span> Actions</a>
-        <a class="pe-nav" href="reports/payrun.html"><span>▦</span> Reports</a>
-        <a class="pe-nav active" href="employees.html"><span>👤</span> Employees</a>
-        <span class="pe-nav spacer"></span>
-        <a class="pe-nav" href="#"><span>⚙</span> Settings</a>
-      </aside>
+    <!-- Wizard progress -->
+    <div class="bg-base-100 border-b border-base-300 px-6 py-3">
+      <ul class="steps steps-horizontal w-full max-w-lg mx-auto text-xs">
+        <li class="step step-primary" data-content="✓">Member Type</li>
+        <li class="step step-primary" data-content="✓">Personal Info</li>
+        <li class="step step-primary" data-content="✓">Payroll</li>
+        <li class="step step-primary" data-content="4">YTD &amp; Benefits</li>
+        <li class="step" data-content="5">Review</li>
+      </ul>
+    </div>
 
-      <main class="pe-main">
-        <div class="pe-card" style="max-width: 900px">
-          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem">
-            <h2 style="margin: 0; border: none; padding: 0">Benefit rules in payroll</h2>
-            <button type="button" class="pe-btn pe-btn-primary">Add benefit +</button>
-          </div>
-          <div class="pe-table-wrap">
-            <table class="pe-table">
-              <thead>
-                <tr>
-                  <th>Rule name</th>
-                  <th>Unit</th>
-                  <th>Per pay amount</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr>
-                  <td colspan="3" class="pe-empty">No benefits added yet</td>
-                </tr>
-              </tbody>
-            </table>
-            <div class="pe-pagination">
-              <span>0 items</span>
-              <span>Per page <select><option>5</option></select></span>
+    <div class="flex justify-center px-4 py-8">
+      <div class="w-full max-w-3xl flex flex-col gap-5">
+
+        <div class="card bg-base-100 shadow-sm">
+          <div class="card-body gap-4">
+            <div class="flex items-center justify-between">
+              <div>
+                <h3 class="font-semibold text-base">Benefit Rules in Payroll</h3>
+                <p class="text-sm text-base-content/60 mt-0.5">Optional per-pay deductions or additions for this employee</p>
+              </div>
+              <button type="button" id="btn-add-benefit" class="btn btn-primary btn-sm gap-1">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/></svg>
+                Add Benefit
+              </button>
+            </div>
+
+            <div class="overflow-x-auto">
+              <table class="table table-sm">
+                <thead>
+                  <tr class="text-xs text-base-content/60 border-b border-base-300">
+                    <th>Rule Name</th>
+                    <th>Unit</th>
+                    <th class="text-right">Per Pay Amount</th>
+                    <th class="w-10"></th>
+                  </tr>
+                </thead>
+                <tbody id="benefits-tbody">
+                  <tr id="empty-row">
+                    <td colspan="4" class="text-center py-6 text-base-content/50 text-sm">
+                      No benefits added yet — click "Add Benefit" to add one
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
             </div>
           </div>
-          <div class="pe-foot-actions">
-            <a class="pe-btn" href="onboard-ytd.html">Back</a>
-            <button type="button" class="pe-btn pe-btn-primary" onclick="location.href='onboard-deductions.html'">
-              Continue
-            </button>
-          </div>
         </div>
-      </main>
+
+        <!-- Add Benefit Modal -->
+        <dialog id="addBenefitModal" class="modal">
+          <div class="modal-box max-w-sm">
+            <h3 class="font-bold text-base mb-4">Add Benefit Rule</h3>
+            <div class="flex flex-col gap-3">
+              <div class="form-control">
+                <label class="label"><span class="label-text">Rule Name</span></label>
+                <input type="text" id="benefit-name" class="input input-bordered input-sm" placeholder="e.g. Health Insurance" />
+              </div>
+              <div class="form-control">
+                <label class="label"><span class="label-text">Unit</span></label>
+                <select id="benefit-unit" class="select select-bordered select-sm">
+                  <option value="Fixed">Fixed Amount</option>
+                  <option value="Percentage">Percentage of Gross</option>
+                </select>
+              </div>
+              <div class="form-control">
+                <label class="label"><span class="label-text">Per Pay Amount</span></label>
+                <label class="input input-bordered input-sm flex items-center gap-1">
+                  <span class="text-base-content/50 text-sm" id="amt-prefix">$</span>
+                  <input type="number" id="benefit-amount" class="grow" step="0.01" min="0" placeholder="50.00" />
+                </label>
+              </div>
+            </div>
+            <div class="modal-action">
+              <button class="btn btn-sm btn-ghost" onclick="document.getElementById('addBenefitModal').close()">Cancel</button>
+              <button class="btn btn-sm btn-primary" id="btn-save-benefit">Add</button>
+            </div>
+          </div>
+          <form method="dialog" class="modal-backdrop"><button>close</button></form>
+        </dialog>
+
+        <!-- Footer actions -->
+        <div class="flex justify-between items-center bg-base-100 rounded-xl px-5 py-3 shadow-sm">
+          <a href="onboard-ytd.html" class="btn btn-ghost btn-sm">Back</a>
+          <button type="button" id="btn-continue" class="btn btn-primary btn-sm gap-2">
+            Continue
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+          </button>
+        </div>
+      </div>
     </div>
+
+    <script src="js/onboard.js"></script>
+    <script>
+      function toggleTheme() {
+        var html = document.documentElement;
+        var next = html.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+        html.setAttribute('data-theme', next);
+        localStorage.setItem('pw-theme', next);
+        document.getElementById('iconSun').classList.toggle('hidden', next !== 'dark');
+        document.getElementById('iconMoon').classList.toggle('hidden', next === 'dark');
+      }
+      document.addEventListener('DOMContentLoaded', function() {
+        var isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+        document.getElementById('iconSun').classList.toggle('hidden', !isDark);
+        document.getElementById('iconMoon').classList.toggle('hidden', isDark);
+      });
+
+      var benefits = [];
+
+      function renderBenefits() {
+        var tbody = document.getElementById('benefits-tbody');
+        if (benefits.length === 0) {
+          tbody.innerHTML = '<tr id="empty-row"><td colspan="4" class="text-center py-6 text-base-content/50 text-sm">No benefits added yet — click "Add Benefit" to add one</td></tr>';
+          return;
+        }
+        tbody.innerHTML = benefits.map(function(b, i) {
+          var amt = b.unit === 'Percentage' ? b.amount.toFixed(2) + '%' : '$' + b.amount.toFixed(2);
+          return `<tr class="border-b border-base-200 last:border-0">
+            <td class="text-sm font-medium">${esc(b.name)}</td>
+            <td class="text-sm text-base-content/60">${esc(b.unit)}</td>
+            <td class="text-sm text-right">${esc(amt)}</td>
+            <td>
+              <button class="btn btn-ghost btn-xs btn-circle text-error" onclick="removeBenefit(${i})">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+              </button>
+            </td>
+          </tr>`;
+        }).join('');
+      }
+
+      function removeBenefit(i) {
+        benefits.splice(i, 1);
+        renderBenefits();
+      }
+
+      function esc(s) {
+        return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+      }
+
+      document.getElementById('benefit-unit').addEventListener('change', function() {
+        document.getElementById('amt-prefix').textContent = this.value === 'Percentage' ? '%' : '$';
+      });
+
+      document.getElementById('btn-add-benefit').addEventListener('click', function() {
+        document.getElementById('benefit-name').value = '';
+        document.getElementById('benefit-unit').value = 'Fixed';
+        document.getElementById('benefit-amount').value = '';
+        document.getElementById('amt-prefix').textContent = '$';
+        document.getElementById('addBenefitModal').showModal();
+      });
+
+      document.getElementById('btn-save-benefit').addEventListener('click', function() {
+        var name = document.getElementById('benefit-name').value.trim();
+        var unit = document.getElementById('benefit-unit').value;
+        var amt  = parseFloat(document.getElementById('benefit-amount').value) || 0;
+        if (!name) { document.getElementById('benefit-name').focus(); return; }
+        benefits.push({ name: name, unit: unit, amount: amt });
+        renderBenefits();
+        document.getElementById('addBenefitModal').close();
+      });
+
+      document.getElementById('btn-continue').addEventListener('click', function() {
+        pwOnboard.save({ benefits: benefits });
+        location.href = 'onboard-review.html';
+      });
+
+      (function() {
+        var d = pwOnboard.load();
+        if (Array.isArray(d.benefits)) { benefits = d.benefits; renderBenefits(); }
+      })();
+    </script>
   </body>
 </html>

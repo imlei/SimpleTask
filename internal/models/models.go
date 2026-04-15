@@ -175,11 +175,15 @@ type PayrollEmployee struct {
 	CompanyID   string `json:"companyId"`
 
 	// Personal / contact
-	LegalName string `json:"legalName"`
-	Nickname  string `json:"nickname"`
-	Email     string `json:"email"`
-	Mobile    string `json:"mobile"`
-	Position  string `json:"position"`
+	LegalName     string `json:"legalName"`
+	Nickname      string `json:"nickname"`
+	Email         string `json:"email"`
+	Mobile        string `json:"mobile"`
+	Position      string `json:"position"`
+	Address       string `json:"address"`
+	Gender        string `json:"gender"`        // Male | Female | Non-binary | Prefer not to say
+	MaritalStatus string `json:"maritalStatus"` // Single | Married | Common-law | Other
+	Notes         string `json:"notes"`
 
 	// CRA required (T4001 §8)
 	Province    string `json:"province"`    // 2-letter code: BC / ON / QC …

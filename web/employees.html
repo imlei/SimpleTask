@@ -4,206 +4,315 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Team — Payroll Works</title>
-    <link rel="stylesheet" href="employees-theme.css" />
+    <script>(function(){var t=localStorage.getItem('pw-theme')||(window.matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');document.documentElement.setAttribute('data-theme',t);})();</script>
+    <link href="https://cdn.jsdelivr.net/npm/daisyui@5/themes.css" rel="stylesheet" />
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <script src="https://cdn.jsdelivr.net/npm/daisyui@5/cdn.js"></script>
+    <style type="text/tailwindcss">@import "tailwindcss";</style>
   </head>
-  <body class="pe-app">
-    <div class="pe-shell">
-      <header class="pe-topbar">
-        <div class="pe-brand">
-          <span>PAYROLL WORKS</span>
-          <span class="sep">|</span>
-          <span class="sub">Payroll</span>
-          <span class="pe-flag" aria-hidden="true">🇨🇦</span>
-          <span class="pe-tax-pill">2026</span>
-        </div>
-        <nav class="pe-topbar-nav">
-          <a href="run-payroll.html" class="pe-topbar-nav-item">Payroll</a>
-        </nav>
-        <div class="pe-topbar-right">
-          <span id="company-label" style="font-size:0.8rem;opacity:0.75"></span>
-          <button type="button" class="pe-icon-btn" title="Help">?</button>
-          <div class="pe-avatar" id="topbar-avatar">—</div>
-        </div>
-      </header>
+  <body class="bg-base-200 min-h-screen">
 
-      <div class="pe-strip">
-        <div class="pe-strip-tabs">
-          <span class="pe-strip-tab active">Team</span>
-        </div>
-        <span style="opacity:0.85">Employee list</span>
+    <!-- Navbar -->
+    <div class="navbar bg-base-100 border-b border-base-300 px-4 min-h-12 sticky top-0 z-30 shadow-sm">
+      <div class="navbar-start gap-2">
+        <span class="font-bold text-sm tracking-wide">PAYROLL WORKS</span>
+        <span class="badge badge-ghost badge-sm">🇨🇦</span>
+        <span class="text-base-content/40 text-xs" id="taxYear">2025</span>
       </div>
+      <div class="navbar-center">
+        <span class="text-sm font-medium text-base-content/70" id="companyName">—</span>
+      </div>
+      <div class="navbar-end gap-3">
+        <button onclick="toggleTheme()" class="btn btn-ghost btn-sm btn-circle" id="themeToggle" title="Toggle dark mode">
+          <svg id="iconSun" class="w-4 h-4 hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364-6.364l-.707.707M6.343 17.657l-.707.707M17.657 17.657l-.707-.707M6.343 6.343l-.707-.707M12 5a7 7 0 100 14A7 7 0 0012 5z"/></svg>
+          <svg id="iconMoon" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/></svg>
+        </button>
+        <button class="btn btn-ghost btn-sm btn-circle" title="Help">?</button>
+        <div class="avatar placeholder">
+          <div class="bg-primary text-primary-content rounded-full w-8 text-xs">
+            <span id="topbar-avatar">PW</span>
+          </div>
+        </div>
+      </div>
+    </div>
 
-      <aside class="pe-sidebar">
-        <a class="pe-nav" id="nav-home" href="dashboard.html"><span>⌂</span> Home</a>
-        <a class="pe-nav" href="run-payroll.html"><span>▤</span> Run payroll</a>
-        <a class="pe-nav" href="reports/payrun.html"><span>▦</span> Reports</a>
-        <a class="pe-nav active" href="#"><span>👤</span> Employees</a>
-        <span class="pe-nav spacer"></span>
-        <a class="pe-nav" href="index.html"><span>⌂</span> All Companies</a>
+    <div class="flex">
+      <!-- Sidebar -->
+      <aside class="w-56 bg-base-100 border-r border-base-300 min-h-[calc(100vh-3rem)] hidden md:flex flex-col gap-1 p-3 shrink-0">
+        <a href="index.html" class="btn btn-ghost btn-sm justify-start gap-2 font-normal">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
+          Home
+        </a>
+        <a href="run-payroll.html" class="btn btn-ghost btn-sm justify-start gap-2 font-normal" id="nav-payroll">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
+          Run Payroll
+        </a>
+        <a href="reports/payrun.html" class="btn btn-ghost btn-sm justify-start gap-2 font-normal" id="nav-reports">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+          Reports
+        </a>
+        <a href="employees.html" class="btn btn-ghost btn-sm justify-start gap-2 font-normal bg-primary/10 text-primary" id="nav-employees">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+          Employees
+        </a>
+        <a href="pay-rules.html" class="btn btn-ghost btn-sm justify-start gap-2 font-normal" id="nav-rules">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+          Pay Rules
+        </a>
       </aside>
 
-      <main class="pe-main">
-        <div class="pe-page-head">
-          <h1 class="pe-page-title">Team</h1>
-          <div class="pe-toolbar">
-            <select id="status-filter" style="font-size:0.82rem;padding:0.25rem 0.5rem;border-radius:4px">
-              <option value="active">Active</option>
-              <option value="all">All</option>
-            </select>
-            <a class="pe-btn pe-btn-primary" id="btn-add" href="#">Add member +</a>
+      <!-- Main -->
+      <main class="flex-1 p-6">
+        <!-- Page Header -->
+        <div class="flex items-center justify-between mb-6">
+          <div>
+            <h1 class="text-xl font-bold text-base-content">Team</h1>
+            <p class="text-sm text-base-content/60">Manage employees and contractors</p>
+          </div>
+          <a id="btn-add" href="#" class="btn btn-primary btn-sm gap-2">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/></svg>
+            Add Member
+          </a>
+        </div>
+
+        <!-- Filters -->
+        <div class="flex items-center gap-3 mb-4">
+          <label class="input input-bordered input-sm flex items-center gap-2 flex-1 max-w-xs">
+            <svg class="w-4 h-4 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+            <input type="text" id="search-input" placeholder="Search name or position…" class="grow bg-transparent" oninput="filterList()" />
+          </label>
+          <select id="status-filter" class="select select-bordered select-sm" onchange="filterList()">
+            <option value="active">Active</option>
+            <option value="all">All</option>
+            <option value="terminated">Terminated</option>
+          </select>
+          <select id="type-filter" class="select select-bordered select-sm" onchange="filterList()">
+            <option value="">All Types</option>
+            <option value="0">Employee (T4)</option>
+            <option value="1">Contractor (T4A)</option>
+            <option value="2">Construction (T5018)</option>
+          </select>
+        </div>
+
+        <!-- Empty Banner -->
+        <div id="empty-banner" class="alert alert-info hidden mb-4">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+          <span>No team members yet. <a id="banner-add" href="#" class="link">Add your first member →</a></span>
+        </div>
+
+        <!-- Employee Table -->
+        <div class="card bg-base-100 shadow-sm overflow-hidden">
+          <div class="overflow-x-auto">
+            <table class="table table-sm">
+              <thead>
+                <tr class="text-xs text-base-content/60 border-b border-base-300">
+                  <th class="w-12"></th>
+                  <th>Name</th>
+                  <th>Position</th>
+                  <th>Pay Frequency</th>
+                  <th>Province</th>
+                  <th>Type</th>
+                  <th>Status</th>
+                  <th class="w-10"></th>
+                </tr>
+              </thead>
+              <tbody id="emp-tbody">
+                <tr id="loading-row">
+                  <td colspan="8" class="text-center py-8 text-base-content/50">
+                    <span class="loading loading-spinner loading-sm"></span>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
           </div>
         </div>
 
-        <div id="onboard-banner" class="pe-banner" style="display:none">
-          No employees yet. <a id="banner-add" href="#">Click here to add the first one.</a>
-        </div>
-
-        <div class="pe-table-wrap">
-          <table class="pe-table">
-            <thead>
-              <tr>
-                <th>Name</th>
-                <th>Position</th>
-                <th>Pay Frequency</th>
-                <th>Province</th>
-                <th>Status</th>
-                <th>Type</th>
-                <th></th>
-              </tr>
-            </thead>
-            <tbody id="employee-rows">
-              <tr><td colspan="7" style="text-align:center;padding:2rem;opacity:0.4">Loading…</td></tr>
-            </tbody>
-          </table>
-          <div class="pe-pagination">
-            <span id="emp-count"></span>
-          </div>
-        </div>
+        <!-- Count -->
+        <p class="text-xs text-base-content/40 mt-3" id="emp-count"></p>
       </main>
     </div>
 
+    <!-- Terminate Confirm Modal -->
+    <dialog id="terminateModal" class="modal">
+      <div class="modal-box max-w-sm">
+        <h3 class="font-bold text-base mb-2">Terminate Employee</h3>
+        <p class="text-sm text-base-content/70 mb-4">Are you sure you want to terminate <strong id="terminate-name"></strong>? The record will be retained for CRA audit purposes.</p>
+        <div class="modal-action">
+          <button class="btn btn-sm btn-ghost" onclick="document.getElementById('terminateModal').close()">Cancel</button>
+          <button class="btn btn-sm btn-error" id="btn-confirm-terminate">Terminate</button>
+        </div>
+      </div>
+      <form method="dialog" class="modal-backdrop"><button>close</button></form>
+    </dialog>
+
     <script>
-      var companyId = new URLSearchParams(location.search).get('company') || '';
-
-      // Point nav links to company-scoped URLs
-      function withCompany(href) {
-        return companyId ? href + '?company=' + encodeURIComponent(companyId) : href;
+      function toggleTheme() {
+        var html = document.documentElement;
+        var next = html.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+        html.setAttribute('data-theme', next);
+        localStorage.setItem('pw-theme', next);
+        document.getElementById('iconSun').classList.toggle('hidden', next !== 'dark');
+        document.getElementById('iconMoon').classList.toggle('hidden', next === 'dark');
       }
-      document.getElementById('nav-home').href = withCompany('dashboard.html');
-      document.getElementById('btn-add').href  = withCompany('onboard-type.html');
-      document.getElementById('banner-add').href = withCompany('onboard-type.html');
+      document.addEventListener('DOMContentLoaded', function() {
+        var isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+        document.getElementById('iconSun').classList.toggle('hidden', !isDark);
+        document.getElementById('iconMoon').classList.toggle('hidden', isDark);
+      });
 
-      var MEMBER_LABEL = ['Employee', 'Contractor', 'Construction'];
-      var SALARY_LABEL = ['Salaried', 'Time-Based'];
+      var params    = new URLSearchParams(location.search);
+      var companyId = params.get('company') || '';
+      var allEmps   = [];
 
-      function escHtml(s) {
-        var d = document.createElement('div');
-        d.textContent = String(s ?? '');
-        return d.innerHTML;
-      }
+      var MEMBER_TYPE = ['Employee', 'Contractor', 'Construction'];
+      var FREQ_LABEL  = { biweekly:'Bi-weekly', semimonthly:'Semi-monthly', monthly:'Monthly', weekly:'Weekly' };
 
       function initials(name) {
-        if (!name || !name.trim()) return '?';
-        var parts = name.split(/[\s,]+/).filter(Boolean);
-        return parts.length >= 2
-          ? (parts[0][0] + parts[parts.length - 1][0]).toUpperCase()
-          : name.slice(0, 2).toUpperCase();
+        return (name || '—').split(/\s+/).filter(Boolean).map(w => w[0]).join('').toUpperCase().slice(0,2) || '—';
       }
 
-      function renderRows(list) {
-        var tbody = document.getElementById('employee-rows');
-        document.getElementById('emp-count').textContent =
-          list.length + ' member' + (list.length === 1 ? '' : 's');
-
-        if (list.length === 0) {
-          tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:2rem;opacity:0.4">No team members found.</td></tr>';
-          document.getElementById('onboard-banner').style.display = 'block';
-          return;
-        }
-        document.getElementById('onboard-banner').style.display = 'none';
-
-        tbody.innerHTML = list.map(function(e) {
-          var dot = e.status === 'active'
-            ? '<span class="pe-dot-active">Active</span>'
-            : '<span style="color:#e05">Terminated</span>';
-          return '<tr>' +
-            '<td><div class="pe-name-cell">' +
-              '<span class="pe-avatar-sm">' + escHtml(initials(e.legalName)) + '</span>' +
-              '<div class="pe-name-block">' +
-                '<span class="name">' + escHtml(e.legalName) + '</span>' +
-                '<span class="id">' + escHtml(e.id) +
-                  (e.sinMasked ? ' · SIN ' + escHtml(e.sinMasked) : '') +
-                '</span>' +
-              '</div>' +
-            '</div></td>' +
-            '<td>' + escHtml(e.position || '—') + '</td>' +
-            '<td>' + escHtml(e.payFrequency || '—') + '</td>' +
-            '<td>' + escHtml(e.province || '—') + '</td>' +
-            '<td>' + dot + '</td>' +
-            '<td>' + escHtml(SALARY_LABEL[e.salaryType] || '—') + '<br>' +
-              escHtml(MEMBER_LABEL[e.memberType] || '—') + '</td>' +
-            '<td>' +
-              '<button type="button" class="pe-kebab btn-terminate" ' +
-                'data-id="' + escHtml(e.id) + '" ' +
-                'data-name="' + escHtml(e.legalName) + '" ' +
-                'data-status="' + escHtml(e.status) + '" ' +
-                'title="Actions">⋮</button>' +
-            '</td>' +
-            '</tr>';
-        }).join('');
-
-        tbody.querySelectorAll('.btn-terminate').forEach(function(btn) {
-          btn.addEventListener('click', function() {
-            if (btn.dataset.status === 'terminated') return;
-            if (!confirm('Terminate "' + btn.dataset.name + '"?\n\nThis sets their status to Terminated. Records are retained per CRA 6-year requirement.')) return;
-            fetch('/api/payroll/employees/' + btn.dataset.id, {
-              method: 'DELETE', credentials: 'same-origin'
-            }).then(function(r) {
-              if (!r.ok) throw new Error(r.statusText);
-              loadEmployees();
-            }).catch(function(err) { alert('Error: ' + err.message); });
-          });
-        });
-      }
-
-      function loadEmployees() {
-        if (!companyId) {
-          document.getElementById('employee-rows').innerHTML =
-            '<tr><td colspan="7" style="text-align:center;padding:2rem;color:#e05">No company selected. <a href="index.html">Go to Companies →</a></td></tr>';
-          return;
-        }
-        var status = document.getElementById('status-filter').value;
-        fetch('/api/payroll/employees?company_id=' + encodeURIComponent(companyId) + '&status=' + status, {
-          credentials: 'same-origin'
-        })
-          .then(function(r) { if (!r.ok) throw new Error(r.statusText); return r.json(); })
-          .then(function(list) { renderRows(list || []); })
-          .catch(function(err) {
-            document.getElementById('employee-rows').innerHTML =
-              '<tr><td colspan="7" style="text-align:center;padding:2rem;color:#e05">Failed to load: ' + escHtml(err.message) + '</td></tr>';
-          });
-      }
-
-      // Set company label and load company name
-      if (companyId) {
-        fetch('/api/payroll/companies/' + encodeURIComponent(companyId), { credentials: 'same-origin' })
-          .then(function(r) { return r.ok ? r.json() : null; })
-          .then(function(c) {
-            if (c) document.getElementById('company-label').textContent = c.name;
-          }).catch(function() {});
-      }
-
-      // Auth
+      // ── Auth + init ───────────────────────────────────────────────────────
       fetch('/api/me', { credentials: 'same-origin' })
-        .then(function(r) { return r.json(); })
-        .then(function(me) {
-          if (!me.authenticated) { window.location.href = '/'; return; }
+        .then(r => { if (!r.ok) location.href = '/static/login.html'; return r.json(); })
+        .then(u => {
           var av = document.getElementById('topbar-avatar');
-          if (av && me.user) av.textContent = me.user.slice(0, 2).toUpperCase();
-        }).catch(function() {});
+          if (av) av.textContent = initials(u.username || 'PW');
+        }).catch(() => location.href = '/static/login.html');
+
+      if (!companyId) {
+        document.getElementById('loading-row').innerHTML =
+          '<td colspan="8" class="text-center py-8 text-error">Missing company parameter</td>';
+      } else {
+        loadEmployees();
+      }
+
+      // ── Load employees ────────────────────────────────────────────────────
+      function loadEmployees() {
+        var status = document.getElementById('status-filter').value;
+        var q = status === 'all' ? '?company_id=' + encodeURIComponent(companyId) + '&status=all'
+                                 : '?company_id=' + encodeURIComponent(companyId) + '&status=' + encodeURIComponent(status);
+        fetch('/api/payroll/employees' + q)
+          .then(r => r.json())
+          .then(list => {
+            allEmps = list || [];
+            renderTable(allEmps);
+          })
+          .catch(() => {
+            document.getElementById('emp-tbody').innerHTML =
+              '<tr><td colspan="8" class="text-center py-8 text-error">Failed to load employees</td></tr>';
+          });
+
+        // Also load company name
+        if (companyId) {
+          fetch('/api/payroll/companies/' + encodeURIComponent(companyId))
+            .then(r => r.ok ? r.json() : null)
+            .then(c => {
+              if (c) {
+                document.getElementById('companyName').textContent = c.name || c.legalName || '';
+                document.getElementById('nav-payroll').href = 'run-payroll.html?company=' + companyId;
+                document.getElementById('nav-reports').href = 'reports/payrun.html?company=' + companyId;
+                document.getElementById('nav-rules').href = 'pay-rules.html?company=' + companyId;
+              }
+            });
+        }
+
+        document.getElementById('btn-add').href = 'onboard-type.html?company=' + encodeURIComponent(companyId);
+        document.getElementById('banner-add').href = 'onboard-type.html?company=' + encodeURIComponent(companyId);
+      }
+
+      function filterList() {
+        var search = document.getElementById('search-input').value.toLowerCase();
+        var typeF  = document.getElementById('type-filter').value;
+        var filtered = allEmps.filter(e => {
+          var matchSearch = !search || (e.legalName||'').toLowerCase().includes(search)
+                           || (e.position||'').toLowerCase().includes(search)
+                           || (e.nickname||'').toLowerCase().includes(search);
+          var matchType   = typeF === '' || String(e.memberType) === typeF;
+          return matchSearch && matchType;
+        });
+        renderTable(filtered);
+      }
 
       document.getElementById('status-filter').addEventListener('change', loadEmployees);
-      loadEmployees();
+
+      function renderTable(list) {
+        var tbody = document.getElementById('emp-tbody');
+        if (!list || list.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="8" class="text-center py-8 text-base-content/50">No employees found</td></tr>';
+          document.getElementById('empty-banner').classList.toggle('hidden', allEmps.length > 0);
+          document.getElementById('emp-count').textContent = '';
+          return;
+        }
+        document.getElementById('empty-banner').classList.add('hidden');
+        document.getElementById('emp-count').textContent = list.length + ' member' + (list.length !== 1 ? 's' : '');
+
+        tbody.innerHTML = list.map(e => {
+          var ini  = initials(e.legalName);
+          var freq = FREQ_LABEL[e.payFrequency] || e.payFrequency || '—';
+          var typeLabel = MEMBER_TYPE[e.memberType] || 'Employee';
+          var typeBadge = e.memberType === 0 ? 'badge-primary' : e.memberType === 1 ? 'badge-secondary' : 'badge-accent';
+          var statusBadge = e.status === 'active' ? 'badge-success' : 'badge-neutral';
+          var detailUrl = 'employee.html?id=' + encodeURIComponent(e.id) + '&company=' + encodeURIComponent(companyId);
+          return `
+          <tr class="hover:bg-base-200 cursor-pointer border-b border-base-200 last:border-0" onclick="location.href='${detailUrl}'">
+            <td class="pl-4">
+              <div class="avatar placeholder">
+                <div class="bg-primary/20 text-primary rounded-full w-8 text-xs font-semibold">
+                  <span>${ini}</span>
+                </div>
+              </div>
+            </td>
+            <td>
+              <div class="font-medium text-sm">${esc(e.legalName)}</div>
+              ${e.nickname ? `<div class="text-xs text-base-content/50">${esc(e.nickname)}</div>` : ''}
+            </td>
+            <td class="text-sm text-base-content/70">${esc(e.position||'—')}</td>
+            <td class="text-sm text-base-content/70">${esc(freq)}</td>
+            <td class="text-sm text-base-content/70">${esc(e.province||'—')}</td>
+            <td><span class="badge badge-sm ${typeBadge} badge-outline">${esc(typeLabel)}</span></td>
+            <td><span class="badge badge-sm ${statusBadge}">${esc(e.status||'active')}</span></td>
+            <td>
+              <div class="dropdown dropdown-end" onclick="event.stopPropagation()">
+                <button tabindex="0" class="btn btn-ghost btn-xs btn-circle">
+                  <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z"/></svg>
+                </button>
+                <ul tabindex="0" class="dropdown-content z-50 menu p-2 shadow bg-base-100 rounded-box w-40 text-sm border border-base-300">
+                  <li><a href="${detailUrl}">View Profile</a></li>
+                  <li><a href="${detailUrl}">Edit</a></li>
+                  ${e.status === 'active' ? `<li><a class="text-error" onclick="confirmTerminate('${esc(e.id)}','${esc(e.legalName)}')">Terminate</a></li>` : ''}
+                </ul>
+              </div>
+            </td>
+          </tr>`;
+        }).join('');
+      }
+
+      function esc(s) {
+        return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+      }
+
+      // ── Terminate ─────────────────────────────────────────────────────────
+      var terminateId = '';
+      function confirmTerminate(id, name) {
+        terminateId = id;
+        document.getElementById('terminate-name').textContent = name;
+        document.getElementById('terminateModal').showModal();
+      }
+      document.getElementById('btn-confirm-terminate').addEventListener('click', function() {
+        if (!terminateId) return;
+        this.classList.add('loading');
+        fetch('/api/payroll/employees/' + encodeURIComponent(terminateId), { method: 'DELETE' })
+          .then(r => {
+            if (r.ok || r.status === 204) {
+              document.getElementById('terminateModal').close();
+              loadEmployees();
+            } else {
+              alert('Failed to terminate employee');
+            }
+          })
+          .catch(() => alert('Network error'))
+          .finally(() => this.classList.remove('loading'));
+      });
     </script>
   </body>
 </html>
