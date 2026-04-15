@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Select Pay Cycle — Payroll Works</title>
+    <title>Run Payroll — Payroll Works</title>
     <link rel="stylesheet" href="theme.css" />
     <link rel="stylesheet" href="app.css" />
     <link rel="stylesheet" href="forms.css" />
@@ -17,30 +17,30 @@
           <span>PAYROLL WORKS</span>
           <span class="muted">Payroll</span>
           <span class="brand-flag" aria-hidden="true">🇨🇦</span>
-          <span class="tax-year"><span>2026</span></span>
+          <span class="tax-year"><span id="taxYear">2025</span></span>
         </div>
         <nav class="topbar-nav">
           <a href="run-payroll.html" class="topbar-nav-item active">Payroll</a>
         </nav>
         <div class="topbar-actions">
-          <span class="muted" style="font-size: 0.8rem">RORO HOLDING LTD</span>
-          <button type="button" class="icon-btn" title="Help">?</button>
-          <div class="avatar">LH</div>
+          <span class="muted" style="font-size: 0.8rem" id="companyName">—</span>
+          <div class="avatar">PW</div>
         </div>
       </header>
 
       <aside class="sidebar">
-        <a href="dashboard.html" class="nav-item"><span>⌂</span> Home</a>
-        <a href="run-payroll.html" class="nav-item active"><span>▤</span> Run Payroll</a>
+        <a href="dashboard.html" class="nav-item" id="nav-home"><span>⌂</span> Home</a>
+        <a href="run-payroll.html" class="nav-item active" id="nav-run"><span>▤</span> Run Payroll</a>
         <a href="#" class="nav-item" onclick="return false"><span>☰</span> Actions</a>
-        <a href="reports/payrun.html" class="nav-item"><span>▦</span> Reports</a>
-        <a href="employees.html" class="nav-item"><span>👤</span> Employees</a>
+        <a href="reports/payrun.html" class="nav-item" id="nav-reports"><span>▦</span> Reports</a>
+        <a href="employees.html" class="nav-item" id="nav-employees"><span>👤</span> Employees</a>
+        <a href="pay-rules.html" class="nav-item" id="nav-payrules"><span>⚙</span> Pay Rules</a>
       </aside>
 
       <main class="main">
         <div class="hero-banner">
           <span>Run payroll · Select pay cycle</span>
-          <span class="muted">Regular · Semi-monthly</span>
+          <span class="muted" id="heroPeriod">Regular · Bi-weekly</span>
         </div>
 
         <div class="content">
@@ -48,64 +48,192 @@
           <div class="stepper" role="list">
             <div class="step active" role="listitem">Select pay cycle</div>
             <div class="step" role="listitem">Salaries</div>
-            <div class="step" role="listitem">Timesheets</div>
             <div class="step" role="listitem">Calculate</div>
             <div class="step" role="listitem">Review</div>
-            <div class="step" role="listitem">Payments</div>
-            <div class="step" role="listitem">Summary</div>
           </div>
 
+          <!-- Create new period form -->
           <div class="form-card">
+            <h3 style="margin: 0 0 1rem">New Pay Period</h3>
             <div class="form-row">
-              <label class="field-label" for="payDate"
-                >Payment date <span class="info-dot" title="Cheque or deposit date">i</span></label
-              >
-              <input type="text" id="payDate" class="field-input" value="06-Apr-2026" readonly />
+              <label class="field-label" for="payDate">Payment date <span class="info-dot" title="Cheque or direct deposit date">i</span></label>
+              <input type="date" id="payDate" class="field-input" />
             </div>
-
+            <div class="form-grid-2">
+              <div>
+                <label class="field-label" for="periodStart">Period start</label>
+                <input type="date" id="periodStart" class="field-input" />
+              </div>
+              <div>
+                <label class="field-label" for="periodEnd">Period end</label>
+                <input type="date" id="periodEnd" class="field-input" />
+              </div>
+            </div>
+            <div class="form-row">
+              <label class="field-label" for="payFreq">Pay cycle</label>
+              <select id="payFreq" class="field-input field-select">
+                <option value="26|Bi-weekly">26 — Bi-weekly</option>
+                <option value="24|Semi-monthly">24 — Semi-monthly</option>
+                <option value="52|Weekly">52 — Weekly</option>
+                <option value="12|Monthly">12 — Monthly</option>
+              </select>
+            </div>
             <fieldset class="fieldset">
               <legend class="field-label">Payroll type</legend>
-              <label class="radio-label"><input type="radio" name="ptype" checked /> Regular</label>
-              <label class="radio-label"><input type="radio" name="ptype" /> Special</label>
+              <label class="radio-label"><input type="radio" name="ptype" value="regular" checked /> Regular</label>
+              <label class="radio-label"><input type="radio" name="ptype" value="special" /> Special</label>
             </fieldset>
+            <div id="createErr" class="error-msg" style="display:none"></div>
+            <div class="form-actions">
+              <button type="button" class="btn btn-primary" id="btnCreate">Create &amp; Continue →</button>
+            </div>
+          </div>
 
-            <div class="cycle-box">
-              <div class="cycle-box-title">Pay period</div>
-              <div class="form-row">
-                <label class="field-label" for="cycle">Pay cycle</label>
-                <select id="cycle" class="field-input field-select">
-                  <option>24 — Semi-monthly</option>
-                  <option>26 — Bi-weekly</option>
-                  <option>52 — Weekly</option>
-                </select>
-              </div>
-              <div class="form-grid-2">
-                <div>
-                  <label class="field-label" for="from">From</label>
-                  <input type="text" id="from" class="field-input" value="16-Feb-2026" />
-                  <span class="hint">dd-mmm-yyyy</span>
-                </div>
-                <div>
-                  <label class="field-label" for="to">To</label>
-                  <input type="text" id="to" class="field-input" value="02-Mar-2026" />
-                  <span class="hint">dd-mmm-yyyy</span>
-                </div>
-              </div>
-              <p class="hint" style="margin-top: 0.75rem">
-                Semi-monthly uses <code>P</code> = 24 pay periods per year (<code>PayPeriodsPerYear</code>).
-              </p>
-              <div class="form-actions">
-                <button type="button" class="btn btn-primary">Submit</button>
-              </div>
+          <!-- Existing periods list -->
+          <div style="margin-top: 1.5rem">
+            <h3>Recent Pay Periods</h3>
+            <div class="panel">
+              <table class="data" id="periodsTable">
+                <thead>
+                  <tr>
+                    <th>Pay Date</th>
+                    <th>Period</th>
+                    <th>Frequency</th>
+                    <th>Type</th>
+                    <th>Status</th>
+                    <th></th>
+                  </tr>
+                </thead>
+                <tbody id="periodsTbody">
+                  <tr><td colspan="6" class="muted" style="padding:1rem">Loading…</td></tr>
+                </tbody>
+              </table>
             </div>
           </div>
 
           <div class="flow-footer">
-            <a href="index.html" class="btn">← Company list</a>
-            <a href="salaries.html" class="btn btn-primary" style="text-decoration: none">Continue → Salaries</a>
+            <a href="index.html" id="backLink" class="btn">← Company list</a>
           </div>
         </div>
       </main>
     </div>
+
+    <script>
+      var companyId = new URLSearchParams(location.search).get('company') || '';
+
+      // Wire nav links with company param
+      function withC(href) { return companyId ? href + '?company=' + encodeURIComponent(companyId) : href; }
+      document.getElementById('nav-home').href = withC('dashboard.html');
+      document.getElementById('nav-run').href = withC('run-payroll.html');
+      document.getElementById('nav-reports').href = withC('reports/payrun.html');
+      document.getElementById('nav-employees').href = withC('employees.html');
+      document.getElementById('nav-payrules').href  = withC('pay-rules.html');
+
+      // Auto-fill dates: today as pay date, last 14-day window as period
+      (function () {
+        var today = new Date();
+        function fmt(d) { return d.toISOString().slice(0, 10); }
+        document.getElementById('payDate').value = fmt(today);
+        var end = new Date(today); end.setDate(end.getDate() - 1);
+        var start = new Date(end); start.setDate(start.getDate() - 13);
+        document.getElementById('periodStart').value = fmt(start);
+        document.getElementById('periodEnd').value = fmt(end);
+        document.getElementById('taxYear').textContent = today.getFullYear();
+      })();
+
+      // Load company name
+      if (companyId) {
+        fetch('/api/payroll/companies/' + encodeURIComponent(companyId), { credentials: 'same-origin' })
+          .then(function (r) { return r.ok ? r.json() : null; })
+          .then(function (c) {
+            if (c) document.getElementById('companyName').textContent = c.name || c.legalName || companyId;
+          });
+        loadPeriods();
+      } else {
+        document.getElementById('periodsTbody').innerHTML = '<tr><td colspan="6" class="muted" style="padding:1rem">No company selected.</td></tr>';
+      }
+
+      function loadPeriods() {
+        fetch('/api/payroll/periods?company_id=' + encodeURIComponent(companyId), { credentials: 'same-origin' })
+          .then(function (r) { return r.ok ? r.json() : []; })
+          .then(renderPeriods);
+      }
+
+      function renderPeriods(list) {
+        var tbody = document.getElementById('periodsTbody');
+        if (!list || list.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="6" class="muted" style="padding:1rem">No periods yet.</td></tr>';
+          return;
+        }
+        tbody.innerHTML = list.map(function (p) {
+          var statusCls = p.status === 'finalized' ? 'badge-green' : p.status === 'calculated' ? 'badge-blue' : 'badge-gray';
+          var salariesHref = 'salaries.html?period=' + encodeURIComponent(p.id) + (companyId ? '&company=' + encodeURIComponent(companyId) : '');
+          var reviewHref = 'review.html?period=' + encodeURIComponent(p.id) + (companyId ? '&company=' + encodeURIComponent(companyId) : '');
+          var actionLink = p.status === 'calculated' || p.status === 'finalized'
+            ? '<a href="' + reviewHref + '" class="btn btn-sm">Review</a>'
+            : '<a href="' + salariesHref + '" class="btn btn-sm btn-primary">Open</a>';
+          return '<tr>' +
+            '<td class="mono">' + p.payDate + '</td>' +
+            '<td class="mono" style="font-size:0.8rem">' + (p.periodStart || '—') + ' – ' + (p.periodEnd || '—') + '</td>' +
+            '<td>' + (p.payFrequency || p.paysPerYear + 'x/yr') + '</td>' +
+            '<td>' + (p.payrollType || 'regular') + '</td>' +
+            '<td><span class="badge ' + statusCls + '">' + p.status + '</span></td>' +
+            '<td>' + actionLink + '</td>' +
+            '</tr>';
+        }).join('');
+      }
+
+      document.getElementById('btnCreate').addEventListener('click', function () {
+        if (!companyId) { alert('No company selected. Return to company list.'); return; }
+        var errEl = document.getElementById('createErr');
+        errEl.style.display = 'none';
+
+        var payDate = document.getElementById('payDate').value;
+        var periodStart = document.getElementById('periodStart').value;
+        var periodEnd = document.getElementById('periodEnd').value;
+        var freqVal = document.getElementById('payFreq').value.split('|');
+        var paysPerYear = parseInt(freqVal[0], 10);
+        var payFrequency = freqVal[1] || '';
+        var payrollType = document.querySelector('input[name="ptype"]:checked').value;
+
+        if (!payDate) { showErr('Payment date is required'); return; }
+
+        var body = {
+          companyId: companyId,
+          payDate: payDate,
+          periodStart: periodStart,
+          periodEnd: periodEnd,
+          paysPerYear: paysPerYear,
+          payFrequency: payFrequency,
+          payrollType: payrollType
+        };
+
+        document.getElementById('btnCreate').disabled = true;
+        fetch('/api/payroll/periods', {
+          method: 'POST',
+          credentials: 'same-origin',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(body)
+        })
+          .then(function (r) {
+            if (!r.ok) return r.text().then(function (t) { throw new Error(t); });
+            return r.json();
+          })
+          .then(function (period) {
+            location.href = 'salaries.html?period=' + encodeURIComponent(period.id) +
+              (companyId ? '&company=' + encodeURIComponent(companyId) : '');
+          })
+          .catch(function (err) {
+            showErr(err.message || 'Failed to create period');
+            document.getElementById('btnCreate').disabled = false;
+          });
+      });
+
+      function showErr(msg) {
+        var el = document.getElementById('createErr');
+        el.textContent = msg;
+        el.style.display = 'block';
+      }
+    </script>
   </body>
 </html>

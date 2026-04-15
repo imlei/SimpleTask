@@ -204,6 +204,38 @@ func Open(dir string) (*sql.DB, error) {
 		_ = db.Close()
 		return nil, err
 	}
+	if err := ensurePayrollPeriodsTable(db); err != nil {
+		_ = db.Close()
+		return nil, err
+	}
+	if err := ensurePayrollEntriesTable(db); err != nil {
+		_ = db.Close()
+		return nil, err
+	}
+	if err := ensurePayrollEarningsCodesTable(db); err != nil {
+		_ = db.Close()
+		return nil, err
+	}
+	if err := ensurePayrollEntryEarningsTable(db); err != nil {
+		_ = db.Close()
+		return nil, err
+	}
+	if err := ensureEarningsCodeExtraColumns(db); err != nil {
+		_ = db.Close()
+		return nil, err
+	}
+	if err := ensurePayrollCompanyRulesTable(db); err != nil {
+		_ = db.Close()
+		return nil, err
+	}
+	if err := ensureEmployeeVacationBalance(db); err != nil {
+		_ = db.Close()
+		return nil, err
+	}
+	if err := ensureEntryPaymentType(db); err != nil {
+		_ = db.Close()
+		return nil, err
+	}
 	return db, nil
 }
 
@@ -897,6 +929,177 @@ CREATE TABLE IF NOT EXISTS payroll_companies (
   updated_at TEXT NOT NULL DEFAULT ''
 );`)
 	return err
+}
+
+func ensurePayrollPeriodsTable(db *sql.DB) error {
+	_, err := db.Exec(`
+CREATE TABLE IF NOT EXISTS payroll_periods (
+  id TEXT PRIMARY KEY,
+  company_id TEXT NOT NULL DEFAULT '',
+  period_start TEXT NOT NULL DEFAULT '',
+  period_end TEXT NOT NULL DEFAULT '',
+  pay_date TEXT NOT NULL DEFAULT '',
+  pays_per_year INTEGER NOT NULL DEFAULT 26,
+  pay_frequency TEXT NOT NULL DEFAULT 'biweekly',
+  payroll_type TEXT NOT NULL DEFAULT 'regular',
+  status TEXT NOT NULL DEFAULT 'open',
+  created_at TEXT NOT NULL DEFAULT '',
+  updated_at TEXT NOT NULL DEFAULT ''
+);
+CREATE INDEX IF NOT EXISTS idx_payroll_periods_company ON payroll_periods (company_id);
+`)
+	return err
+}
+
+func ensurePayrollEntriesTable(db *sql.DB) error {
+	_, err := db.Exec(`
+CREATE TABLE IF NOT EXISTS payroll_entries (
+  id TEXT PRIMARY KEY,
+  period_id TEXT NOT NULL DEFAULT '',
+  employee_id TEXT NOT NULL DEFAULT '',
+  company_id TEXT NOT NULL DEFAULT '',
+  hours REAL NOT NULL DEFAULT 0,
+  pay_rate REAL NOT NULL DEFAULT 0,
+  gross_pay REAL NOT NULL DEFAULT 0,
+  cpp_ee REAL NOT NULL DEFAULT 0,
+  cpp2_ee REAL NOT NULL DEFAULT 0,
+  ei_ee REAL NOT NULL DEFAULT 0,
+  federal_tax REAL NOT NULL DEFAULT 0,
+  provincial_tax REAL NOT NULL DEFAULT 0,
+  total_deductions REAL NOT NULL DEFAULT 0,
+  net_pay REAL NOT NULL DEFAULT 0,
+  cpp_er REAL NOT NULL DEFAULT 0,
+  cpp2_er REAL NOT NULL DEFAULT 0,
+  ei_er REAL NOT NULL DEFAULT 0,
+  ytd_gross REAL NOT NULL DEFAULT 0,
+  ytd_cpp_ee REAL NOT NULL DEFAULT 0,
+  ytd_cpp2_ee REAL NOT NULL DEFAULT 0,
+  ytd_ei_ee REAL NOT NULL DEFAULT 0,
+  calc_snapshot_json TEXT NOT NULL DEFAULT '{}',
+  status TEXT NOT NULL DEFAULT 'draft',
+  created_at TEXT NOT NULL DEFAULT '',
+  updated_at TEXT NOT NULL DEFAULT ''
+);
+CREATE INDEX IF NOT EXISTS idx_payroll_entries_period ON payroll_entries (period_id);
+CREATE INDEX IF NOT EXISTS idx_payroll_entries_employee ON payroll_entries (employee_id);
+`)
+	return err
+}
+
+func ensurePayrollEarningsCodesTable(db *sql.DB) error {
+	_, err := db.Exec(`
+CREATE TABLE IF NOT EXISTS payroll_earnings_codes (
+  id TEXT PRIMARY KEY,
+  company_id TEXT NOT NULL DEFAULT '',
+  code TEXT NOT NULL DEFAULT '',
+  name TEXT NOT NULL DEFAULT '',
+  enabled INTEGER NOT NULL DEFAULT 1,
+  cpp INTEGER NOT NULL DEFAULT 1,
+  ei INTEGER NOT NULL DEFAULT 1,
+  tax_fed INTEGER NOT NULL DEFAULT 1,
+  tax_prov INTEGER NOT NULL DEFAULT 1,
+  non_cash INTEGER NOT NULL DEFAULT 0,
+  vacationable INTEGER NOT NULL DEFAULT 0,
+  t4_box TEXT NOT NULL DEFAULT '',
+  sort_order INTEGER NOT NULL DEFAULT 0,
+  created_at TEXT NOT NULL DEFAULT '',
+  updated_at TEXT NOT NULL DEFAULT ''
+);
+CREATE INDEX IF NOT EXISTS idx_earnings_codes_company ON payroll_earnings_codes (company_id);
+`)
+	return err
+}
+
+func ensurePayrollEntryEarningsTable(db *sql.DB) error {
+	_, err := db.Exec(`
+CREATE TABLE IF NOT EXISTS payroll_entry_earnings (
+  id TEXT PRIMARY KEY,
+  entry_id TEXT NOT NULL DEFAULT '',
+  earnings_code_id TEXT NOT NULL DEFAULT '',
+  hours REAL NOT NULL DEFAULT 0,
+  rate REAL NOT NULL DEFAULT 0,
+  amount REAL NOT NULL DEFAULT 0,
+  created_at TEXT NOT NULL DEFAULT '',
+  updated_at TEXT NOT NULL DEFAULT ''
+);
+CREATE INDEX IF NOT EXISTS idx_entry_earnings_entry ON payroll_entry_earnings (entry_id);
+`)
+	return err
+}
+
+func ensureEarningsCodeExtraColumns(db *sql.DB) error {
+	want := []struct {
+		Name string
+		DDL  string
+	}{
+		{Name: "multiplier", DDL: "ALTER TABLE payroll_earnings_codes ADD COLUMN multiplier REAL NOT NULL DEFAULT 1.0"},
+		{Name: "is_system",  DDL: "ALTER TABLE payroll_earnings_codes ADD COLUMN is_system INTEGER NOT NULL DEFAULT 0"},
+	}
+	existing := map[string]bool{}
+	rows, err := db.Query(`PRAGMA table_info(payroll_earnings_codes)`)
+	if err != nil {
+		return err
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var cid int; var name, ctype string; var notnull int; var dflt sql.NullString; var pk int
+		if rows.Scan(&cid, &name, &ctype, &notnull, &dflt, &pk) == nil {
+			existing[name] = true
+		}
+	}
+	for _, c := range want {
+		if !existing[c.Name] {
+			_, _ = db.Exec(c.DDL)
+		}
+	}
+	return nil
+}
+
+func ensurePayrollCompanyRulesTable(db *sql.DB) error {
+	_, err := db.Exec(`
+CREATE TABLE IF NOT EXISTS payroll_company_rules (
+  company_id TEXT PRIMARY KEY,
+  vacation_rate REAL NOT NULL DEFAULT 0.04,
+  vacation_method TEXT NOT NULL DEFAULT 'per_period',
+  updated_at TEXT NOT NULL DEFAULT ''
+);`)
+	return err
+}
+
+func ensureEmployeeVacationBalance(db *sql.DB) error {
+	rows, err := db.Query(`PRAGMA table_info(payroll_employees)`)
+	if err != nil {
+		return err
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var cid int; var name, ctype string; var notnull int; var dflt sql.NullString; var pk int
+		if rows.Scan(&cid, &name, &ctype, &notnull, &dflt, &pk) == nil && name == "vacation_balance" {
+			return nil
+		}
+	}
+	_, err = db.Exec(`ALTER TABLE payroll_employees ADD COLUMN vacation_balance REAL NOT NULL DEFAULT 0`)
+	return err
+}
+
+func ensureEntryPaymentType(db *sql.DB) error {
+	rows, err := db.Query(`PRAGMA table_info(payroll_entries)`)
+	if err != nil {
+		return err
+	}
+	defer rows.Close()
+	found := false
+	for rows.Next() {
+		var cid int; var name, ctype string; var notnull int; var dflt sql.NullString; var pk int
+		if rows.Scan(&cid, &name, &ctype, &notnull, &dflt, &pk) == nil && name == "payment_type" {
+			found = true
+		}
+	}
+	if !found {
+		_, err = db.Exec(`ALTER TABLE payroll_entries ADD COLUMN payment_type TEXT NOT NULL DEFAULT 'cheque'`)
+		return err
+	}
+	return nil
 }
 
 func ensurePayrollEmployeesTable(db *sql.DB) error {

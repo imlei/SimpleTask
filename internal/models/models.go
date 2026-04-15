@@ -212,6 +212,109 @@ type PayrollEmployee struct {
 	UpdatedAt string `json:"updatedAt,omitempty"`
 }
 
+// PayrollPeriod 一次发薪周期（属于某家公司）
+type PayrollPeriod struct {
+	ID           string `json:"id"`
+	CompanyID    string `json:"companyId"`
+	PeriodStart  string `json:"periodStart"` // YYYY-MM-DD
+	PeriodEnd    string `json:"periodEnd"`   // YYYY-MM-DD
+	PayDate      string `json:"payDate"`     // YYYY-MM-DD (CRA: deductions based on pay date)
+	PaysPerYear  int    `json:"paysPerYear"` // 52 | 26 | 24 | 12
+	PayFrequency string `json:"payFrequency"`
+	PayrollType  string `json:"payrollType"` // regular | special
+	Status       string `json:"status"`      // open | calculated | finalized
+	CreatedAt    string `json:"createdAt,omitempty"`
+	UpdatedAt    string `json:"updatedAt,omitempty"`
+}
+
+// PayrollEntry 一名员工在一个发薪周期内的计算结果
+type PayrollEntry struct {
+	ID         string `json:"id"`
+	PeriodID   string `json:"periodId"`
+	EmployeeID string `json:"employeeId"`
+	CompanyID  string `json:"companyId"`
+
+	// Employee name (joined, not stored)
+	EmployeeName string `json:"employeeName,omitempty"`
+
+	// Earnings input
+	Hours   float64 `json:"hours"`
+	PayRate float64 `json:"payRate"`
+	GrossPay float64 `json:"grossPay"`
+
+	// Employee deductions (CPP T4001 §2, EI §3, Income Tax §4)
+	CPPEmployee   float64 `json:"cppEmployee"`
+	CPP2Employee  float64 `json:"cpp2Employee"`
+	EIEmployee    float64 `json:"eiEmployee"`
+	FederalTax    float64 `json:"federalTax"`
+	ProvincialTax float64 `json:"provincialTax"`
+	TotalDeductions float64 `json:"totalDeductions"`
+	NetPay          float64 `json:"netPay"`
+
+	// Employer contributions (for PD7A remittance)
+	CPPEmployer  float64 `json:"cppEmployer"`
+	CPP2Employer float64 `json:"cpp2Employer"`
+	EIEmployer   float64 `json:"eiEmployer"`
+
+	// YTD snapshot at time of calculation
+	YTDGross  float64 `json:"ytdGross"`
+	YTDCPPEe  float64 `json:"ytdCppEmployee"`
+	YTDCPP2Ee float64 `json:"ytdCpp2Employee"`
+	YTDEIEe   float64 `json:"ytdEiEmployee"`
+
+	// Calculation audit trail (JSON blob of rates+inputs used)
+	CalcSnapshotJSON string `json:"calcSnapshotJson,omitempty"`
+
+	Status    string `json:"status"` // draft | approved
+	CreatedAt string `json:"createdAt,omitempty"`
+	UpdatedAt string `json:"updatedAt,omitempty"`
+}
+
+// PayrollEarningsCode defines how an earnings type is treated for payroll deductions.
+// Companies configure their own codes under Settings → Pay Rules.
+type PayrollEarningsCode struct {
+	ID           string  `json:"id"`
+	CompanyID    string  `json:"companyId"`
+	Code         string  `json:"code"`         // short identifier, e.g. "TIPS", "OT15"
+	Name         string  `json:"name"`         // display name, e.g. "Tips", "Overtime Hours @ 1.5"
+	Enabled      bool    `json:"enabled"`
+	CPP          bool    `json:"cpp"`          // CPP-applicable
+	EI           bool    `json:"ei"`           // EI-applicable (insurable earnings)
+	TaxFed       bool    `json:"taxFed"`       // federal income tax applicable
+	TaxProv      bool    `json:"taxProv"`      // provincial income tax applicable
+	NonCash      bool    `json:"nonCash"`      // non-cash benefit (taxable but no cheque issued)
+	Vacationable bool    `json:"vacationable"` // included in vacation-pay calculation base
+	Multiplier   float64 `json:"multiplier"`   // rate multiplier: 1.0=regular, 1.5=OT, 2.0=DT
+	IsSystem     bool    `json:"isSystem"`     // system-defined codes cannot be deleted
+	T4Box        string  `json:"t4Box"`        // T4 slip box, e.g. "14", "40" (optional)
+	SortOrder    int     `json:"sortOrder"`
+	CreatedAt    string  `json:"createdAt,omitempty"`
+	UpdatedAt    string  `json:"updatedAt,omitempty"`
+}
+
+// PayrollCompanyRules holds payroll-computation rules for one company.
+type PayrollCompanyRules struct {
+	CompanyID      string  `json:"companyId"`
+	VacationRate   float64 `json:"vacationRate"`   // e.g. 0.04 = 4%
+	VacationMethod string  `json:"vacationMethod"` // "per_period" | "accrued"
+	UpdatedAt      string  `json:"updatedAt,omitempty"`
+}
+
+// PayrollEntryEarning is one line of additional earnings for a payroll entry.
+// Regular base pay is stored directly on PayrollEntry; each extra earnings type
+// (tips, overtime, commission, etc.) is stored as a separate line here.
+type PayrollEntryEarning struct {
+	ID             string  `json:"id"`
+	EntryID        string  `json:"entryId"`
+	EarningsCodeID string  `json:"earningsCodeId"`
+	CodeName       string  `json:"codeName,omitempty"` // joined from payroll_earnings_codes
+	Hours          float64 `json:"hours"`
+	Rate           float64 `json:"rate"`
+	Amount         float64 `json:"amount"`
+	CreatedAt      string  `json:"createdAt,omitempty"`
+	UpdatedAt      string  `json:"updatedAt,omitempty"`
+}
+
 // BankAccount 支票打印 / MICR 银行账户（支持多账户）
 type BankAccount struct {
 	ID                   string `json:"id"`

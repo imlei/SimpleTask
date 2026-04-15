@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="en-CA">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Pay Stub — Payroll Works</title>
+    <style>
+      /* Screen shell */
+      body { font-family: Arial, Helvetica, sans-serif; font-size: 12px; background: #f0f4f8; margin: 0; padding: 0; }
+      .screen-toolbar { background: #1e293b; color: #e2e8f0; display: flex; align-items: center; gap: 1rem; padding: 0.6rem 1.2rem; font-size: 13px; }
+      .screen-toolbar a { color: #93c5fd; text-decoration: none; }
+      .screen-toolbar button { background: #334155; color: #e2e8f0; border: 1px solid #475569; border-radius: 4px; padding: 0.3rem 0.9rem; cursor: pointer; font-size: 13px; }
+      .screen-toolbar button:hover { background: #475569; }
+      .page-wrap { max-width: 760px; margin: 1.5rem auto; background: #fff; box-shadow: 0 2px 12px rgba(0,0,0,.15); }
+
+      /* Stub layout */
+      .stub { padding: 1.5rem 2rem; }
+
+      /* Header */
+      .stub-header { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 2px solid #1e293b; padding-bottom: 0.75rem; margin-bottom: 1rem; }
+      .stub-company { font-size: 15px; font-weight: 700; color: #1e293b; }
+      .stub-company .bn { font-size: 11px; font-weight: 400; color: #64748b; margin-top: 2px; }
+      .stub-title { text-align: right; }
+      .stub-title .label { font-size: 18px; font-weight: 700; color: #1e293b; letter-spacing: 1px; }
+      .stub-title .period { font-size: 11px; color: #64748b; margin-top: 2px; }
+
+      /* Employee info row */
+      .emp-info { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 0.5rem 1.5rem; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 4px; padding: 0.6rem 1rem; margin-bottom: 1rem; font-size: 11px; }
+      .emp-info .field { display: flex; flex-direction: column; }
+      .emp-info .field span:first-child { color: #94a3b8; font-size: 10px; text-transform: uppercase; letter-spacing: 0.05em; }
+      .emp-info .field span:last-child  { font-weight: 600; color: #1e293b; margin-top: 1px; }
+
+      /* Earnings / Deductions two-column */
+      .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem; }
+      .section-title { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: #475569; border-bottom: 1px solid #e2e8f0; padding-bottom: 3px; margin-bottom: 6px; }
+      table.stub-table { width: 100%; border-collapse: collapse; font-size: 11.5px; }
+      table.stub-table td { padding: 3px 0; }
+      table.stub-table td:last-child { text-align: right; font-family: monospace; font-size: 12px; }
+      table.stub-table tr.total-row td { border-top: 1px solid #cbd5e1; font-weight: 700; padding-top: 5px; margin-top: 2px; }
+      table.stub-table tr.sub { color: #64748b; }
+
+      /* Summary box */
+      .summary-box { background: #1e293b; color: #f1f5f9; border-radius: 4px; display: flex; justify-content: space-around; padding: 0.75rem 1rem; margin-bottom: 1rem; font-size: 12px; }
+      .summary-box .item { display: flex; flex-direction: column; align-items: center; gap: 3px; }
+      .summary-box .item .lbl { font-size: 10px; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.05em; }
+      .summary-box .item .val { font-size: 15px; font-weight: 700; font-family: monospace; }
+      .summary-box .item .val.net { color: #4ade80; font-size: 18px; }
+
+      /* YTD section */
+      .ytd-section { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 4px; padding: 0.6rem 1rem; margin-bottom: 1rem; font-size: 11px; }
+      .ytd-section .section-title { margin-bottom: 4px; }
+      table.ytd-table { width: 100%; border-collapse: collapse; font-size: 11.5px; }
+      table.ytd-table td { padding: 2px 4px; }
+      table.ytd-table td:not(:first-child) { text-align: right; font-family: monospace; }
+      table.ytd-table th { text-align: right; font-size: 10px; color: #94a3b8; text-transform: uppercase; font-weight: 600; padding: 0 4px 3px; }
+      table.ytd-table th:first-child { text-align: left; }
+
+      /* CRA note */
+      .cra-note { font-size: 10px; color: #94a3b8; text-align: center; margin-top: 0.5rem; border-top: 1px dashed #e2e8f0; padding-top: 0.5rem; }
+
+      /* Print */
+      @media print {
+        body { background: #fff; }
+        .screen-toolbar { display: none; }
+        .page-wrap { box-shadow: none; margin: 0; }
+        .stub { padding: 1rem 1.5rem; }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="screen-toolbar">
+      <a id="backLink" href="cheques-payslips.html">← Back to payslips</a>
+      <button type="button" onclick="window.print()">🖨 Print / Save as PDF</button>
+      <span id="stubTitle" style="margin-left:auto; opacity:0.7"></span>
+    </div>
+
+    <div class="page-wrap">
+      <div class="stub" id="stubContent">
+        <div style="text-align:center; padding:2rem; color:#94a3b8">Loading pay stub…</div>
+      </div>
+    </div>
+
+    <script>
+      var params     = new URLSearchParams(location.search);
+      var periodId   = params.get('period')   || '';
+      var employeeId = params.get('employee') || '';
+      var companyId  = params.get('company')  || '';
+
+      var backBase = 'cheques-payslips.html?period=' + encodeURIComponent(periodId);
+      if (companyId) backBase += '&company=' + encodeURIComponent(companyId);
+      document.getElementById('backLink').href = backBase;
+
+      if (!periodId || !employeeId) {
+        document.getElementById('stubContent').innerHTML = '<div style="padding:2rem;color:#b91c1c">Missing period or employee parameter.</div>';
+      } else {
+        loadStub();
+      }
+
+      function loadStub() {
+        Promise.all([
+          fetch('/api/payroll/periods/' + encodeURIComponent(periodId), { credentials: 'same-origin' }).then(function (r) { return r.ok ? r.json() : null; }),
+          fetch('/api/payroll/periods/' + encodeURIComponent(periodId) + '/entries', { credentials: 'same-origin' }).then(function (r) { return r.ok ? r.json() : []; }),
+          companyId ? fetch('/api/payroll/companies/' + encodeURIComponent(companyId), { credentials: 'same-origin' }).then(function (r) { return r.ok ? r.json() : null; }) : Promise.resolve(null),
+        ]).then(function (results) {
+          var period   = results[0];
+          var entries  = results[1] || [];
+          var company  = results[2];
+
+          var entry = entries.find(function (e) { return e.employeeId === employeeId; });
+          if (!entry) {
+            document.getElementById('stubContent').innerHTML = '<div style="padding:2rem;color:#b91c1c">Entry not found for this employee in the selected period.</div>';
+            return;
+          }
+          renderStub(company, period, entry);
+        });
+      }
+
+      function fmt(v) { return '$' + (parseFloat(v)||0).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g,','); }
+      function fmtH(v) { return (parseFloat(v)||0).toFixed(2); }
+
+      function renderStub(company, period, e) {
+        document.getElementById('stubTitle').textContent =
+          (e.employeeName || e.employeeId) + ' · ' + (period ? period.payDate : '');
+
+        var companyName = company ? (company.name || company.legalName) : '—';
+        var companyBN   = company ? (company.businessNumber || '') : '';
+        var companyAddr = company ? (company.address || '') : '';
+
+        var payDate  = period ? period.payDate     : '—';
+        var pStart   = period ? period.periodStart : '—';
+        var pEnd     = period ? period.periodEnd   : '—';
+        var freq     = period ? (period.payFrequency || (period.paysPerYear + 'x/yr')) : '—';
+
+        var cpp     = (parseFloat(e.cppEmployee)||0) + (parseFloat(e.cpp2Employee)||0);
+        var ei      = parseFloat(e.eiEmployee)||0;
+        var fedTax  = parseFloat(e.federalTax)||0;
+        var provTax = parseFloat(e.provincialTax)||0;
+        var gross   = parseFloat(e.grossPay)||0;
+        var netPay  = parseFloat(e.netPay)||0;
+        var ded     = parseFloat(e.totalDeductions)||0;
+        var hours   = parseFloat(e.hours)||0;
+        var rate    = parseFloat(e.payRate)||0;
+
+        var ytdGross  = parseFloat(e.ytdGross)||0;
+        var ytdCPP    = (parseFloat(e.ytdCppEmployee)||0) + (parseFloat(e.ytdCpp2Employee)||0);
+        var ytdEI     = parseFloat(e.ytdEiEmployee)||0;
+
+        document.getElementById('stubContent').innerHTML = [
+          '<div class="stub-header">',
+            '<div class="stub-company">',
+              '<div>' + esc(companyName) + '</div>',
+              companyBN ? '<div class="bn">BN: ' + esc(companyBN) + '</div>' : '',
+              companyAddr ? '<div class="bn">' + esc(companyAddr) + '</div>' : '',
+            '</div>',
+            '<div class="stub-title">',
+              '<div class="label">PAY STUB</div>',
+              '<div class="period">Pay date: <strong>' + esc(payDate) + '</strong></div>',
+              '<div class="period">Period: ' + esc(pStart) + ' – ' + esc(pEnd) + '</div>',
+              '<div class="period">' + esc(freq) + '</div>',
+            '</div>',
+          '</div>',
+
+          '<div class="emp-info">',
+            '<div class="field"><span>Employee</span><span>' + esc(e.employeeName || e.employeeId) + '</span></div>',
+            '<div class="field"><span>Employee ID</span><span>' + esc(e.employeeId) + '</span></div>',
+            '<div class="field"><span>Period ID</span><span>' + esc(e.periodId) + '</span></div>',
+          '</div>',
+
+          '<div class="two-col">',
+            // Earnings
+            '<div>',
+              '<div class="section-title">Earnings</div>',
+              '<table class="stub-table">',
+                hours > 0 ? ('<tr><td>Regular Hours</td><td>' + fmtH(hours) + ' h × ' + fmt(rate) + '</td></tr>') : '',
+                '<tr><td>Gross Pay</td><td>' + fmt(gross) + '</td></tr>',
+                '<tr class="total-row"><td>Total Earnings</td><td>' + fmt(gross) + '</td></tr>',
+              '</table>',
+            '</div>',
+            // Deductions
+            '<div>',
+              '<div class="section-title">Deductions</div>',
+              '<table class="stub-table">',
+                '<tr><td>CPP / CPP2</td><td>' + fmt(cpp) + '</td></tr>',
+                cpp > 0 && parseFloat(e.cpp2Employee) > 0 ? '<tr class="sub"><td>&nbsp;&nbsp;CPP</td><td>' + fmt(e.cppEmployee) + '</td></tr>' : '',
+                cpp > 0 && parseFloat(e.cpp2Employee) > 0 ? '<tr class="sub"><td>&nbsp;&nbsp;CPP2</td><td>' + fmt(e.cpp2Employee) + '</td></tr>' : '',
+                '<tr><td>EI Premium</td><td>' + fmt(ei) + '</td></tr>',
+                '<tr><td>Federal Income Tax</td><td>' + fmt(fedTax) + '</td></tr>',
+                '<tr><td>Provincial Income Tax</td><td>' + fmt(provTax) + '</td></tr>',
+                '<tr class="total-row"><td>Total Deductions</td><td>' + fmt(ded) + '</td></tr>',
+              '</table>',
+            '</div>',
+          '</div>',
+
+          '<div class="summary-box">',
+            '<div class="item"><span class="lbl">Gross Pay</span><span class="val">' + fmt(gross) + '</span></div>',
+            '<div class="item"><span class="lbl">Total Deductions</span><span class="val">' + fmt(ded) + '</span></div>',
+            '<div class="item"><span class="lbl">Net Pay</span><span class="val net">' + fmt(netPay) + '</span></div>',
+          '</div>',
+
+          '<div class="ytd-section">',
+            '<div class="section-title">Year-to-Date (prior periods)</div>',
+            '<table class="ytd-table">',
+              '<tr><th>Item</th><th>Prior YTD</th><th>This Period</th><th>Updated YTD</th></tr>',
+              '<tr><td>Gross Pay</td><td>' + fmt(ytdGross) + '</td><td>' + fmt(gross) + '</td><td>' + fmt(ytdGross+gross) + '</td></tr>',
+              '<tr><td>CPP / CPP2</td><td>' + fmt(ytdCPP) + '</td><td>' + fmt(cpp) + '</td><td>' + fmt(ytdCPP+cpp) + '</td></tr>',
+              '<tr><td>EI Premium</td><td>' + fmt(ytdEI) + '</td><td>' + fmt(ei) + '</td><td>' + fmt(ytdEI+ei) + '</td></tr>',
+            '</table>',
+          '</div>',
+
+          '<div class="cra-note">',
+            'This is a computer-generated pay statement. Amounts are calculated per CRA T4001 / T4127 using 2025 rates. ',
+            'Not a legal tax document — refer to your annual T4 slip for CRA reporting.',
+          '</div>',
+        ].join('');
+      }
+
+      function esc(s) {
+        return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+      }
+    </script>
+  </body>
+</html>

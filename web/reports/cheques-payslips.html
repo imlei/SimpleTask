@@ -15,17 +15,14 @@
           <span class="sep">|</span>
           <span class="sub">Payroll</span>
           <span class="pe-flag">🇨🇦</span>
-          <span class="pe-tax-pill">2026</span>
+          <span class="pe-tax-pill" id="taxYear">2025</span>
         </div>
         <nav class="pe-topbar-nav">
-          <a href="../run-payroll.html" class="pe-topbar-nav-item">Payroll</a>
+          <a href="../run-payroll.html" class="pe-topbar-nav-item" id="nav-run">Payroll</a>
         </nav>
         <div class="pe-topbar-right">
-          <span class="pe-badge-admin">Admin</span>
-          <span>RORO HOLDING LTD</span>
-          <button type="button" class="pe-icon-btn" title="Notifications">🔔</button>
-          <button type="button" class="pe-icon-btn" title="Help">?</button>
-          <div class="pe-avatar">LH</div>
+          <span id="companyName">—</span>
+          <div class="pe-avatar">PW</div>
         </div>
       </header>
 
@@ -35,126 +32,154 @@
       </div>
 
       <aside class="pe-sidebar">
-        <a class="pe-nav" href="../dashboard.html"><span>⌂</span> Home</a>
-        <a class="pe-nav" href="../run-payroll.html"><span>▤</span> Run payroll</a>
-        <a class="pe-nav" href="#"><span>☰</span> Actions</a>
+        <a class="pe-nav" href="../dashboard.html" id="nav-home"><span>⌂</span> Home</a>
+        <a class="pe-nav" href="../run-payroll.html" id="nav-runSide"><span>▤</span> Run payroll</a>
+        <a class="pe-nav" href="#" onclick="return false"><span>☰</span> Actions</a>
         <div class="pe-nav-group">
           <div class="pe-nav-heading">Reports</div>
           <a class="pe-nav active" href="payrun.html" style="margin: 0 0.5rem"><span>▦</span> Reports</a>
           <div class="pe-nav-sub">
-            <a href="payrun.html">Pay run</a>
-            <a href="#">Pay run history</a>
-            <a href="#">Time sheet</a>
-            <a href="#">Time summary</a>
-            <a href="#">Journal (register)</a>
+            <a href="payrun.html" id="nav-payrun">Pay run</a>
+            <a href="remittance.html" id="nav-remittance">Remittance report</a>
             <a class="active" href="cheques-payslips.html">Cheques / payslips</a>
-            <a href="#">E-pay direct deposit</a>
-            <a href="#">Payment register</a>
-            <a href="#">Summary</a>
-            <a href="#">Employee HX</a>
-            <a href="remittance.html">Remittance report</a>
             <a href="accountant/index.html">Accountant</a>
           </div>
         </div>
-        <a class="pe-nav" href="../employees.html"><span>👤</span> Employees</a>
-        <span class="pe-nav spacer"></span>
-        <a class="pe-nav" href="#"><span>⚙</span> Settings</a>
+        <a class="pe-nav" href="../employees.html" id="nav-employees"><span>👤</span> Employees</a>
       </aside>
 
       <main class="pe-main">
         <div class="pe-report-toolbar">
-          <h1>Cheques / payslips</h1>
+          <h1>Cheques / Payslips</h1>
           <div class="pe-report-filters">
-            <label for="rtype">Report</label>
-            <select id="rtype" aria-label="Report type">
-              <option selected>Cheques / payslips</option>
-              <option>Cheques only</option>
-              <option>Payslips only</option>
+            <label for="periodSel">Pay period</label>
+            <select id="periodSel" aria-label="Pay period" style="min-width:220px">
+              <option value="">— Select a period —</option>
             </select>
-            <a class="pe-btn pe-btn-primary" href="/export/payslip/sample" target="_blank" rel="noopener"
-              >Sample payslip (print / PDF)</a
-            >
+            <button type="button" class="pe-btn" id="btnLoad">Load</button>
+            <a id="btnCSV" href="#" class="pe-btn pe-btn-primary" style="display:none" download>⬇ CSV export</a>
           </div>
         </div>
 
-        <div class="pe-info" style="margin-bottom: 1rem; max-width: 900px">
-          Payslip layout follows payroll slip template (hours, earnings, deductions, summary, cheque stub). Open the sample
-          and use the browser <strong>Print → Save as PDF</strong> to match PDF output.
+        <div class="pe-info" style="margin-bottom:1rem; max-width:720px">
+          Select a pay period to view individual pay stubs. Click <strong>📄 View</strong> on any employee to open
+          the printable pay stub — use <em>File → Print → Save as PDF</em> to produce a PDF copy.
         </div>
 
         <div class="pe-table-wrap">
           <table class="pe-table">
             <thead>
               <tr>
-                <th>Report no.</th>
-                <th>Created</th>
-                <th>Payroll date</th>
-                <th>Type</th>
-                <th>Pages</th>
-                <th>Report name</th>
-                <th>View</th>
-                <th>PDF</th>
+                <th>#</th>
+                <th>Employee</th>
+                <th style="text-align:right">Hours</th>
+                <th style="text-align:right">Gross Pay</th>
+                <th style="text-align:right">Total Deductions</th>
+                <th style="text-align:right">Net Pay</th>
+                <th>Status</th>
+                <th>Payslip</th>
               </tr>
             </thead>
-            <tbody>
-              <tr>
-                <td class="mono">184</td>
-                <td>06/03/2026 14:22</td>
-                <td>06/03/2026</td>
-                <td>Cheques</td>
-                <td class="mono">0001</td>
-                <td class="mono">CHQ000184</td>
-                <td><a class="pe-icon-action" href="#" title="View" aria-label="View report">📄</a></td>
-                <td><a class="pe-icon-action" href="#" title="PDF" aria-label="Download PDF">📕</a></td>
-              </tr>
-              <tr>
-                <td class="mono">183</td>
-                <td>06/03/2026 14:21</td>
-                <td>06/03/2026</td>
-                <td>Payslips</td>
-                <td class="mono">0001</td>
-                <td class="mono">DEP000183</td>
-                <td><a class="pe-icon-action" href="#" title="View">📄</a></td>
-                <td><a class="pe-icon-action" href="#" title="PDF">📕</a></td>
-              </tr>
-              <tr>
-                <td class="mono">182</td>
-                <td>20/02/2026 09:15</td>
-                <td>20/02/2026</td>
-                <td>Payslips</td>
-                <td class="mono">0001</td>
-                <td class="mono">DEP000182</td>
-                <td><a class="pe-icon-action" href="#" title="View">📄</a></td>
-                <td><a class="pe-icon-action" href="#" title="PDF">📕</a></td>
-              </tr>
+            <tbody id="entriesTbody">
+              <tr><td colspan="8" style="padding:1rem;opacity:0.6">Select a pay period to load employees.</td></tr>
             </tbody>
+            <tfoot>
+              <tr style="font-weight:700; background:var(--pe-row-alt)">
+                <td colspan="3" style="text-align:right">Totals:</td>
+                <td style="text-align:right; font-family:monospace" id="totGross">—</td>
+                <td style="text-align:right; font-family:monospace" id="totDed">—</td>
+                <td style="text-align:right; font-family:monospace" id="totNet">—</td>
+                <td colspan="2"></td>
+              </tr>
+            </tfoot>
           </table>
-          <div class="pe-pagination-full">
-            <div class="pe-page-btns">
-              <button type="button">«</button>
-              <button type="button">‹</button>
-              <span class="current">1</span>
-              <a href="#">2</a>
-              <a href="#">3</a>
-              <span>…</span>
-              <a href="#">19</a>
-              <button type="button">›</button>
-              <button type="button">»</button>
-            </div>
-            <div style="display: flex; align-items: center; gap: 0.75rem">
-              <label>
-                Per page
-                <select style="margin-left: 0.35rem">
-                  <option>10</option>
-                  <option selected>25</option>
-                  <option>50</option>
-                </select>
-              </label>
-              <span>184 items in 19 pages</span>
-            </div>
-          </div>
         </div>
       </main>
     </div>
+
+    <script>
+      var params    = new URLSearchParams(location.search);
+      var companyId = params.get('company') || '';
+      var initPeriod = params.get('period')  || '';
+
+      function withC(href) { return companyId ? href + '?company=' + encodeURIComponent(companyId) : href; }
+      document.getElementById('nav-home').href       = withC('../dashboard.html');
+      document.getElementById('nav-run').href        = withC('../run-payroll.html');
+      document.getElementById('nav-runSide').href    = withC('../run-payroll.html');
+      document.getElementById('nav-employees').href  = withC('../employees.html');
+      document.getElementById('nav-payrun').href     = 'payrun.html' + (companyId ? '?company=' + encodeURIComponent(companyId) : '');
+      document.getElementById('nav-remittance').href = 'remittance.html' + (companyId ? '?company=' + encodeURIComponent(companyId) : '');
+      document.getElementById('taxYear').textContent = new Date().getFullYear();
+
+      if (companyId) {
+        fetch('/api/payroll/companies/' + encodeURIComponent(companyId), { credentials: 'same-origin' })
+          .then(function (r) { return r.ok ? r.json() : null; })
+          .then(function (c) { if (c) document.getElementById('companyName').textContent = c.name || c.legalName; });
+
+        fetch('/api/payroll/periods?company_id=' + encodeURIComponent(companyId), { credentials: 'same-origin' })
+          .then(function (r) { return r.ok ? r.json() : []; })
+          .then(function (list) {
+            var sel = document.getElementById('periodSel');
+            (list || []).forEach(function (p) {
+              if (p.status === 'open') return; // nothing to show for open periods
+              var opt = document.createElement('option');
+              opt.value = p.id;
+              opt.textContent = p.payDate + ' · ' + (p.periodStart || '') + ' – ' + (p.periodEnd || '') + ' [' + p.status + ']';
+              sel.appendChild(opt);
+            });
+            if (initPeriod) {
+              sel.value = initPeriod;
+              loadEntries(initPeriod);
+            }
+          });
+      }
+
+      document.getElementById('btnLoad').addEventListener('click', function () {
+        var pid = document.getElementById('periodSel').value;
+        if (pid) loadEntries(pid);
+      });
+
+      function fmt(v) {
+        return '$' + (parseFloat(v)||0).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+      }
+
+      function loadEntries(periodId) {
+        document.getElementById('btnCSV').href = '/api/payroll/export/csv?period_id=' + encodeURIComponent(periodId);
+        document.getElementById('btnCSV').style.display = 'inline-flex';
+
+        fetch('/api/payroll/periods/' + encodeURIComponent(periodId) + '/entries', { credentials: 'same-origin' })
+          .then(function (r) { return r.ok ? r.json() : []; })
+          .then(function (list) {
+            var tbody = document.getElementById('entriesTbody');
+            if (!list || !list.length) {
+              tbody.innerHTML = '<tr><td colspan="8" style="padding:1rem;opacity:0.6">No entries for this period.</td></tr>';
+              return;
+            }
+            var totGross = 0, totDed = 0, totNet = 0;
+            tbody.innerHTML = list.map(function (e, i) {
+              totGross += parseFloat(e.grossPay)||0;
+              totDed   += parseFloat(e.totalDeductions)||0;
+              totNet   += parseFloat(e.netPay)||0;
+              var stubHref = 'paystub.html?period=' + encodeURIComponent(periodId) +
+                '&employee=' + encodeURIComponent(e.employeeId) +
+                (companyId ? '&company=' + encodeURIComponent(companyId) : '');
+              var statusColor = e.status === 'approved' ? 'var(--pe-success)' : '#64748b';
+              return '<tr>' +
+                '<td class="mono" style="font-size:0.8rem">' + (i+1) + '</td>' +
+                '<td>' + (e.employeeName || e.employeeId) + '</td>' +
+                '<td style="text-align:right; font-family:monospace">' + (parseFloat(e.hours)||0).toFixed(2) + '</td>' +
+                '<td style="text-align:right; font-family:monospace">' + fmt(e.grossPay) + '</td>' +
+                '<td style="text-align:right; font-family:monospace">' + fmt(e.totalDeductions) + '</td>' +
+                '<td style="text-align:right; font-family:monospace; font-weight:600">' + fmt(e.netPay) + '</td>' +
+                '<td style="color:' + statusColor + '; font-size:0.8rem">' + (e.status||'') + '</td>' +
+                '<td><a href="' + stubHref + '" target="_blank" title="View payslip" class="pe-icon-action">📄</a></td>' +
+                '</tr>';
+            }).join('');
+            document.getElementById('totGross').textContent = fmt(totGross);
+            document.getElementById('totDed').textContent   = fmt(totDed);
+            document.getElementById('totNet').textContent   = fmt(totNet);
+          });
+      }
+    </script>
   </body>
 </html>

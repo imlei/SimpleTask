@@ -1,144 +1,680 @@
 <!DOCTYPE html>
-<html lang="en-CA">
+<html lang="en-CA" data-theme="light">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Salaries — Payroll Works</title>
-    <link rel="stylesheet" href="theme.css" />
-    <link rel="stylesheet" href="app.css" />
-    <link rel="stylesheet" href="pages.css" />
+    <link href="https://cdn.jsdelivr.net/npm/daisyui@5/themes.css" rel="stylesheet" />
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <script src="https://cdn.jsdelivr.net/npm/daisyui@5/cdn.js"></script>
+    <style type="text/tailwindcss">
+      @import "tailwindcss";
+    </style>
   </head>
-  <body>
-    <div class="app-shell">
-      <header class="topbar">
-        <div class="brand">
-          <a href="dashboard.html" class="muted">←</a>
-          <span>PAYROLL WORKS</span>
-          <span class="muted">Payroll</span>
-          <span class="brand-flag" aria-hidden="true">🇨🇦</span>
-          <span class="tax-year"><span>2026</span></span>
-        </div>
-        <nav class="topbar-nav">
-          <a href="run-payroll.html" class="topbar-nav-item active">Payroll</a>
-        </nav>
-        <div class="topbar-actions">
-          <span class="muted" style="font-size: 0.8rem">RORO HOLDING LTD</span>
-          <div class="avatar">LH</div>
-        </div>
-      </header>
+  <body class="bg-base-200 min-h-screen">
 
-      <aside class="sidebar">
-        <a href="dashboard.html" class="nav-item"><span>⌂</span> Home</a>
-        <a href="run-payroll.html" class="nav-item active"><span>▤</span> Run Payroll</a>
-        <a href="#" class="nav-item" onclick="return false"><span>☰</span> Actions</a>
-        <a href="reports/payrun.html" class="nav-item"><span>▦</span> Reports</a>
-        <a href="employees.html" class="nav-item"><span>👤</span> Employees</a>
+    <!-- ── Top nav ─────────────────────────────────────────────────────────── -->
+    <div class="navbar bg-base-100 border-b border-base-300 px-4 min-h-12 sticky top-0 z-30 shadow-sm">
+      <div class="navbar-start gap-2">
+        <a id="backBrand" href="run-payroll.html" class="btn btn-ghost btn-sm text-base-content/60">←</a>
+        <span class="font-bold text-sm tracking-wide">PAYROLL WORKS</span>
+        <span class="badge badge-ghost badge-sm">🇨🇦</span>
+        <span class="text-base-content/40 text-xs" id="taxYear">2025</span>
+      </div>
+      <div class="navbar-center">
+        <a id="nav-run" href="run-payroll.html" class="btn btn-ghost btn-sm font-medium">Payroll</a>
+      </div>
+      <div class="navbar-end gap-3">
+        <span class="text-sm text-base-content/60" id="companyName">—</span>
+        <div class="avatar placeholder">
+          <div class="bg-primary text-primary-content rounded-full w-8 text-xs">
+            <span>PW</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="flex">
+      <!-- ── Sidebar ──────────────────────────────────────────────────────── -->
+      <aside class="w-56 bg-base-100 border-r border-base-300 min-h-[calc(100vh-3rem)] hidden md:flex flex-col gap-1 p-3 shrink-0">
+        <a id="nav-home" href="dashboard.html" class="btn btn-ghost btn-sm justify-start gap-2 font-normal">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
+          Home
+        </a>
+        <a id="nav-runSide" href="run-payroll.html" class="btn btn-ghost btn-sm justify-start gap-2 font-normal bg-primary/10 text-primary">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
+          Run Payroll
+        </a>
+        <a id="nav-employees" href="employees.html" class="btn btn-ghost btn-sm justify-start gap-2 font-normal">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+          Employees
+        </a>
+        <a id="nav-payrules" href="pay-rules.html" class="btn btn-ghost btn-sm justify-start gap-2 font-normal">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><circle cx="12" cy="12" r="3"/></svg>
+          Pay Rules
+        </a>
       </aside>
 
-      <main class="main">
-        <div class="hero-banner">
-          <span>Approve employee earnings</span>
-          <span class="muted">Pay period · sample</span>
+      <!-- ── Main content ─────────────────────────────────────────────────── -->
+      <main class="flex-1 p-4 md:p-6 min-w-0">
+
+        <!-- Hero -->
+        <div class="mb-4">
+          <h1 class="text-xl font-bold">Employee Earnings</h1>
+          <p class="text-sm text-base-content/60 mt-0.5" id="heroPeriod">Pay period · —</p>
         </div>
-        <div class="content">
-          <div class="payroll-steps-label">Payroll steps</div>
-          <div class="stepper">
-            <div class="step">Select pay cycle</div>
-            <div class="step active">Salaries</div>
-            <div class="step">Timesheets</div>
-            <div class="step">Calculate</div>
-            <div class="step">Review</div>
-            <div class="step">Payments</div>
-            <div class="step">Summary</div>
+
+        <!-- Stepper -->
+        <ul class="steps steps-horizontal w-full max-w-xl mb-6 text-xs">
+          <li class="step step-neutral">Select Pay Cycle</li>
+          <li class="step step-primary font-semibold">Salaries</li>
+          <li class="step">Calculate</li>
+          <li class="step">Review</li>
+        </ul>
+
+        <!-- Alert -->
+        <div id="alertBox" class="hidden mb-4"></div>
+
+        <!-- Toolbar -->
+        <div class="flex flex-wrap items-center justify-between gap-2 mb-3">
+          <div class="flex items-center gap-2">
+            <button type="button" class="btn btn-sm btn-ghost" id="btnSelectAll">Select All</button>
+            <button type="button" class="btn btn-sm btn-success hidden" id="btnApproveSelected">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>
+              Approve Selected (<span id="selectedCount">0</span>)
+            </button>
           </div>
-
-          <div class="layout-2col">
-            <div style="min-width: 0">
-              <div class="table-toolbar">
-                <h2>Approve employee earnings</h2>
-                <div class="bulk-actions">
-                  <button type="button" class="btn btn-sm">✓ Approve</button>
-                  <button type="button" class="btn btn-sm">💾 Save</button>
-                  <button type="button" class="btn btn-sm">🗑 Delete</button>
-                </div>
-              </div>
-              <div class="table-toolbar">
-                <div class="search-inline">
-                  <input type="search" placeholder="Name or ID" />
-                  <button type="button" class="btn btn-primary">Search</button>
-                </div>
-              </div>
-
-              <div class="panel">
-                <table class="data">
-                  <thead>
-                    <tr>
-                      <th><input type="checkbox" /></th>
-                      <th>#</th>
-                      <th>Employee</th>
-                      <th>ID</th>
-                      <th>Earnings type</th>
-                      <th>Hours</th>
-                      <th>Rate</th>
-                      <th>Total</th>
-                      <th></th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <tr>
-                      <td><input type="checkbox" /></td>
-                      <td>1</td>
-                      <td>GONG, MINGYING</td>
-                      <td class="mono">000003</td>
-                      <td>
-                        <select class="input" style="font-size: 0.8rem">
-                          <option>Regular Hours</option>
-                        </select>
-                      </td>
-                      <td><input class="cell-input" value="86.66666" /></td>
-                      <td><input class="cell-input" value="45.00" /></td>
-                      <td class="mono">$3,900.00</td>
-                      <td><button type="button" class="icon-btn" title="Save">💾</button> <button type="button" class="icon-btn">+</button></td>
-                    </tr>
-                    <tr>
-                      <td><input type="checkbox" /></td>
-                      <td>2</td>
-                      <td>ZHANG, JIE</td>
-                      <td class="mono">000004</td>
-                      <td>
-                        <select class="input" style="font-size: 0.8rem">
-                          <option>Regular Hours</option>
-                        </select>
-                      </td>
-                      <td><input class="cell-input" value="80.00" /></td>
-                      <td><input class="cell-input" value="42.00" /></td>
-                      <td class="mono">$3,360.00</td>
-                      <td><button type="button" class="icon-btn">💾</button> <button type="button" class="icon-btn">+</button></td>
-                    </tr>
-                  </tbody>
-                </table>
-                <div class="pagination-bar">
-                  <span>← 1 / 1 →</span>
-                  <span>Per page <select class="input"><option>10</option></select></span>
-                </div>
-                <div class="footer-summary" style="padding: 0.75rem 1rem">
-                  Total gross approved: <strong>$0.00</strong> for 0 employees
-                  <span class="legend-approved" style="margin-left: 1rem">✓ Approved</span>
-                </div>
-              </div>
-
-              <div class="flow-footer">
-                <a href="run-payroll.html" class="btn">← Select pay cycle</a>
-                <a href="timesheets.html" class="btn btn-primary" style="text-decoration: none">Timesheets →</a>
-              </div>
-            </div>
-            <aside class="tips-box">
-              <strong>Quick tips</strong><br />
-              Select rows to approve in bulk. Use + to add another earning line for the same employee.
-            </aside>
+          <div class="flex gap-2">
+            <button type="button" class="btn btn-sm btn-ghost" id="btnSaveAll">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"/></svg>
+              Save All
+            </button>
+            <button type="button" class="btn btn-sm btn-primary" id="btnCalculate">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+              Calculate
+            </button>
           </div>
         </div>
+
+        <!-- Table card -->
+        <div class="card bg-base-100 shadow-sm overflow-x-auto" id="tableCard">
+          <table class="table table-sm">
+            <thead class="bg-base-200 text-xs uppercase tracking-wide text-base-content/60">
+              <tr>
+                <th class="w-8">
+                  <input type="checkbox" class="checkbox checkbox-sm" id="chkAll" />
+                </th>
+                <th>#</th>
+                <th>Employee</th>
+                <th>Type</th>
+                <th class="text-right">Hours</th>
+                <th class="text-right">Rate</th>
+                <th class="text-right">Gross Pay</th>
+                <th class="text-center">Earnings</th>
+                <th class="text-center">Status</th>
+              </tr>
+            </thead>
+            <tbody id="entriesTbody">
+              <tr><td colspan="9" class="text-center py-6 text-base-content/40">Loading…</td></tr>
+            </tbody>
+            <tfoot>
+              <tr class="font-semibold bg-base-50">
+                <td colspan="6" class="text-right text-sm text-base-content/60">Total Gross:</td>
+                <td class="text-right font-bold text-primary" id="totalGross">$0.00</td>
+                <td colspan="2"></td>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+
+        <!-- Footer nav -->
+        <div class="flex justify-between mt-6">
+          <a id="backLink" href="run-payroll.html" class="btn btn-ghost btn-sm">← Select Pay Cycle</a>
+          <button type="button" class="btn btn-primary btn-sm" id="btnCalcFooter">
+            Calculate →
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+          </button>
+        </div>
+
       </main>
     </div>
+
+    <!-- ══════════════════════════════════════════════════════════════════════ -->
+    <!-- Additional Earnings Modal                                             -->
+    <!-- ══════════════════════════════════════════════════════════════════════ -->
+    <dialog id="addlModal" class="modal modal-bottom sm:modal-middle">
+      <div class="modal-box w-full max-w-lg p-0 overflow-hidden">
+
+        <!-- Modal header -->
+        <div class="bg-primary px-5 py-4 text-primary-content">
+          <h3 class="font-bold text-base" id="addlModalName">Additional Earnings</h3>
+          <p class="text-primary-content/75 text-xs mt-0.5" id="addlModalSub">—</p>
+        </div>
+
+        <div class="px-5 pt-4 pb-2">
+          <!-- Saved lines list -->
+          <div id="addlSavedList" class="space-y-1.5 mb-3"></div>
+
+          <!-- New line form -->
+          <div class="bg-base-200 rounded-lg p-3" id="newLineForm">
+            <p class="text-xs font-semibold text-base-content/60 uppercase tracking-wide mb-2">Add Earnings Line</p>
+            <div class="flex flex-col gap-2">
+              <select class="select select-bordered select-sm w-full" id="newLineCode">
+                <option value="">— Select earnings type —</option>
+              </select>
+              <div class="grid grid-cols-3 gap-2">
+                <label class="form-control">
+                  <span class="label py-0.5"><span class="label-text text-xs">Hours</span></span>
+                  <input type="number" class="input input-bordered input-sm text-right" id="newLineHours"
+                         min="0" step="0.01" placeholder="0.00" />
+                </label>
+                <label class="form-control">
+                  <span class="label py-0.5"><span class="label-text text-xs">Rate</span></span>
+                  <input type="number" class="input input-bordered input-sm text-right" id="newLineRate"
+                         min="0" step="0.001" placeholder="0.000" />
+                </label>
+                <label class="form-control">
+                  <span class="label py-0.5"><span class="label-text text-xs">Amount</span></span>
+                  <input type="number" class="input input-bordered input-sm text-right font-semibold" id="newLineAmount"
+                         min="0" step="0.01" placeholder="$0.00" />
+                </label>
+              </div>
+            </div>
+          </div>
+
+          <!-- Running total -->
+          <div class="flex justify-between items-center text-sm font-semibold border-t border-base-300 mt-3 pt-3">
+            <span class="text-base-content/60">Total Additional Earnings</span>
+            <span class="text-primary" id="addlTotal">$0.00</span>
+          </div>
+
+          <!-- Error -->
+          <div id="addlErr" class="alert alert-error text-xs py-2 px-3 mt-2 hidden"></div>
+        </div>
+
+        <!-- Modal footer -->
+        <div class="modal-action px-5 pb-4 mt-2 gap-2">
+          <button type="button" class="btn btn-ghost btn-sm" id="btnAddlCancel">Cancel</button>
+          <button type="button" class="btn btn-outline btn-sm" id="btnAddAnother">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+            Add Another
+          </button>
+          <button type="button" class="btn btn-primary btn-sm" id="btnAddlSave">
+            Save & Close
+          </button>
+        </div>
+      </div>
+      <form method="dialog" class="modal-backdrop"><button>close</button></form>
+    </dialog>
+
+    <script>
+      var params    = new URLSearchParams(location.search);
+      var periodId  = params.get('period')  || '';
+      var companyId = params.get('company') || '';
+
+      function withC(href) { return companyId ? href + '?company=' + encodeURIComponent(companyId) : href; }
+      document.getElementById('nav-home').href      = withC('dashboard.html');
+      document.getElementById('nav-runSide').href   = withC('run-payroll.html');
+      document.getElementById('nav-run').href       = withC('run-payroll.html');
+      document.getElementById('nav-employees').href = withC('employees.html');
+      document.getElementById('nav-payrules').href  = withC('pay-rules.html');
+      document.getElementById('backBrand').href     = withC('run-payroll.html');
+      document.getElementById('backLink').href      = withC('run-payroll.html');
+
+      // ── State ────────────────────────────────────────────────────────────
+      var earningsCodes = [];   // all enabled codes for company
+      var entries       = [];   // loaded payroll entries
+      var selectedRows  = {};   // { idx: true }
+
+      if (!periodId) {
+        document.getElementById('entriesTbody').innerHTML =
+          '<tr><td colspan="9" class="text-center py-6 text-error">No period selected.</td></tr>';
+      } else {
+        loadPeriodInfo();
+        initEntries();
+      }
+
+      // ── Period & company bootstrap ────────────────────────────────────────
+      function loadPeriodInfo() {
+        fetch('/api/payroll/periods/' + encodeURIComponent(periodId), { credentials: 'same-origin' })
+          .then(function(r) { return r.ok ? r.json() : null; })
+          .then(function(p) {
+            if (!p) return;
+            document.getElementById('heroPeriod').textContent =
+              (p.payrollType || 'Regular') + ' · ' + (p.payFrequency || '') +
+              ' · Pay date ' + (p.payDate || '');
+            if (p.payDate) document.getElementById('taxYear').textContent = p.payDate.slice(0, 4);
+            var cid = p.companyId || companyId;
+            if (cid) {
+              fetch('/api/payroll/companies/' + encodeURIComponent(cid), { credentials: 'same-origin' })
+                .then(function(r) { return r.ok ? r.json() : null; })
+                .then(function(c) { if (c) document.getElementById('companyName').textContent = c.name || c.legalName || ''; });
+              fetch('/api/payroll/earnings-codes?company_id=' + encodeURIComponent(cid), { credentials: 'same-origin' })
+                .then(function(r) { return r.ok ? r.json() : []; })
+                .then(function(list) { earningsCodes = (list || []).filter(function(c) { return c.enabled; }); });
+            }
+          });
+      }
+
+      // ── Init entries ──────────────────────────────────────────────────────
+      function initEntries() {
+        fetch('/api/payroll/init-entries?period_id=' + encodeURIComponent(periodId), {
+          method: 'POST', credentials: 'same-origin'
+        })
+          .then(function(r) { return r.ok ? r.json() : []; })
+          .then(function(list) { entries = list || []; renderTable(); loadAddlEarningsForEntries(); })
+          .catch(function() {
+            fetch('/api/payroll/periods/' + encodeURIComponent(periodId) + '/entries', { credentials: 'same-origin' })
+              .then(function(r) { return r.ok ? r.json() : []; })
+              .then(function(list) { entries = list || []; renderTable(); loadAddlEarningsForEntries(); });
+          });
+      }
+
+      // ── Render table ──────────────────────────────────────────────────────
+      function renderTable() {
+        var tbody = document.getElementById('entriesTbody');
+        if (!entries.length) {
+          tbody.innerHTML = '<tr><td colspan="9" class="text-center py-6 text-base-content/40">No employees found for this period.</td></tr>';
+          updateTotal();
+          return;
+        }
+
+        tbody.innerHTML = entries.map(function(e, i) {
+          var isSalaried  = e.hours === 0;
+          var typeLabel   = isSalaried ? 'Salaried' : 'Hourly';
+          var typeBadge   = isSalaried
+            ? '<span class="badge badge-ghost badge-xs">Salary</span>'
+            : '<span class="badge badge-info badge-xs badge-outline">Hourly</span>';
+
+          var addlLines = e._addlLines || [];
+          var addlTotal = addlLines.reduce(function(s, l) { return s + (parseFloat(l.amount) || 0); }, 0);
+
+          // Additional earnings summary lines (shown under main row)
+          var addlRows = '';
+          if (addlLines.length) {
+            addlRows = addlLines.map(function(l) {
+              return '<tr class="bg-base-50">' +
+                '<td colspan="2"></td>' +
+                '<td class="pl-6 text-xs text-base-content/60 italic">' + esc(l.codeName || l.earningsCodeId || '') + '</td>' +
+                '<td></td>' +
+                '<td class="text-right text-xs text-base-content/60">' + (l.hours > 0 ? fmt2(l.hours) : '') + '</td>' +
+                '<td class="text-right text-xs text-base-content/60">' + (l.rate > 0 ? '$' + fmt3(l.rate) : '') + '</td>' +
+                '<td class="text-right text-xs text-base-content/60">$' + fmt2(l.amount) + '</td>' +
+                '<td colspan="2"></td>' +
+                '</tr>';
+            }).join('');
+          }
+
+          // Status badge
+          var status = e.status || 'draft';
+          var statusBadge = status === 'approved'
+            ? '<span class="badge badge-success badge-xs">Approved</span>'
+            : status === 'calculated'
+            ? '<span class="badge badge-info badge-xs">Calculated</span>'
+            : '<span class="badge badge-ghost badge-xs">Draft</span>';
+
+          // Earnings button: show amount badge if has addl, or ➕ button
+          var earningsBtn = addlTotal > 0
+            ? '<button type="button" class="btn btn-xs btn-primary btn-outline addl-btn" data-idx="' + i + '">' +
+                '+$' + addlTotal.toFixed(2) +
+              '</button>'
+            : '<button type="button" class="btn btn-xs btn-ghost addl-btn" data-idx="' + i + '">' +
+                '<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>' +
+              '</button>';
+
+          var isChecked = selectedRows[i] ? 'checked' : '';
+
+          return (
+            '<tr id="row-' + i + '" class="hover">' +
+              '<td><input type="checkbox" class="checkbox checkbox-sm row-chk" data-idx="' + i + '" ' + isChecked + '/></td>' +
+              '<td class="text-xs text-base-content/40 font-mono">' + (i + 1) + '</td>' +
+              '<td class="font-medium text-sm">' + esc(e.employeeName || e.employeeId) + '</td>' +
+              '<td>' + typeBadge + '</td>' +
+              '<td class="text-right">' +
+                '<input class="input input-xs text-right w-20 font-mono" type="number" min="0" step="0.01"' +
+                '  data-idx="' + i + '" data-field="hours" value="' + (e.hours || 0) + '" />' +
+              '</td>' +
+              '<td class="text-right">' +
+                '<input class="input input-xs text-right w-24 font-mono" type="number" min="0" step="0.01"' +
+                '  data-idx="' + i + '" data-field="payRate" value="' + (e.payRate || 0) + '" />' +
+              '</td>' +
+              '<td class="text-right">' +
+                '<input class="input input-xs text-right w-24 font-mono font-semibold" type="number" min="0" step="0.01"' +
+                '  data-idx="' + i + '" data-field="grossPay" value="' + (e.grossPay || 0) + '" />' +
+              '</td>' +
+              '<td class="text-center">' + earningsBtn + '</td>' +
+              '<td class="text-center">' + statusBadge + '</td>' +
+            '</tr>' + addlRows
+          );
+        }).join('');
+
+        // Wire input changes
+        tbody.querySelectorAll('input[data-field]').forEach(function(inp) {
+          inp.addEventListener('change', function() {
+            var idx   = parseInt(inp.dataset.idx, 10);
+            var field = inp.dataset.field;
+            entries[idx][field]  = parseFloat(inp.value) || 0;
+            entries[idx]._dirty  = true;
+            var row = document.getElementById('row-' + idx);
+            if (row) row.classList.add('bg-warning/5');
+            updateTotal();
+          });
+        });
+
+        // Wire earnings buttons
+        tbody.querySelectorAll('.addl-btn').forEach(function(btn) {
+          btn.addEventListener('click', function() { openAddlModal(parseInt(btn.dataset.idx, 10)); });
+        });
+
+        // Wire row checkboxes
+        tbody.querySelectorAll('.row-chk').forEach(function(chk) {
+          chk.addEventListener('change', function() {
+            var idx = parseInt(chk.dataset.idx, 10);
+            if (chk.checked) selectedRows[idx] = true; else delete selectedRows[idx];
+            refreshApproveBtn();
+          });
+        });
+
+        updateTotal();
+        refreshApproveBtn();
+      }
+
+      function refreshApproveBtn() {
+        var n = Object.keys(selectedRows).length;
+        document.getElementById('btnApproveSelected').classList.toggle('hidden', n === 0);
+        document.getElementById('selectedCount').textContent = n;
+      }
+
+      function updateTotal() {
+        var sum = entries.reduce(function(s, e) { return s + (parseFloat(e.grossPay) || 0); }, 0);
+        document.getElementById('totalGross').textContent = '$' + sum.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+      }
+
+      // Select all checkbox
+      document.getElementById('chkAll').addEventListener('change', function() {
+        if (this.checked) entries.forEach(function(_, i) { selectedRows[i] = true; });
+        else selectedRows = {};
+        document.querySelectorAll('.row-chk').forEach(function(c) { c.checked = !!selectedRows[parseInt(c.dataset.idx,10)]; });
+        refreshApproveBtn();
+      });
+
+      document.getElementById('btnSelectAll').addEventListener('click', function() {
+        var allChecked = Object.keys(selectedRows).length === entries.length && entries.length > 0;
+        if (allChecked) {
+          selectedRows = {};
+          document.querySelectorAll('.row-chk').forEach(function(c) { c.checked = false; });
+          document.getElementById('chkAll').checked = false;
+        } else {
+          entries.forEach(function(_, i) { selectedRows[i] = true; });
+          document.querySelectorAll('.row-chk').forEach(function(c) { c.checked = true; });
+          document.getElementById('chkAll').checked = true;
+        }
+        refreshApproveBtn();
+      });
+
+      // ── Save & Calculate ──────────────────────────────────────────────────
+      function saveAll(cb) {
+        var payload = entries.map(function(e) {
+          return { employeeId: e.employeeId, hours: e.hours, payRate: e.payRate, grossPay: e.grossPay };
+        });
+        document.getElementById('tableCard').classList.add('opacity-60', 'pointer-events-none');
+        fetch('/api/payroll/periods/' + encodeURIComponent(periodId) + '/entries', {
+          method: 'POST', credentials: 'same-origin',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        })
+          .then(function(r) { return r.ok ? r.json() : r.text().then(function(t) { throw new Error(t); }); })
+          .then(function(updated) {
+            // Preserve _addlLines
+            var addlMap = {};
+            entries.forEach(function(e, i) { addlMap[e.employeeId] = e._addlLines || []; });
+            entries = updated || entries;
+            entries.forEach(function(e) {
+              e._dirty     = false;
+              e._addlLines = addlMap[e.employeeId] || [];
+            });
+            document.getElementById('tableCard').classList.remove('opacity-60', 'pointer-events-none');
+            document.querySelectorAll('.bg-warning\\/5').forEach(function(r) { r.classList.remove('bg-warning/5'); });
+            showAlert('Saved.', false);
+            renderTable();
+            if (cb) cb();
+          })
+          .catch(function(err) {
+            document.getElementById('tableCard').classList.remove('opacity-60', 'pointer-events-none');
+            showAlert('Save failed: ' + err.message, true);
+          });
+      }
+
+      function calculate() {
+        fetch('/api/payroll/periods/' + encodeURIComponent(periodId) + '/calculate', {
+          method: 'POST', credentials: 'same-origin'
+        })
+          .then(function(r) { return r.ok ? r.json() : r.text().then(function(t) { throw new Error(t); }); })
+          .then(function() {
+            location.href = 'review.html?period=' + encodeURIComponent(periodId) +
+              (companyId ? '&company=' + encodeURIComponent(companyId) : '');
+          })
+          .catch(function(err) { showAlert('Calculate failed: ' + err.message, true); });
+      }
+
+      document.getElementById('btnSaveAll').addEventListener('click', function() { saveAll(null); });
+      document.getElementById('btnCalculate').addEventListener('click', function() { saveAll(function() { calculate(); }); });
+      document.getElementById('btnCalcFooter').addEventListener('click', function() { saveAll(function() { calculate(); }); });
+
+      document.getElementById('btnApproveSelected').addEventListener('click', function() {
+        // Mark selected entries status = approved via save
+        Object.keys(selectedRows).forEach(function(i) {
+          entries[parseInt(i,10)]._dirty = true;
+        });
+        showAlert('Approval noted. Calculate to finalize.', false);
+      });
+
+      // ── Alert helper ──────────────────────────────────────────────────────
+      function showAlert(msg, isErr) {
+        var el = document.getElementById('alertBox');
+        el.className = isErr
+          ? 'alert alert-error text-sm py-2 px-4 mb-4'
+          : 'alert alert-success text-sm py-2 px-4 mb-4';
+        el.textContent = msg;
+        el.classList.remove('hidden');
+        clearTimeout(el._t);
+        el._t = setTimeout(function() { el.classList.add('hidden'); }, 4000);
+      }
+
+      // ── Additional Earnings Modal ─────────────────────────────────────────
+      var addlModalIdx    = -1;
+      var addlSavedLines  = [];   // lines already added (confirmed via "Add Another")
+      var modal           = document.getElementById('addlModal');
+
+      function openAddlModal(idx) {
+        addlModalIdx   = idx;
+        var entry      = entries[idx];
+        addlSavedLines = JSON.parse(JSON.stringify(entry._addlLines || []));
+
+        document.getElementById('addlModalName').textContent = entry.employeeName || entry.employeeId;
+        document.getElementById('addlModalSub').textContent  =
+          'Basic Rate: $' + fmt3(entry.payRate || 0) + '/hr' +
+          (entry.hours > 0 ? '   Basic Hours: ' + fmt5(entry.hours) : '');
+        document.getElementById('addlErr').classList.add('hidden');
+
+        buildCodeDropdown(document.getElementById('newLineCode'), '');
+        clearNewLineForm();
+        renderSavedLines();
+        updateAddlTotal();
+        modal.showModal();
+      }
+
+      function buildCodeDropdown(sel, selectedId) {
+        sel.innerHTML = '<option value="">— Select earnings type —</option>';
+        earningsCodes.forEach(function(c) {
+          var opt = document.createElement('option');
+          opt.value = c.id;
+          opt.textContent = c.name + (c.multiplier && c.multiplier !== 1 ? ' @' + c.multiplier + 'x' : '');
+          if (c.id === selectedId) opt.selected = true;
+          sel.appendChild(opt);
+        });
+      }
+
+      function clearNewLineForm() {
+        document.getElementById('newLineCode').value   = '';
+        document.getElementById('newLineHours').value  = '';
+        document.getElementById('newLineRate').value   = '';
+        document.getElementById('newLineAmount').value = '';
+      }
+
+      // Auto-fill rate when code with multiplier selected
+      document.getElementById('newLineCode').addEventListener('change', function() {
+        var code = earningsCodes.find(function(c) { return c.id === this.value; }, this);
+        if (code && code.multiplier && code.multiplier !== 1) {
+          var entry   = entries[addlModalIdx];
+          var base    = parseFloat(entry.payRate) || 0;
+          var rate    = Math.round(base * code.multiplier * 1000) / 1000;
+          document.getElementById('newLineRate').value = rate > 0 ? rate : '';
+        } else if (code && (!code.multiplier || code.multiplier === 1)) {
+          // Leave rate as-is for non-multiplier codes (may be tips/commission with manual amount)
+        }
+        recalcNewLineAmount();
+      });
+
+      document.getElementById('newLineHours').addEventListener('input', recalcNewLineAmount);
+      document.getElementById('newLineRate').addEventListener('input', recalcNewLineAmount);
+      document.getElementById('newLineAmount').addEventListener('input', updateAddlTotal);
+
+      function recalcNewLineAmount() {
+        var h = parseFloat(document.getElementById('newLineHours').value) || 0;
+        var r = parseFloat(document.getElementById('newLineRate').value)  || 0;
+        if (h > 0 && r > 0) {
+          document.getElementById('newLineAmount').value = (Math.round(h * r * 100) / 100).toFixed(2);
+        }
+        updateAddlTotal();
+      }
+
+      function getCurrentNewLine() {
+        var codeId = document.getElementById('newLineCode').value;
+        var hours  = parseFloat(document.getElementById('newLineHours').value)  || 0;
+        var rate   = parseFloat(document.getElementById('newLineRate').value)   || 0;
+        var amount = parseFloat(document.getElementById('newLineAmount').value) || 0;
+        return { earningsCodeId: codeId, hours: hours, rate: rate, amount: amount };
+      }
+
+      // "Add Another": push current form into saved list, clear form
+      document.getElementById('btnAddAnother').addEventListener('click', function() {
+        var line = getCurrentNewLine();
+        if (!line.earningsCodeId) {
+          showModalErr('Please select an earnings type.');
+          return;
+        }
+        if (line.amount <= 0) {
+          showModalErr('Please enter an amount.');
+          return;
+        }
+        document.getElementById('addlErr').classList.add('hidden');
+        // Annotate with code name for display
+        var code = earningsCodes.find(function(c) { return c.id === line.earningsCodeId; });
+        line.codeName = code ? code.name : line.earningsCodeId;
+        addlSavedLines.push(line);
+        clearNewLineForm();
+        renderSavedLines();
+        updateAddlTotal();
+        document.getElementById('newLineCode').focus();
+      });
+
+      // "Save & Close": push current form if filled, then save all to API
+      document.getElementById('btnAddlSave').addEventListener('click', function() {
+        if (addlModalIdx < 0) return;
+        var entry = entries[addlModalIdx];
+        if (!entry.id) {
+          showAlert('Please Save All first, then add additional earnings.', true);
+          modal.close();
+          return;
+        }
+
+        // Push current form if it has data
+        var line = getCurrentNewLine();
+        var allLines = addlSavedLines.slice();
+        if (line.earningsCodeId && line.amount > 0) {
+          var code = earningsCodes.find(function(c) { return c.id === line.earningsCodeId; });
+          line.codeName = code ? code.name : line.earningsCodeId;
+          allLines.push(line);
+        }
+
+        document.getElementById('addlErr').classList.add('hidden');
+        document.getElementById('btnAddlSave').disabled = true;
+
+        fetch('/api/payroll/entries/' + encodeURIComponent(entry.id) + '/earnings', {
+          method: 'PUT', credentials: 'same-origin',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(allLines)
+        }).then(function(r) {
+          if (!r.ok) return r.text().then(function(t) { throw new Error(t); });
+          return r.json();
+        }).then(function(saved) {
+          entries[addlModalIdx]._addlLines = saved || [];
+          modal.close();
+          renderTable();
+          showAlert('Earnings saved.', false);
+        }).catch(function(err) {
+          showModalErr(err.message || 'Failed to save');
+        }).finally(function() {
+          document.getElementById('btnAddlSave').disabled = false;
+        });
+      });
+
+      document.getElementById('btnAddlCancel').addEventListener('click', function() { modal.close(); });
+
+      function renderSavedLines() {
+        var container = document.getElementById('addlSavedList');
+        if (!addlSavedLines.length) {
+          container.innerHTML = '';
+          return;
+        }
+        container.innerHTML = addlSavedLines.map(function(l, i) {
+          return '<div class="flex items-center gap-2 bg-base-100 border border-base-300 rounded-lg px-3 py-2 text-sm">' +
+            '<span class="flex-1 font-medium text-xs">' + esc(l.codeName || l.earningsCodeId || '') + '</span>' +
+            (l.hours > 0 ? '<span class="text-xs text-base-content/50">' + fmt2(l.hours) + ' hrs</span>' : '') +
+            (l.rate  > 0 ? '<span class="text-xs text-base-content/50">$' + fmt3(l.rate) + '/hr</span>' : '') +
+            '<span class="font-semibold text-primary text-xs">$' + fmt2(l.amount) + '</span>' +
+            '<button type="button" class="btn btn-ghost btn-xs text-error" data-remove="' + i + '">✕</button>' +
+          '</div>';
+        }).join('');
+
+        container.querySelectorAll('[data-remove]').forEach(function(btn) {
+          btn.addEventListener('click', function() {
+            addlSavedLines.splice(parseInt(btn.dataset.remove, 10), 1);
+            renderSavedLines();
+            updateAddlTotal();
+          });
+        });
+      }
+
+      function updateAddlTotal() {
+        var saved  = addlSavedLines.reduce(function(s, l) { return s + (parseFloat(l.amount) || 0); }, 0);
+        var newAmt = parseFloat(document.getElementById('newLineAmount').value) || 0;
+        document.getElementById('addlTotal').textContent = '$' + (saved + newAmt).toFixed(2);
+      }
+
+      function showModalErr(msg) {
+        var el = document.getElementById('addlErr');
+        el.textContent = msg;
+        el.classList.remove('hidden');
+      }
+
+      // ── Load addl earnings on init ────────────────────────────────────────
+      function loadAddlEarningsForEntries() {
+        var withId = entries.filter(function(e) { return e.id; });
+        if (!withId.length) return;
+        Promise.all(withId.map(function(e) {
+          return fetch('/api/payroll/entries/' + encodeURIComponent(e.id) + '/earnings', { credentials: 'same-origin' })
+            .then(function(r) { return r.ok ? r.json() : []; })
+            .then(function(lines) { e._addlLines = lines || []; });
+        })).then(function() { renderTable(); });
+      }
+
+      // ── Formatters ────────────────────────────────────────────────────────
+      function fmt2(v)  { return parseFloat(v).toFixed(2); }
+      function fmt3(v)  { return parseFloat(v).toFixed(3); }
+      function fmt5(v)  { return parseFloat(v).toFixed(5); }
+      function esc(s)   { return String(s).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+    </script>
   </body>
 </html>

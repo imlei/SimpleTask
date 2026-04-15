@@ -3,115 +3,280 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Review — Payroll Works</title>
+    <title>Review Payroll — Payroll Works</title>
     <link rel="stylesheet" href="theme.css" />
     <link rel="stylesheet" href="app.css" />
     <link rel="stylesheet" href="pages.css" />
+    <style>
+      .num { text-align: right; font-family: monospace; }
+      .breakdown-row td { font-size: 0.8rem; color: var(--text-muted); }
+      .totals-row .num { font-weight: 700; }
+      .employer-section { margin-top: 1.5rem; }
+      .employer-section h4 { margin: 0 0 0.5rem; font-size: 0.9rem; color: var(--text-muted); }
+      .finalized-banner { background: #d1fae5; border: 1px solid #6ee7b7; border-radius: 6px; padding: 0.75rem 1rem; margin-bottom: 1rem; }
+    </style>
   </head>
   <body>
     <div class="app-shell">
       <header class="topbar">
         <div class="brand">
-          <a href="dashboard.html" class="muted">←</a>
+          <a href="run-payroll.html" class="muted" id="backBrand">←</a>
           <span>PAYROLL WORKS</span>
           <span class="muted">Payroll</span>
           <span class="brand-flag" aria-hidden="true">🇨🇦</span>
-          <span class="tax-year"><span>2026</span></span>
+          <span class="tax-year"><span id="taxYear">2025</span></span>
         </div>
         <nav class="topbar-nav">
-          <a href="run-payroll.html" class="topbar-nav-item active">Payroll</a>
+          <a href="run-payroll.html" class="topbar-nav-item active" id="nav-run">Payroll</a>
         </nav>
         <div class="topbar-actions">
-          <span class="muted" style="font-size: 0.8rem">RORO HOLDING LTD</span>
-          <div class="avatar">LH</div>
+          <span class="muted" style="font-size: 0.8rem" id="companyName">—</span>
+          <div class="avatar">PW</div>
         </div>
       </header>
 
       <aside class="sidebar">
-        <a href="dashboard.html" class="nav-item"><span>⌂</span> Home</a>
-        <a href="run-payroll.html" class="nav-item active"><span>▤</span> Run Payroll</a>
+        <a href="dashboard.html" class="nav-item" id="nav-home"><span>⌂</span> Home</a>
+        <a href="run-payroll.html" class="nav-item active" id="nav-runSide"><span>▤</span> Run Payroll</a>
         <a href="#" class="nav-item" onclick="return false"><span>☰</span> Actions</a>
-        <a href="reports/payrun.html" class="nav-item"><span>▦</span> Reports</a>
-        <a href="employees.html" class="nav-item"><span>👤</span> Employees</a>
+        <a href="employees.html" class="nav-item" id="nav-employees"><span>👤</span> Employees</a>
+        <a href="pay-rules.html" class="nav-item" id="nav-payrules"><span>⚙</span> Pay Rules</a>
       </aside>
 
       <main class="main">
         <div class="hero-banner">
           <span>Review payroll</span>
-          <span class="muted">Before payments</span>
+          <span class="muted" id="heroPeriod">Before finalize</span>
         </div>
         <div class="content">
           <div class="payroll-steps-label">Payroll steps</div>
           <div class="stepper">
             <div class="step">Select pay cycle</div>
             <div class="step">Salaries</div>
-            <div class="step">Timesheets</div>
             <div class="step">Calculate</div>
             <div class="step active">Review</div>
-            <div class="step">Payments</div>
-            <div class="step">Summary</div>
           </div>
 
-          <div class="filter-bar">
-            <label class="muted" for="emp">Employee</label>
-            <select id="emp" class="input">
-              <option>— ALL EMPLOYEES —</option>
-            </select>
-            <div style="margin-left: auto" class="toolbar-right">
-              <button type="button" class="btn btn-sm">Journal</button>
-              <button type="button" class="btn btn-sm">Export</button>
-            </div>
+          <div id="finalizedBanner" class="finalized-banner" style="display:none">
+            ✅ This payroll period has been <strong>finalized</strong>. No further changes allowed.
           </div>
+          <div id="alertBox" class="error-msg" style="display:none; margin-bottom:0.75rem"></div>
 
+          <!-- Employee deductions table -->
           <div class="panel">
-            <table class="data">
+            <table class="data" id="reviewTable">
               <thead>
                 <tr>
                   <th>Employee</th>
-                  <th>ID</th>
-                  <th>Hours</th>
-                  <th>Total gross</th>
-                  <th>Total deductions</th>
-                  <th>Net pay</th>
-                </tr>
-                <tr style="background: var(--bg-surface)">
-                  <td><input type="text" class="field-input" style="max-width: 100%" placeholder="Filter" /></td>
-                  <td><input type="text" class="field-input" style="max-width: 80px" /></td>
-                  <td></td>
-                  <td></td>
-                  <td></td>
-                  <td></td>
+                  <th class="num">Hours</th>
+                  <th class="num">Gross Pay</th>
+                  <th class="num">CPP Ee</th>
+                  <th class="num">EI Ee</th>
+                  <th class="num">Fed Tax</th>
+                  <th class="num">Prov Tax</th>
+                  <th class="num">Total Deductions</th>
+                  <th class="num">Net Pay</th>
                 </tr>
               </thead>
-              <tbody>
-                <tr>
-                  <td>SAWAENGPON, JIRAYU</td>
-                  <td class="mono">000016</td>
-                  <td class="mono">43.33</td>
-                  <td class="mono">$754.86</td>
-                  <td class="mono">$48.54</td>
-                  <td class="mono">$706.32</td>
-                </tr>
+              <tbody id="reviewTbody">
+                <tr><td colspan="9" class="muted" style="padding:1rem">Loading…</td></tr>
               </tbody>
               <tfoot>
                 <tr class="totals-row">
-                  <td>Total 1</td>
-                  <td></td>
-                  <td class="mono">43.33</td>
-                  <td class="mono">$754.86</td>
-                  <td class="mono">$48.54</td>
-                  <td class="mono">$706.32</td>
+                  <td>Totals</td>
+                  <td class="num" id="totHours">—</td>
+                  <td class="num" id="totGross">—</td>
+                  <td class="num" id="totCPP">—</td>
+                  <td class="num" id="totEI">—</td>
+                  <td class="num" id="totFed">—</td>
+                  <td class="num" id="totProv">—</td>
+                  <td class="num" id="totDeductions">—</td>
+                  <td class="num" id="totNet">—</td>
                 </tr>
               </tfoot>
             </table>
           </div>
 
+          <!-- Employer contributions summary -->
+          <div class="employer-section">
+            <div class="panel" style="padding: 1rem">
+              <h4>Employer Contributions (for CRA PD7A remittance)</h4>
+              <table class="data" style="width: auto">
+                <thead>
+                  <tr>
+                    <th>CPP Er</th>
+                    <th>CPP2 Er</th>
+                    <th>EI Er</th>
+                    <th>Total Remittance</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td class="num" id="erCPP">—</td>
+                    <td class="num" id="erCPP2">—</td>
+                    <td class="num" id="erEI">—</td>
+                    <td class="num" id="erTotal">—</td>
+                  </tr>
+                </tbody>
+              </table>
+              <p class="muted" style="font-size:0.8rem; margin: 0.5rem 0 0">
+                Remittance = Employee CPP + Employer CPP + Employee CPP2 + Employer CPP2 + Employee EI + Employer EI + Federal Tax + Provincial Tax
+              </p>
+            </div>
+          </div>
+
           <div class="flow-footer">
-            <a href="calculate.html" class="btn">← Calculate</a>
-            <a href="payments.html" class="btn btn-primary" style="text-decoration: none">Payments →</a>
+            <a href="salaries.html" class="btn" id="backLink">← Salaries</a>
+            <button type="button" class="btn btn-primary" id="btnFinalize">Finalize Payroll ✓</button>
           </div>
         </div>
       </main>
     </div>
+
+    <script>
+      var params    = new URLSearchParams(location.search);
+      var periodId  = params.get('period')  || '';
+      var companyId = params.get('company') || '';
+
+      // Wire nav
+      function withC(href) { return companyId ? href + '?company=' + encodeURIComponent(companyId) : href; }
+      document.getElementById('nav-home').href     = withC('dashboard.html');
+      document.getElementById('nav-runSide').href  = withC('run-payroll.html');
+      document.getElementById('nav-run').href      = withC('run-payroll.html');
+      document.getElementById('nav-employees').href = withC('employees.html');
+      document.getElementById('nav-payrules').href  = withC('pay-rules.html');
+      document.getElementById('backBrand').href    = withC('run-payroll.html');
+      document.getElementById('backLink').href     =
+        'salaries.html?period=' + encodeURIComponent(periodId) +
+        (companyId ? '&company=' + encodeURIComponent(companyId) : '');
+
+      var periodStatus = '';
+
+      if (!periodId) {
+        document.getElementById('reviewTbody').innerHTML = '<tr><td colspan="9" class="error-msg" style="padding:1rem">No period selected.</td></tr>';
+      } else {
+        loadPeriodInfo();
+        loadEntries();
+      }
+
+      function loadPeriodInfo() {
+        fetch('/api/payroll/periods/' + encodeURIComponent(periodId), { credentials: 'same-origin' })
+          .then(function (r) { return r.ok ? r.json() : null; })
+          .then(function (p) {
+            if (!p) return;
+            periodStatus = p.status || '';
+            document.getElementById('heroPeriod').textContent =
+              (p.payrollType || 'Regular') + ' · ' + (p.payFrequency || '') +
+              ' · Pay date ' + (p.payDate || '');
+            if (p.payDate) document.getElementById('taxYear').textContent = p.payDate.slice(0, 4);
+            if (p.status === 'finalized') {
+              document.getElementById('finalizedBanner').style.display = 'block';
+              document.getElementById('btnFinalize').disabled = true;
+              document.getElementById('btnFinalize').textContent = '✅ Finalized';
+            }
+            if (p.companyId) {
+              fetch('/api/payroll/companies/' + encodeURIComponent(p.companyId), { credentials: 'same-origin' })
+                .then(function (r) { return r.ok ? r.json() : null; })
+                .then(function (c) { if (c) document.getElementById('companyName').textContent = c.name || c.legalName; });
+            }
+          });
+      }
+
+      function loadEntries() {
+        fetch('/api/payroll/periods/' + encodeURIComponent(periodId) + '/entries', { credentials: 'same-origin' })
+          .then(function (r) { return r.ok ? r.json() : []; })
+          .then(renderEntries);
+      }
+
+      function fmt(v) {
+        var n = parseFloat(v) || 0;
+        return '$' + n.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+      }
+      function fmtH(v) { return (parseFloat(v) || 0).toFixed(2); }
+
+      function renderEntries(list) {
+        var tbody = document.getElementById('reviewTbody');
+        if (!list || !list.length) {
+          tbody.innerHTML = '<tr><td colspan="9" class="muted" style="padding:1rem">No entries found.</td></tr>';
+          return;
+        }
+
+        var totals = { hours:0, gross:0, cpp:0, ei:0, fed:0, prov:0, ded:0, net:0, erCPP:0, erCPP2:0, erEI:0 };
+
+        tbody.innerHTML = list.map(function (e) {
+          totals.hours += parseFloat(e.hours)            || 0;
+          totals.gross += parseFloat(e.grossPay)         || 0;
+          totals.cpp   += (parseFloat(e.cppEmployee)||0) + (parseFloat(e.cpp2Employee)||0);
+          totals.ei    += parseFloat(e.eiEmployee)       || 0;
+          totals.fed   += parseFloat(e.federalTax)       || 0;
+          totals.prov  += parseFloat(e.provincialTax)    || 0;
+          totals.ded   += parseFloat(e.totalDeductions)  || 0;
+          totals.net   += parseFloat(e.netPay)           || 0;
+          totals.erCPP  += parseFloat(e.cppEmployer)    || 0;
+          totals.erCPP2 += parseFloat(e.cpp2Employer)   || 0;
+          totals.erEI   += parseFloat(e.eiEmployer)     || 0;
+
+          var cpp = (parseFloat(e.cppEmployee)||0) + (parseFloat(e.cpp2Employee)||0);
+          return '<tr>' +
+            '<td>' + (e.employeeName || e.employeeId) + '</td>' +
+            '<td class="num">' + fmtH(e.hours) + '</td>' +
+            '<td class="num">' + fmt(e.grossPay) + '</td>' +
+            '<td class="num">' + fmt(cpp) + '</td>' +
+            '<td class="num">' + fmt(e.eiEmployee) + '</td>' +
+            '<td class="num">' + fmt(e.federalTax) + '</td>' +
+            '<td class="num">' + fmt(e.provincialTax) + '</td>' +
+            '<td class="num">' + fmt(e.totalDeductions) + '</td>' +
+            '<td class="num" style="font-weight:600">' + fmt(e.netPay) + '</td>' +
+            '</tr>';
+        }).join('');
+
+        // Fill totals
+        document.getElementById('totHours').textContent       = fmtH(totals.hours);
+        document.getElementById('totGross').textContent       = fmt(totals.gross);
+        document.getElementById('totCPP').textContent         = fmt(totals.cpp);
+        document.getElementById('totEI').textContent          = fmt(totals.ei);
+        document.getElementById('totFed').textContent         = fmt(totals.fed);
+        document.getElementById('totProv').textContent        = fmt(totals.prov);
+        document.getElementById('totDeductions').textContent  = fmt(totals.ded);
+        document.getElementById('totNet').textContent         = fmt(totals.net);
+
+        document.getElementById('erCPP').textContent  = fmt(totals.erCPP);
+        document.getElementById('erCPP2').textContent = fmt(totals.erCPP2);
+        document.getElementById('erEI').textContent   = fmt(totals.erEI);
+        // Remittance = ee CPP+CPP2 + er CPP+CPP2 + ee EI + er EI + fed + prov
+        var remit = totals.cpp + totals.erCPP + totals.erCPP2 + totals.ei + totals.erEI + totals.fed + totals.prov;
+        document.getElementById('erTotal').textContent = fmt(remit);
+      }
+
+      document.getElementById('btnFinalize').addEventListener('click', function () {
+        if (periodStatus === 'finalized') return;
+        if (!confirm('Finalize this payroll period? This cannot be undone.')) return;
+
+        document.getElementById('btnFinalize').disabled = true;
+        fetch('/api/payroll/periods/' + encodeURIComponent(periodId) + '/finalize', {
+          method: 'POST',
+          credentials: 'same-origin'
+        })
+          .then(function (r) { return r.ok ? r.json() : r.text().then(function (t) { throw new Error(t); }); })
+          .then(function () {
+            periodStatus = 'finalized';
+            document.getElementById('finalizedBanner').style.display = 'block';
+            document.getElementById('btnFinalize').textContent = '✅ Finalized';
+            showAlert('Payroll finalized successfully.', false);
+          })
+          .catch(function (err) {
+            document.getElementById('btnFinalize').disabled = false;
+            showAlert('Finalize failed: ' + err.message, true);
+          });
+      });
+
+      function showAlert(msg, isErr) {
+        var el = document.getElementById('alertBox');
+        el.textContent = msg;
+        el.className = isErr ? 'error-msg' : 'success-msg';
+        el.style.display = 'block';
+        setTimeout(function () { el.style.display = 'none'; }, 5000);
+      }
+    </script>
   </body>
 </html>

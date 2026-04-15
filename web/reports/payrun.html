@@ -15,17 +15,14 @@
           <span class="sep">|</span>
           <span class="sub">Payroll</span>
           <span class="pe-flag">🇨🇦</span>
-          <span class="pe-tax-pill">2026</span>
+          <span class="pe-tax-pill" id="taxYear">2025</span>
         </div>
         <nav class="pe-topbar-nav">
-          <a href="../run-payroll.html" class="pe-topbar-nav-item">Payroll</a>
+          <a href="../run-payroll.html" class="pe-topbar-nav-item" id="nav-run">Payroll</a>
         </nav>
         <div class="pe-topbar-right">
-          <span class="pe-badge-admin">Admin</span>
-          <span>RORO HOLDING LTD</span>
-          <button type="button" class="pe-icon-btn" title="Notifications">🔔</button>
-          <button type="button" class="pe-icon-btn" title="Help">?</button>
-          <div class="pe-avatar">LH</div>
+          <span id="companyName">—</span>
+          <div class="pe-avatar">PW</div>
         </div>
       </header>
 
@@ -35,31 +32,20 @@
       </div>
 
       <aside class="pe-sidebar">
-        <a class="pe-nav" href="../dashboard.html"><span>⌂</span> Home</a>
-        <a class="pe-nav" href="../run-payroll.html"><span>▤</span> Run payroll</a>
-        <a class="pe-nav" href="#"><span>☰</span> Actions</a>
+        <a class="pe-nav" href="../dashboard.html" id="nav-home"><span>⌂</span> Home</a>
+        <a class="pe-nav" href="../run-payroll.html" id="nav-runSide"><span>▤</span> Run payroll</a>
+        <a class="pe-nav" href="#" onclick="return false"><span>☰</span> Actions</a>
         <div class="pe-nav-group">
           <div class="pe-nav-heading">Reports</div>
           <a class="pe-nav active" href="payrun.html" style="margin: 0 0.5rem"><span>▦</span> Reports</a>
           <div class="pe-nav-sub">
             <a class="active" href="payrun.html">Pay run</a>
-            <a href="#">Pay run history</a>
-            <a href="#">Time sheet</a>
-            <a href="#">Time summary</a>
-            <a href="#">Journal (register)</a>
-            <a href="remittance.html">Remittance report</a>
-            <a href="cheques-payslips.html">Cheques / payslips</a>
-            <a href="#">E-pay direct deposit</a>
-            <a href="#">Payment register</a>
-            <a href="#">Summary</a>
-            <a href="#">Employee HX</a>
-            <a href="remittance.html">Remittance report</a>
+            <a href="remittance.html" id="nav-remittance">Remittance report</a>
+            <a href="cheques-payslips.html" id="nav-payslips">Cheques / payslips</a>
             <a href="accountant/index.html">Accountant</a>
           </div>
         </div>
-        <a class="pe-nav" href="../employees.html"><span>👤</span> Employees</a>
-        <span class="pe-nav spacer"></span>
-        <a class="pe-nav" href="#"><span>⚙</span> Settings</a>
+        <a class="pe-nav" href="../employees.html" id="nav-employees"><span>👤</span> Employees</a>
       </aside>
 
       <main class="pe-main">
@@ -68,19 +54,20 @@
           <div class="pe-report-filters">
             <label for="y">Tax year</label>
             <select id="y" aria-label="Tax year">
-              <option selected>2026</option>
-              <option>2025</option>
+              <option value="2025" selected>2025</option>
+              <option value="2026">2026</option>
             </select>
             <label for="st">Status</label>
             <select id="st" aria-label="Status">
-              <option>All</option>
-              <option>Finalized</option>
-              <option>In process</option>
+              <option value="">All</option>
+              <option value="finalized">Finalized</option>
+              <option value="calculated">Calculated</option>
+              <option value="open">Open</option>
             </select>
           </div>
         </div>
 
-        <p class="pe-muted-hint">Posted pay runs for the company. Links to journals and remittance reports can be added when G/L is wired.</p>
+        <div id="alertBox" style="display:none; padding:0.5rem 1rem; margin-bottom:1rem; background:#fef2f2; border:1px solid #fca5a5; color:#b91c1c; border-radius:4px"></div>
 
         <div class="pe-table-wrap">
           <table class="pe-table">
@@ -90,57 +77,138 @@
                 <th>Payment date</th>
                 <th>Type</th>
                 <th>Status</th>
-                <th>Employees</th>
-                <th>Gross</th>
-                <th>Net</th>
+                <th style="text-align:right">Employees</th>
+                <th style="text-align:right">Gross</th>
+                <th style="text-align:right">Net</th>
                 <th></th>
               </tr>
             </thead>
-            <tbody>
-              <tr>
-                <td>16-Feb-2026 — 02-Mar-2026</td>
-                <td>06-Mar-2026</td>
-                <td>Regular</td>
-                <td><span style="color: var(--pe-success); font-weight: 600">Finalized</span></td>
-                <td>22</td>
-                <td>$128,450.00</td>
-                <td>$96,200.00</td>
-                <td><button type="button" class="pe-icon-action" title="View">📄</button></td>
-              </tr>
-              <tr>
-                <td>01-Feb-2026 — 15-Feb-2026</td>
-                <td>20-Feb-2026</td>
-                <td>Regular</td>
-                <td><span style="color: var(--pe-success); font-weight: 600">Finalized</span></td>
-                <td>22</td>
-                <td>$126,800.00</td>
-                <td>$95,100.00</td>
-                <td><button type="button" class="pe-icon-action" title="View">📄</button></td>
-              </tr>
-              <tr>
-                <td>16-Jan-2026 — 31-Jan-2026</td>
-                <td>05-Feb-2026</td>
-                <td>Regular</td>
-                <td><span style="color: #f9ab00; font-weight: 600">In process</span></td>
-                <td>21</td>
-                <td>—</td>
-                <td>—</td>
-                <td><button type="button" class="pe-icon-action" title="View">📄</button></td>
-              </tr>
+            <tbody id="runTbody">
+              <tr><td colspan="8" style="padding:1rem; opacity:0.6">Loading…</td></tr>
             </tbody>
           </table>
           <div class="pe-pagination-full">
-            <div class="pe-page-btns">
-              <button type="button" title="First">«</button>
-              <button type="button" title="Previous">‹</button>
-              <span class="current">1</span>
-              <button type="button" title="Next">›</button>
-              <button type="button" title="Last">»</button>
-            </div>
-            <span>3 pay runs</span>
+            <span id="periodCount">—</span>
           </div>
         </div>
       </main>
     </div>
+
+    <script>
+      var params    = new URLSearchParams(location.search);
+      var companyId = params.get('company') || '';
+
+      function withC(href) { return companyId ? href + '?company=' + encodeURIComponent(companyId) : href; }
+      document.getElementById('nav-home').href       = withC('../dashboard.html');
+      document.getElementById('nav-run').href        = withC('../run-payroll.html');
+      document.getElementById('nav-runSide').href    = withC('../run-payroll.html');
+      document.getElementById('nav-employees').href  = withC('../employees.html');
+      document.getElementById('nav-remittance').href = 'remittance.html' + (companyId ? '?company=' + encodeURIComponent(companyId) : '');
+      document.getElementById('nav-payslips').href   = 'cheques-payslips.html' + (companyId ? '?company=' + encodeURIComponent(companyId) : '');
+
+      // Load company name
+      if (companyId) {
+        fetch('/api/payroll/companies/' + encodeURIComponent(companyId), { credentials: 'same-origin' })
+          .then(function (r) { return r.ok ? r.json() : null; })
+          .then(function (c) { if (c) document.getElementById('companyName').textContent = c.name || c.legalName; });
+      }
+
+      var allPeriods = [];
+
+      function load() {
+        if (!companyId) {
+          document.getElementById('runTbody').innerHTML = '<tr><td colspan="8" style="padding:1rem;opacity:0.6">No company selected.</td></tr>';
+          return;
+        }
+        fetch('/api/payroll/periods?company_id=' + encodeURIComponent(companyId), { credentials: 'same-origin' })
+          .then(function (r) { return r.ok ? r.json() : []; })
+          .then(function (list) {
+            allPeriods = list || [];
+            render();
+          });
+      }
+
+      // For each period load its summary (employee count, gross, net)
+      var summaryCache = {};
+      function loadSummary(periodId, cb) {
+        if (summaryCache[periodId]) { cb(summaryCache[periodId]); return; }
+        fetch('/api/payroll/report/period-summary?period_id=' + encodeURIComponent(periodId), { credentials: 'same-origin' })
+          .then(function (r) { return r.ok ? r.json() : null; })
+          .then(function (sm) {
+            if (sm) summaryCache[periodId] = sm;
+            cb(sm);
+          });
+      }
+
+      function render() {
+        var yearFilter   = document.getElementById('y').value;
+        var statusFilter = document.getElementById('st').value;
+
+        var filtered = allPeriods.filter(function (p) {
+          if (yearFilter && p.payDate && p.payDate.slice(0,4) !== yearFilter) return false;
+          if (statusFilter && p.status !== statusFilter) return false;
+          return true;
+        });
+
+        document.getElementById('periodCount').textContent = filtered.length + ' pay run' + (filtered.length !== 1 ? 's' : '');
+
+        if (!filtered.length) {
+          document.getElementById('runTbody').innerHTML = '<tr><td colspan="8" style="padding:1rem;opacity:0.6">No pay runs found.</td></tr>';
+          return;
+        }
+
+        // Render rows (summary cells filled async)
+        document.getElementById('runTbody').innerHTML = filtered.map(function (p) {
+          var statusColor = p.status === 'finalized' ? 'var(--pe-success)' : p.status === 'calculated' ? '#2563eb' : '#f9ab00';
+          var reviewHref = '../review.html?period=' + encodeURIComponent(p.id) + (companyId ? '&company=' + encodeURIComponent(companyId) : '');
+          var payslipsHref = 'cheques-payslips.html?period=' + encodeURIComponent(p.id) + (companyId ? '&company=' + encodeURIComponent(companyId) : '');
+          return '<tr id="row-' + p.id + '">' +
+            '<td>' + (p.periodStart || '—') + ' – ' + (p.periodEnd || '—') + '</td>' +
+            '<td>' + (p.payDate || '—') + '</td>' +
+            '<td>' + (p.payrollType || 'regular') + '</td>' +
+            '<td><span style="color:' + statusColor + '; font-weight:600">' + p.status + '</span></td>' +
+            '<td style="text-align:right" id="cnt-' + p.id + '">—</td>' +
+            '<td style="text-align:right; font-family:monospace" id="gross-' + p.id + '">—</td>' +
+            '<td style="text-align:right; font-family:monospace" id="net-' + p.id + '">—</td>' +
+            '<td>' +
+              (p.status !== 'open' ? '<a href="' + payslipsHref + '" title="Payslips" style="margin-right:0.25rem">📄</a>' : '') +
+              '<a href="' + reviewHref + '" title="Open">🔍</a>' +
+              (p.status !== 'open' ? ' <a href="/api/payroll/export/csv?period_id=' + encodeURIComponent(p.id) + '" title="CSV export" download>⬇</a>' : '') +
+            '</td>' +
+            '</tr>';
+        }).join('');
+
+        // Fill summaries async
+        filtered.forEach(function (p) {
+          if (p.status === 'open') {
+            var cntEl = document.getElementById('cnt-' + p.id);
+            var grossEl = document.getElementById('gross-' + p.id);
+            var netEl = document.getElementById('net-' + p.id);
+            if (cntEl) cntEl.textContent = '—';
+            if (grossEl) grossEl.textContent = '—';
+            if (netEl) netEl.textContent = '—';
+            return;
+          }
+          loadSummary(p.id, function (sm) {
+            if (!sm) return;
+            var cntEl = document.getElementById('cnt-' + p.id);
+            var grossEl = document.getElementById('gross-' + p.id);
+            var netEl = document.getElementById('net-' + p.id);
+            if (cntEl) cntEl.textContent = sm.employeeCount;
+            if (grossEl) grossEl.textContent = '$' + sm.totalGross.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+            if (netEl) netEl.textContent = '$' + sm.totalNet.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+          });
+        });
+      }
+
+      document.getElementById('y').addEventListener('change', render);
+      document.getElementById('st').addEventListener('change', render);
+
+      // Default year = current
+      document.getElementById('y').value = new Date().getFullYear().toString();
+      document.getElementById('taxYear').textContent = new Date().getFullYear();
+
+      load();
+    </script>
   </body>
 </html>

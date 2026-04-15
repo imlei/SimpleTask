@@ -3,9 +3,17 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Remittance reports — Payroll Works</title>
+    <title>Remittance report — Payroll Works</title>
     <link rel="stylesheet" href="../employees-theme.css" />
     <link rel="stylesheet" href="../reports.css" />
+    <style>
+      .num { text-align: right; font-family: monospace; }
+      .section-header td { background: #f1f5f9; font-weight: 700; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; color: #475569; }
+      .total-row td { font-weight: 700; border-top: 2px solid #cbd5e1; }
+      .grand-row td { font-weight: 700; background: #1e293b; color: #f1f5f9; font-size: 1rem; }
+      .grand-row .num { font-size: 1.1rem; }
+      .period-row:hover { background: #f8fafc; }
+    </style>
   </head>
   <body class="pe-app">
     <div class="pe-shell">
@@ -15,17 +23,14 @@
           <span class="sep">|</span>
           <span class="sub">Payroll</span>
           <span class="pe-flag">🇨🇦</span>
-          <span class="pe-tax-pill">2026</span>
+          <span class="pe-tax-pill" id="taxYear">2025</span>
         </div>
         <nav class="pe-topbar-nav">
-          <a href="../run-payroll.html" class="pe-topbar-nav-item">Payroll</a>
+          <a href="../run-payroll.html" class="pe-topbar-nav-item" id="nav-run">Payroll</a>
         </nav>
         <div class="pe-topbar-right">
-          <span class="pe-badge-admin">Admin</span>
-          <span>RORO HOLDING LTD</span>
-          <button type="button" class="pe-icon-btn">🔔</button>
-          <button type="button" class="pe-icon-btn">?</button>
-          <div class="pe-avatar">LH</div>
+          <span id="companyName">—</span>
+          <div class="pe-avatar">PW</div>
         </div>
       </header>
 
@@ -35,67 +40,178 @@
       </div>
 
       <aside class="pe-sidebar">
-        <a class="pe-nav" href="../dashboard.html"><span>⌂</span> Home</a>
-        <a class="pe-nav" href="../run-payroll.html"><span>▤</span> Run payroll</a>
-        <a class="pe-nav" href="#"><span>☰</span> Actions</a>
+        <a class="pe-nav" href="../dashboard.html" id="nav-home"><span>⌂</span> Home</a>
+        <a class="pe-nav" href="../run-payroll.html" id="nav-runSide"><span>▤</span> Run payroll</a>
+        <a class="pe-nav" href="#" onclick="return false"><span>☰</span> Actions</a>
         <div class="pe-nav-group">
           <div class="pe-nav-heading">Reports</div>
           <a class="pe-nav active" href="payrun.html" style="margin: 0 0.5rem"><span>▦</span> Reports</a>
           <div class="pe-nav-sub">
-            <a href="payrun.html">Pay run</a>
+            <a href="payrun.html" id="nav-payrun">Pay run</a>
             <a class="active" href="remittance.html">Remittance report</a>
-            <a href="cheques-payslips.html">Cheques / payslips</a>
+            <a href="cheques-payslips.html" id="nav-payslips">Cheques / payslips</a>
             <a href="accountant/index.html">Accountant</a>
           </div>
         </div>
-        <a class="pe-nav" href="../employees.html"><span>👤</span> Employees</a>
-        <span class="pe-nav spacer"></span>
-        <a class="pe-nav" href="#"><span>⚙</span> Settings</a>
+        <a class="pe-nav" href="../employees.html" id="nav-employees"><span>👤</span> Employees</a>
       </aside>
 
       <main class="pe-main">
         <div class="pe-report-toolbar">
           <h1>Remittance report</h1>
           <div class="pe-report-filters">
-            <a class="pe-btn pe-btn-primary" href="/export/remittance/sample" target="_blank" rel="noopener"
-              >Preview sample (print / PDF)</a
-            >
+            <label for="monthSel">Month</label>
+            <input type="month" id="monthSel" style="font-size:0.85rem; padding:0.25rem 0.5rem; border:1px solid var(--pe-border); border-radius:4px" />
+            <button type="button" class="pe-btn pe-btn-primary" id="btnLoad">Load</button>
+            <button type="button" class="pe-btn" id="btnPrint" onclick="window.print()">🖨 Print</button>
           </div>
         </div>
 
-        <div class="pe-info" style="margin-bottom: 1rem; max-width: 720px">
-          Layout matches CRA source-deduction remittance summary (Previous / Current columns, CPP, EI, federal tax, totals).
-          Sample data is from client template PDF (report #63). Production export will use the same HTML renderer with live
-          pay-run totals from your database.
+        <div class="pe-info" style="margin-bottom:1rem; max-width:800px">
+          Source-deduction remittance summary for CRA PD7A. Shows CPP/EI/Income Tax totals (employee + employer portions) for all
+          <strong>calculated or finalized</strong> pay runs in the selected month. Use <em>Print → Save as PDF</em> as a reference when making your CRA payment.
         </div>
 
-        <div class="pe-table-wrap">
-          <table class="pe-table">
-            <thead>
-              <tr>
-                <th>#</th>
-                <th>Created</th>
-                <th>Reporting period</th>
-                <th>Type</th>
-                <th>Total remittance</th>
-                <th></th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr>
-                <td class="mono">63</td>
-                <td>10/12/2025 16:10</td>
-                <td>— Nov 2025</td>
-                <td>CRA / source deductions</td>
-                <td>$842.42</td>
-                <td>
-                  <a class="pe-icon-action" href="/export/remittance/sample" target="_blank" title="Preview">📄</a>
-                </td>
-              </tr>
-            </tbody>
-          </table>
+        <div id="alertBox" style="display:none; padding:0.5rem 1rem; margin-bottom:1rem; background:#fef2f2; border:1px solid #fca5a5; color:#b91c1c; border-radius:4px"></div>
+
+        <div id="reportArea">
+          <div style="opacity:0.5; padding:1rem">Select a month and click Load.</div>
         </div>
       </main>
     </div>
+
+    <script>
+      var params    = new URLSearchParams(location.search);
+      var companyId = params.get('company') || '';
+
+      function withC(href) { return companyId ? href + '?company=' + encodeURIComponent(companyId) : href; }
+      document.getElementById('nav-home').href      = withC('../dashboard.html');
+      document.getElementById('nav-run').href       = withC('../run-payroll.html');
+      document.getElementById('nav-runSide').href   = withC('../run-payroll.html');
+      document.getElementById('nav-employees').href = withC('../employees.html');
+      document.getElementById('nav-payrun').href    = 'payrun.html' + (companyId ? '?company=' + encodeURIComponent(companyId) : '');
+      document.getElementById('nav-payslips').href  = 'cheques-payslips.html' + (companyId ? '?company=' + encodeURIComponent(companyId) : '');
+
+      // Default month = current
+      var now = new Date();
+      document.getElementById('monthSel').value = now.getFullYear() + '-' + String(now.getMonth()+1).padStart(2,'0');
+      document.getElementById('taxYear').textContent = now.getFullYear();
+
+      if (companyId) {
+        fetch('/api/payroll/companies/' + encodeURIComponent(companyId), { credentials: 'same-origin' })
+          .then(function (r) { return r.ok ? r.json() : null; })
+          .then(function (c) { if (c) document.getElementById('companyName').textContent = c.name || c.legalName; });
+      }
+
+      document.getElementById('btnLoad').addEventListener('click', load);
+
+      function load() {
+        if (!companyId) { showAlert('No company selected.'); return; }
+        var month = document.getElementById('monthSel').value;
+        if (!month) { showAlert('Please select a month.'); return; }
+
+        fetch('/api/payroll/report/remittance?company_id=' + encodeURIComponent(companyId) + '&month=' + encodeURIComponent(month), { credentials: 'same-origin' })
+          .then(function (r) { return r.ok ? r.json() : r.text().then(function (t) { throw new Error(t); }); })
+          .then(function (data) { renderReport(data, month); })
+          .catch(function (err) { showAlert('Failed to load: ' + err.message); });
+      }
+
+      function fmt(v) { return '$' + (parseFloat(v)||0).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g,','); }
+
+      function renderReport(data, month) {
+        var periods = data.periods || [];
+        var t = data.totals || {};
+        var area = document.getElementById('reportArea');
+
+        if (!periods.length) {
+          area.innerHTML = '<div style="opacity:0.5;padding:1rem">No calculated or finalized pay runs for ' + month + '.</div>';
+          return;
+        }
+
+        // Build per-period rows
+        var periodRows = periods.map(function (p) {
+          return [
+            '<tr class="period-row">',
+              '<td>' + p.payDate + '</td>',
+              '<td style="font-size:0.8rem">' + (p.periodStart||'') + ' – ' + (p.periodEnd||'') + '</td>',
+              '<td class="num">' + (p.employeeCount||0) + '</td>',
+              '<td class="num">' + fmt(p.totalGross) + '</td>',
+              '<td class="num">' + fmt(p.totalCppEmployee) + '</td>',
+              '<td class="num">' + fmt(p.totalCppEmployer) + '</td>',
+              '<td class="num">' + fmt((p.totalCpp2Employee||0)+(p.totalCpp2Employer||0)) + '</td>',
+              '<td class="num">' + fmt(p.totalEiEmployee) + '</td>',
+              '<td class="num">' + fmt(p.totalEiEmployer) + '</td>',
+              '<td class="num">' + fmt(p.totalFederalTax) + '</td>',
+              '<td class="num">' + fmt(p.totalProvincialTax) + '</td>',
+              '<td class="num" style="font-weight:700">' + fmt(p.remittanceTotal) + '</td>',
+            '</tr>',
+          ].join('');
+        }).join('');
+
+        area.innerHTML = [
+          '<div class="pe-table-wrap">',
+            '<table class="pe-table" style="font-size:0.82rem">',
+              '<thead>',
+                '<tr>',
+                  '<th>Pay Date</th>',
+                  '<th>Period</th>',
+                  '<th style="text-align:right">Ee</th>',
+                  '<th class="num">Gross</th>',
+                  '<th class="num">CPP Ee</th>',
+                  '<th class="num">CPP Er</th>',
+                  '<th class="num">CPP2 Total</th>',
+                  '<th class="num">EI Ee</th>',
+                  '<th class="num">EI Er</th>',
+                  '<th class="num">Fed Tax</th>',
+                  '<th class="num">Prov Tax</th>',
+                  '<th class="num">Remittance</th>',
+                '</tr>',
+              '</thead>',
+              '<tbody>',
+                periodRows,
+                '<tr class="total-row">',
+                  '<td colspan="2">Month total — ' + month + '</td>',
+                  '<td class="num">—</td>',
+                  '<td class="num">' + fmt(t.totalGross) + '</td>',
+                  '<td class="num">' + fmt(t.totalCppEmployee) + '</td>',
+                  '<td class="num">' + fmt(t.totalCppEmployer) + '</td>',
+                  '<td class="num">' + fmt((t.totalCpp2Employee||0)+(t.totalCpp2Employer||0)) + '</td>',
+                  '<td class="num">' + fmt(t.totalEiEmployee) + '</td>',
+                  '<td class="num">' + fmt(t.totalEiEmployer) + '</td>',
+                  '<td class="num">' + fmt(t.totalFederalTax) + '</td>',
+                  '<td class="num">' + fmt(t.totalProvincialTax) + '</td>',
+                  '<td class="num" style="font-weight:700">' + fmt(t.remittanceTotal) + '</td>',
+                '</tr>',
+              '</tbody>',
+            '</table>',
+          '</div>',
+
+          '<div style="margin-top:1.5rem; background:#f8fafc; border:1px solid #e2e8f0; border-radius:6px; padding:1rem 1.5rem; max-width:480px">',
+            '<div style="font-weight:700; font-size:0.9rem; margin-bottom:0.5rem">CRA PD7A Summary — ' + month + '</div>',
+            '<table style="width:100%; font-size:0.85rem; border-collapse:collapse">',
+              '<tr><td>CPP contributions (employee)</td><td style="text-align:right;font-family:monospace">' + fmt(t.totalCppEmployee) + '</td></tr>',
+              '<tr><td>CPP contributions (employer)</td><td style="text-align:right;font-family:monospace">' + fmt(t.totalCppEmployer) + '</td></tr>',
+              '<tr><td>CPP2 contributions (total)</td><td style="text-align:right;font-family:monospace">' + fmt((t.totalCpp2Employee||0)+(t.totalCpp2Employer||0)) + '</td></tr>',
+              '<tr><td>EI premiums (employee)</td><td style="text-align:right;font-family:monospace">' + fmt(t.totalEiEmployee) + '</td></tr>',
+              '<tr><td>EI premiums (employer)</td><td style="text-align:right;font-family:monospace">' + fmt(t.totalEiEmployer) + '</td></tr>',
+              '<tr><td>Federal income tax</td><td style="text-align:right;font-family:monospace">' + fmt(t.totalFederalTax) + '</td></tr>',
+              '<tr><td>Provincial income tax</td><td style="text-align:right;font-family:monospace">' + fmt(t.totalProvincialTax) + '</td></tr>',
+              '<tr style="border-top:2px solid #cbd5e1; font-weight:700; font-size:1rem"><td>Total remittance due</td><td style="text-align:right;font-family:monospace;color:#1e40af">' + fmt(t.remittanceTotal) + '</td></tr>',
+            '</table>',
+            '<p style="font-size:0.75rem; color:#94a3b8; margin:0.5rem 0 0">',
+              'Verify against your CRA My Business Account before remitting. ',
+              'Remittance deadline varies by payroll frequency (T4001 §7).',
+            '</p>',
+          '</div>',
+        ].join('');
+      }
+
+      function showAlert(msg) {
+        var el = document.getElementById('alertBox');
+        el.textContent = msg;
+        el.style.display = 'block';
+        setTimeout(function () { el.style.display = 'none'; }, 5000);
+      }
+    </script>
   </body>
 </html>
