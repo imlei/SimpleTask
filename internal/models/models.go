@@ -135,6 +135,22 @@ type ExpenseCodeRow struct {
 	BalanceYear int     `json:"balanceYear"`
 }
 
+// PayrollCompany Payroll 模块中管理的公司（单用户可管理多家公司）
+type PayrollCompany struct {
+	ID             string `json:"id"`
+	Name           string `json:"name"`           // 常用名 / 显示名
+	LegalName      string `json:"legalName"`      // CRA 注册全名
+	BusinessNumber string `json:"businessNumber"` // CRA BN（9位数字，如 123456789）
+	Email          string `json:"email"`
+	Phone          string `json:"phone"`
+	Address        string `json:"address"`
+	Province       string `json:"province"`      // 主要营业省份，如 BC / ON / AB
+	PayFrequency   string `json:"payFrequency"`  // biweekly | semimonthly | monthly | weekly
+	Status         string `json:"status"`        // active | inactive
+	CreatedAt      string `json:"createdAt,omitempty"`
+	UpdatedAt      string `json:"updatedAt,omitempty"`
+}
+
 // BankAccount 支票打印 / MICR 银行账户（支持多账户）
 type BankAccount struct {
 	ID                   string `json:"id"`

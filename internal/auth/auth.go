@@ -477,8 +477,11 @@ func isAllowedForRole(role, path string) bool {
 		}
 		return true
 	case "user1":
-		// Payroll pages only
+		// Payroll pages + payroll API only
 		if strings.HasPrefix(path, "/payroll/") {
+			return true
+		}
+		if strings.HasPrefix(path, "/api/payroll/") {
 			return true
 		}
 		switch path {

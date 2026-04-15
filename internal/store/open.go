@@ -196,6 +196,10 @@ func Open(dir string) (*sql.DB, error) {
 		_ = db.Close()
 		return nil, err
 	}
+	if err := ensurePayrollCompaniesTable(db); err != nil {
+		_ = db.Close()
+		return nil, err
+	}
 	return db, nil
 }
 
@@ -868,6 +872,25 @@ CREATE TABLE IF NOT EXISTS app_sub_users (
   password_hash TEXT NOT NULL DEFAULT '',
   session_secret TEXT NOT NULL DEFAULT '',
   role TEXT NOT NULL DEFAULT 'user2'
+);`)
+	return err
+}
+
+func ensurePayrollCompaniesTable(db *sql.DB) error {
+	_, err := db.Exec(`
+CREATE TABLE IF NOT EXISTS payroll_companies (
+  id TEXT PRIMARY KEY,
+  name TEXT NOT NULL DEFAULT '',
+  legal_name TEXT NOT NULL DEFAULT '',
+  business_number TEXT NOT NULL DEFAULT '',
+  email TEXT NOT NULL DEFAULT '',
+  phone TEXT NOT NULL DEFAULT '',
+  address TEXT NOT NULL DEFAULT '',
+  province TEXT NOT NULL DEFAULT '',
+  pay_frequency TEXT NOT NULL DEFAULT 'biweekly',
+  status TEXT NOT NULL DEFAULT 'active',
+  created_at TEXT NOT NULL DEFAULT '',
+  updated_at TEXT NOT NULL DEFAULT ''
 );`)
 	return err
 }

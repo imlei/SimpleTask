@@ -14,106 +14,315 @@
           <span>PAYROLL WORKS</span>
           <span class="muted">Payroll</span>
           <span class="brand-flag" aria-hidden="true">🇨🇦</span>
-          <span class="tax-year" title="Tax year (TaxYear / RateBook)"><span>2026</span></span>
+          <span class="tax-year" title="Tax year"><span>2026</span></span>
         </div>
         <nav class="topbar-nav">
           <a href="run-payroll.html" class="topbar-nav-item">Payroll</a>
         </nav>
         <div class="topbar-actions">
           <button type="button" class="icon-btn" title="Help">?</button>
-          <div class="avatar" title="Signed in">LH</div>
+          <div class="avatar" id="topbar-avatar" title="Signed in">—</div>
         </div>
       </header>
 
       <aside class="sidebar">
         <a href="index.html" class="nav-item active"><span>⌂</span> Home</a>
         <a href="run-payroll.html" class="nav-item"><span>▤</span> Run Payroll</a>
-        <a href="#" class="nav-item" onclick="return false"><span>☰</span> Actions</a>
         <a href="reports/payrun.html" class="nav-item"><span>▦</span> Reports</a>
         <a href="employees.html" class="nav-item"><span>👤</span> Employees</a>
-        <a href="#" class="nav-item" onclick="return false" style="margin-top: 1rem"><span>📋</span> Billing</a>
-        <a href="#" class="nav-item" onclick="return false"><span>⚙</span> Settings</a>
       </aside>
 
       <main class="main">
         <div class="hero-banner">
-          <span>Company list</span>
-          <span class="muted">Multi-company · Dark mode</span>
+          <span>Companies</span>
+          <span class="muted" id="company-count">Loading…</span>
         </div>
 
         <div class="content">
-          <h1 class="page-title">Companies</h1>
-
-          <div class="payroll-steps-label">Payroll steps</div>
-          <div class="stepper" role="list">
-            <div class="step active" role="listitem">Select pay cycle</div>
-            <div class="step" role="listitem">Salaries</div>
-            <div class="step" role="listitem">Timesheets</div>
-            <div class="step" role="listitem">Calculate</div>
-            <div class="step" role="listitem">Review</div>
-            <div class="step" role="listitem">Payments</div>
-            <div class="step" role="listitem">Summary</div>
-          </div>
-
           <div class="panel">
             <div class="panel-toolbar">
-              <div class="cutoff">e-Pay cutoff: Apr 06 3:30 PM ET · Pay date Apr 10</div>
-              <div style="display: flex; gap: 0.5rem; align-items: center">
-                <label class="muted" for="f">Status</label>
-                <select id="f" class="input">
-                  <option>Active</option>
-                  <option>All</option>
+              <div style="display:flex;gap:0.5rem;align-items:center">
+                <label class="muted" for="status-filter">Status</label>
+                <select id="status-filter" class="input">
+                  <option value="active">Active</option>
+                  <option value="all">All</option>
                 </select>
-                <button type="button" class="btn btn-primary">+ Company</button>
               </div>
+              <button type="button" class="btn btn-primary" id="btn-add-company">+ Company</button>
             </div>
-            <table class="data">
+
+            <table class="data" id="companies-table">
               <thead>
                 <tr>
                   <th>Company</th>
+                  <th>Business No.</th>
                   <th>Email</th>
                   <th>Phone</th>
-                  <th>Contact</th>
+                  <th>Province</th>
+                  <th>Pay Cycle</th>
                   <th>Status</th>
                   <th></th>
                 </tr>
               </thead>
-              <tbody>
-                <tr>
-                  <td><a href="dashboard.html">Bizsense Services Inc.</a></td>
-                  <td>pay@example.com</td>
-                  <td>(416) 555-0100</td>
-                  <td>Jane Doe</td>
-                  <td><span class="status-pill">Active</span></td>
-                  <td class="row-actions">
-                    <button type="button" title="Users">👥</button>
-                    <button type="button" title="Reports">📋</button>
-                    <button type="button" title="Settings (rates / RateBook)">⚙</button>
-                  </td>
-                </tr>
-                <tr>
-                  <td><a href="dashboard.html">RORO HOLDING LTD</a></td>
-                  <td>hq@example.com</td>
-                  <td>(604) 555-0199</td>
-                  <td>Lei Huang</td>
-                  <td><span class="status-pill">Active</span></td>
-                  <td class="row-actions">
-                    <button type="button" title="Users">👥</button>
-                    <button type="button" title="Reports">📋</button>
-                    <button type="button" title="Settings">⚙</button>
-                  </td>
-                </tr>
+              <tbody id="companies-body">
+                <tr><td colspan="8" class="muted" style="text-align:center;padding:2rem">Loading…</td></tr>
               </tbody>
             </table>
           </div>
-
-          <p class="muted" style="margin-top: 1.25rem">
-            <a href="run-payroll.html" class="btn btn-primary" style="text-decoration: none; display: inline-flex"
-              >Run payroll · Select pay cycle →</a
-            >
-          </p>
         </div>
       </main>
     </div>
+
+    <!-- ── Create / Edit Modal ──────────────────────────────── -->
+    <div id="modal-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:100;align-items:center;justify-content:center">
+      <div style="background:var(--surface,#1e2028);border:1px solid var(--border,#2e3240);border-radius:0.75rem;padding:1.75rem;width:min(520px,95vw);max-height:90vh;overflow-y:auto">
+        <h2 id="modal-title" style="margin:0 0 1.25rem;font-size:1rem;font-weight:600">Add Company</h2>
+        <form id="company-form" novalidate>
+          <input type="hidden" id="f-id" />
+
+          <div class="form-row" style="display:grid;grid-template-columns:1fr 1fr;gap:0.75rem 1rem">
+            <div class="form-group" style="grid-column:1/-1">
+              <label class="label" for="f-name">Display Name <span style="color:var(--danger,#e05)">*</span></label>
+              <input id="f-name" type="text" class="input" placeholder="RORO Holding Ltd." required />
+            </div>
+            <div class="form-group" style="grid-column:1/-1">
+              <label class="label" for="f-legal-name">CRA Legal Name</label>
+              <input id="f-legal-name" type="text" class="input" placeholder="Full registered name" />
+            </div>
+            <div class="form-group">
+              <label class="label" for="f-bn">Business Number (BN)</label>
+              <input id="f-bn" type="text" class="input" placeholder="123456789" maxlength="15" />
+            </div>
+            <div class="form-group">
+              <label class="label" for="f-province">Province</label>
+              <select id="f-province" class="input">
+                <option value="">— select —</option>
+                <option value="AB">Alberta</option>
+                <option value="BC">British Columbia</option>
+                <option value="MB">Manitoba</option>
+                <option value="NB">New Brunswick</option>
+                <option value="NL">Newfoundland &amp; Labrador</option>
+                <option value="NS">Nova Scotia</option>
+                <option value="NT">Northwest Territories</option>
+                <option value="NU">Nunavut</option>
+                <option value="ON">Ontario</option>
+                <option value="PE">Prince Edward Island</option>
+                <option value="QC">Quebec</option>
+                <option value="SK">Saskatchewan</option>
+                <option value="YT">Yukon</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="label" for="f-email">Email</label>
+              <input id="f-email" type="email" class="input" placeholder="pay@example.com" />
+            </div>
+            <div class="form-group">
+              <label class="label" for="f-phone">Phone</label>
+              <input id="f-phone" type="tel" class="input" placeholder="(604) 555-0100" />
+            </div>
+            <div class="form-group" style="grid-column:1/-1">
+              <label class="label" for="f-address">Address</label>
+              <input id="f-address" type="text" class="input" placeholder="123 Main St, Vancouver BC V6B 1A1" />
+            </div>
+            <div class="form-group">
+              <label class="label" for="f-freq">Pay Frequency</label>
+              <select id="f-freq" class="input">
+                <option value="biweekly">Bi-weekly (26/yr)</option>
+                <option value="semimonthly">Semi-monthly (24/yr)</option>
+                <option value="monthly">Monthly (12/yr)</option>
+                <option value="weekly">Weekly (52/yr)</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="label" for="f-status">Status</label>
+              <select id="f-status" class="input">
+                <option value="active">Active</option>
+                <option value="inactive">Inactive</option>
+              </select>
+            </div>
+          </div>
+
+          <div id="form-error" style="display:none;color:var(--danger,#e05);font-size:.85rem;margin-top:.75rem"></div>
+
+          <div style="display:flex;gap:.75rem;justify-content:flex-end;margin-top:1.25rem">
+            <button type="button" class="btn" id="btn-cancel-modal">Cancel</button>
+            <button type="submit" class="btn btn-primary" id="btn-save-modal">Save</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <script>
+      const FREQ_LABEL = {
+        biweekly: 'Bi-weekly',
+        semimonthly: 'Semi-monthly',
+        monthly: 'Monthly',
+        weekly: 'Weekly',
+      };
+
+      function escHtml(s) {
+        const d = document.createElement('div');
+        d.textContent = String(s ?? '');
+        return d.innerHTML;
+      }
+
+      async function apiFetch(path, opts = {}) {
+        const r = await fetch(path, {
+          credentials: 'same-origin',
+          headers: { 'Content-Type': 'application/json; charset=utf-8', ...opts.headers },
+          ...opts,
+        });
+        const text = await r.text();
+        if (!r.ok) {
+          let msg = text;
+          try { msg = JSON.parse(text)?.error || text; } catch { /* ignore */ }
+          throw new Error(msg || r.statusText);
+        }
+        return text ? JSON.parse(text) : null;
+      }
+
+      // ── Render ────────────────────────────────────────────────────
+      function renderCompanies(list) {
+        const tbody = document.getElementById('companies-body');
+        const count = document.getElementById('company-count');
+        count.textContent = `${list.length} compan${list.length === 1 ? 'y' : 'ies'}`;
+
+        if (list.length === 0) {
+          tbody.innerHTML = `<tr><td colspan="8" class="muted" style="text-align:center;padding:2rem">No companies yet. Click <strong>+ Company</strong> to add one.</td></tr>`;
+          return;
+        }
+
+        tbody.innerHTML = list.map(c => `
+          <tr>
+            <td><a href="dashboard.html?company=${escHtml(c.id)}">${escHtml(c.name)}</a></td>
+            <td>${escHtml(c.businessNumber || '—')}</td>
+            <td>${escHtml(c.email || '—')}</td>
+            <td>${escHtml(c.phone || '—')}</td>
+            <td>${escHtml(c.province || '—')}</td>
+            <td>${escHtml(FREQ_LABEL[c.payFrequency] || c.payFrequency || '—')}</td>
+            <td><span class="status-pill${c.status === 'inactive' ? ' status-inactive' : ''}">${escHtml(c.status)}</span></td>
+            <td class="row-actions">
+              <button type="button" title="Edit" data-id="${escHtml(c.id)}" class="btn-edit-company">✎</button>
+              <button type="button" title="Delete" data-id="${escHtml(c.id)}" data-name="${escHtml(c.name)}" class="btn-del-company" style="color:var(--danger,#e05)">🗑</button>
+            </td>
+          </tr>`).join('');
+
+        tbody.querySelectorAll('.btn-edit-company').forEach(btn => {
+          btn.addEventListener('click', () => {
+            const c = list.find(x => x.id === btn.dataset.id);
+            if (c) openModal(c);
+          });
+        });
+
+        tbody.querySelectorAll('.btn-del-company').forEach(btn => {
+          btn.addEventListener('click', () => deleteCompany(btn.dataset.id, btn.dataset.name));
+        });
+      }
+
+      // ── Load ──────────────────────────────────────────────────────
+      async function loadCompanies() {
+        const filter = document.getElementById('status-filter').value;
+        try {
+          const list = await apiFetch(`/api/payroll/companies?status=${filter}`);
+          renderCompanies(list ?? []);
+        } catch (err) {
+          document.getElementById('companies-body').innerHTML =
+            `<tr><td colspan="8" style="color:var(--danger,#e05);text-align:center;padding:1rem">Failed to load: ${escHtml(err.message)}</td></tr>`;
+        }
+      }
+
+      // ── Modal ─────────────────────────────────────────────────────
+      const overlay = document.getElementById('modal-overlay');
+
+      function openModal(company = null) {
+        const form = document.getElementById('company-form');
+        form.reset();
+        document.getElementById('form-error').style.display = 'none';
+        document.getElementById('modal-title').textContent = company ? 'Edit Company' : 'Add Company';
+        document.getElementById('f-id').value = company?.id ?? '';
+        document.getElementById('f-name').value = company?.name ?? '';
+        document.getElementById('f-legal-name').value = company?.legalName ?? '';
+        document.getElementById('f-bn').value = company?.businessNumber ?? '';
+        document.getElementById('f-email').value = company?.email ?? '';
+        document.getElementById('f-phone').value = company?.phone ?? '';
+        document.getElementById('f-address').value = company?.address ?? '';
+        document.getElementById('f-province').value = company?.province ?? '';
+        document.getElementById('f-freq').value = company?.payFrequency ?? 'biweekly';
+        document.getElementById('f-status').value = company?.status ?? 'active';
+        overlay.style.display = 'flex';
+      }
+
+      function closeModal() {
+        overlay.style.display = 'none';
+      }
+
+      document.getElementById('btn-add-company').addEventListener('click', () => openModal());
+      document.getElementById('btn-cancel-modal').addEventListener('click', closeModal);
+      overlay.addEventListener('click', e => { if (e.target === overlay) closeModal(); });
+
+      document.getElementById('company-form').addEventListener('submit', async e => {
+        e.preventDefault();
+        const errEl = document.getElementById('form-error');
+        errEl.style.display = 'none';
+
+        const id = document.getElementById('f-id').value;
+        const payload = {
+          name:           document.getElementById('f-name').value.trim(),
+          legalName:      document.getElementById('f-legal-name').value.trim(),
+          businessNumber: document.getElementById('f-bn').value.trim(),
+          email:          document.getElementById('f-email').value.trim(),
+          phone:          document.getElementById('f-phone').value.trim(),
+          address:        document.getElementById('f-address').value.trim(),
+          province:       document.getElementById('f-province').value,
+          payFrequency:   document.getElementById('f-freq').value,
+          status:         document.getElementById('f-status').value,
+        };
+
+        const saveBtn = document.getElementById('btn-save-modal');
+        saveBtn.disabled = true;
+        try {
+          if (id) {
+            await apiFetch(`/api/payroll/companies/${id}`, { method: 'PUT', body: JSON.stringify(payload) });
+          } else {
+            await apiFetch('/api/payroll/companies', { method: 'POST', body: JSON.stringify(payload) });
+          }
+          closeModal();
+          loadCompanies();
+        } catch (err) {
+          errEl.textContent = err.message || 'Save failed';
+          errEl.style.display = 'block';
+        } finally {
+          saveBtn.disabled = false;
+        }
+      });
+
+      // ── Delete ────────────────────────────────────────────────────
+      async function deleteCompany(id, name) {
+        if (!confirm(`Delete "${name}"?\n\nThis cannot be undone.`)) return;
+        try {
+          await apiFetch(`/api/payroll/companies/${id}`, { method: 'DELETE' });
+          loadCompanies();
+        } catch (err) {
+          alert('Delete failed: ' + err.message);
+        }
+      }
+
+      // ── Auth guard + init ──────────────────────────────────────────
+      fetch('/api/me', { credentials: 'same-origin' })
+        .then(r => r.json())
+        .then(me => {
+          if (!me.authenticated) {
+            window.location.href = '/';
+            return;
+          }
+          const av = document.getElementById('topbar-avatar');
+          if (av && me.user) av.textContent = me.user.slice(0, 2).toUpperCase();
+        })
+        .catch(() => {});
+
+      document.getElementById('status-filter').addEventListener('change', loadCompanies);
+
+      loadCompanies();
+    </script>
   </body>
 </html>
