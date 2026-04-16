@@ -225,8 +225,7 @@
             document.getElementById('heroPeriod').textContent =
               (p.payrollType || 'Regular') + ' · ' + (p.payFrequency || '') + ' · Pay date ' + (p.payDate || '');
             if (p.payDate) {
-              document.getElementById('taxYear').textContent = p.payDate.slice(0, 4);
-              document.getElementById('paymentDate').value   = p.payDate;
+              document.getElementById('paymentDate').value = p.payDate;
             }
             if (p.status === 'finalized') {
               document.getElementById('btnAuthorize').disabled = true;
@@ -252,9 +251,13 @@
       var paymentTypes = {}; // entryId → 'cheque' | 'deposit'
 
       function renderPaymentsTable(list) {
+        // Only show calculated / finalized entries
+        list = list.filter(function(e) {
+          return e.status === 'calculated' || e.status === 'finalized';
+        });
         var tbody = document.getElementById('paymentsTbody');
         if (!list.length) {
-          tbody.innerHTML = '<tr><td colspan="5" class="text-center py-6 text-base-content/40">No entries found.</td></tr>';
+          tbody.innerHTML = '<tr><td colspan="5" class="text-center py-6 text-base-content/40">No calculated entries. Go back to Calculate and process employees first.</td></tr>';
           return;
         }
 
@@ -307,9 +310,9 @@
         document.getElementById('btnConfirmAuthorize').disabled = true;
         document.getElementById('authModal').close();
 
-        // Save payment types first, then finalize
+        // Save payment types for calculated/finalized entries, then finalize
         var updates = allEntries
-          .filter(function(e) { return e.id && paymentTypes[e.id]; })
+          .filter(function(e) { return e.id && paymentTypes[e.id] && (e.status === 'calculated' || e.status === 'finalized'); })
           .map(function(e) {
             return fetch('/api/payroll/periods/' + encodeURIComponent(periodId) + '/entries', {
               method: 'POST', credentials: 'same-origin',
