@@ -113,25 +113,30 @@
       font-size: 7pt; color: #000; line-height: 1.4; margin-top: 1px;
     }
 
-    /* Memo — 2.85in from top */
+    /* Memo — 2.85in from top, far left */
     .abs-memo {
-      top: 2.85in; left: 3.6in;
-      width: 2.2in;
+      top: 2.85in; left: 0.5in;
+      width: 2.8in;
     }
+    /* Memo and Signature share the same line height so underlines align */
     .abs-memo .chk-label { font-size: 7pt; }
     .memo-line {
       border-bottom: 1px solid #000;
-      min-height: 1em; font-size: 9pt; padding: 0 2px;
+      height: 0.22in; font-size: 9pt; padding: 0 2px;
+    }
+    .memo-label-below {
+      font-size: 7pt; text-transform: uppercase; letter-spacing: .04em;
+      text-align: center; margin-top: 2px; color: #000;
     }
 
-    /* Signature — 2.85in from top, aligned with memo */
+    /* Signature — same top as memo */
     .abs-sig {
       top: 2.85in; right: 0.35in;
       width: 2.3in;
     }
     .sig-box {
       border-bottom: 1px solid #000;
-      min-height: 1.5em;
+      height: 0.22in;
     }
     .sig-label {
       font-size: 7.5pt; color: #000;
@@ -260,8 +265,8 @@
 
     {{/* Memo */}}
     <div class="abs abs-memo">
-      <span class="chk-label">Memo</span>
       <div class="memo-line">{{.Memo}}</div>
+      <div class="memo-label-below">Memo</div>
     </div>
 
     {{/* Signature */}}
