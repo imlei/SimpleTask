@@ -181,23 +181,26 @@ func (s *Store) CalculatePeriod(periodID string, rates calculator.TaxYear) ([]mo
 
 	// Load employee province/TD1 data
 	type empInfo struct {
-		Province   string
-		TD1Federal float64
-		TD1Prov    float64
-		MemberType int
+		Province     string
+		TD1Federal   float64
+		TD1Prov      float64
+		MemberType   int
+		AutoVacation bool
 	}
 	empCache := map[string]empInfo{}
 
 	s.mu.Lock()
 	rows, err := s.db.Query(
-		`SELECT id, province, td1_federal, td1_provincial, member_type
+		`SELECT id, province, td1_federal, td1_provincial, member_type, auto_vacation
 		 FROM payroll_employees WHERE company_id = ?`, period.CompanyID)
 	if err == nil {
 		defer rows.Close()
 		for rows.Next() {
 			var id string
 			var info empInfo
-			if err := rows.Scan(&id, &info.Province, &info.TD1Federal, &info.TD1Prov, &info.MemberType); err == nil {
+			var autoVac int
+			if err := rows.Scan(&id, &info.Province, &info.TD1Federal, &info.TD1Prov, &info.MemberType, &autoVac); err == nil {
+				info.AutoVacation = autoVac != 0
 				empCache[id] = info
 			}
 		}
@@ -241,9 +244,10 @@ func (s *Store) CalculatePeriod(periodID string, rates calculator.TaxYear) ([]mo
 			addl := s.EarningsGrossForEntry(e.ID)
 
 			// Vacation pay (per_period method): add vacation % of vacationable base.
+			// Only applies when the employee has AutoVacation enabled.
 			// vacationable base = base pay + vacationable additional earnings.
 			var vacPay float64
-			if companyRules.VacationMethod == "per_period" && companyRules.VacationRate > 0 && vacationCodeID != "" {
+			if info.AutoVacation && companyRules.VacationMethod == "per_period" && companyRules.VacationRate > 0 && vacationCodeID != "" {
 				vacationableBase := e.GrossPay + addl.VacationableTotal
 				raw := vacationableBase * companyRules.VacationRate
 				vacPay = float64(int64(raw*100+0.5)) / 100
