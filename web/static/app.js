@@ -472,10 +472,12 @@ function setInvoiceDialogMode(isMulti) {
   if (multiEl) multiEl.hidden = !isMulti;
 }
 
-/** 从 customersCache 查找客户的 email 和 address，用于预填发票对话框 */
+/** 从 customersCache 查找客户全名、email、address，用于预填发票对话框 */
 function getCustomerDetails(customerId) {
   const c = customersCache.find((x) => String(x.id) === String(customerId));
-  return c ? { email: c.email || "", address: c.address || "" } : { email: "", address: "" };
+  return c
+    ? { name: c.name || "", email: c.email || "", address: c.address || "" }
+    : { name: "", email: "", address: "" };
 }
 
 function openInvoiceDialog(task) {
@@ -483,16 +485,17 @@ function openInvoiceDialog(task) {
   setInvoiceDialogMode(false);
   const today = todayLocalISO();
   const cust = getCustomerDetails(task.customerId);
+  const billName = cust.name || task.customerName || "";
   document.getElementById("inv-task-id").value = task.id;
-  document.getElementById("inv-bill-name").value = task.customerName || "";
+  document.getElementById("inv-bill-name").value = billName;
   document.getElementById("inv-bill-addr").value = cust.address;
   document.getElementById("inv-bill-email").value = cust.email;
-  document.getElementById("inv-ship-name").value = task.customerName || "";
+  document.getElementById("inv-ship-name").value = billName;
   document.getElementById("inv-ship-addr").value = cust.address;
   document.getElementById("inv-date").value = today;
   document.getElementById("inv-terms").value = "Net 30";
   document.getElementById("inv-due-date").value = addDaysISO(today, 30);
-  document.getElementById("inv-currency").value = "USD";
+  document.getElementById("inv-currency").value = "CAD";
   document.getElementById("inv-tax-rate").value = 0;
   document.getElementById("inv-desc").value = "Consulting Services";
   document.getElementById("inv-detail").value = task.service1 || "";
@@ -513,16 +516,17 @@ function openInvoiceDialogMulti(tasks) {
   const first = tasks[0];
   const today = todayLocalISO();
   const cust = getCustomerDetails(first.customerId);
+  const billName = cust.name || first.customerName || "";
   document.getElementById("inv-task-id").value = first.id;
-  document.getElementById("inv-bill-name").value = first.customerName || "";   // 用 Customer，非 Task Name
+  document.getElementById("inv-bill-name").value = billName;
   document.getElementById("inv-bill-addr").value = cust.address;
   document.getElementById("inv-bill-email").value = cust.email;
-  document.getElementById("inv-ship-name").value = first.customerName || "";
+  document.getElementById("inv-ship-name").value = billName;
   document.getElementById("inv-ship-addr").value = cust.address;
   document.getElementById("inv-date").value = today;
   document.getElementById("inv-terms").value = "Net 30";
   document.getElementById("inv-due-date").value = addDaysISO(today, 30);
-  document.getElementById("inv-currency").value = "USD";
+  document.getElementById("inv-currency").value = "CAD";
   document.getElementById("inv-tax-rate").value = 0;
   const tbody = document.getElementById("inv-multi-body");
   if (tbody) {
