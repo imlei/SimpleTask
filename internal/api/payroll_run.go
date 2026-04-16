@@ -4,10 +4,10 @@ import (
 	"encoding/json"
 	"errors"
 	"net/http"
+	"strconv"
 	"strings"
 
 	"simpletask/internal/models"
-	"simpletask/internal/payroll/calculator"
 	"simpletask/internal/store"
 )
 
@@ -165,8 +165,14 @@ func (s *Server) handlePeriodCalculate(w http.ResponseWriter, r *http.Request, p
 		return
 	}
 
-	// Use tax year matching pay_date year; default to 2025 rates
-	rates := calculator.Rates2025()
+	// Use tax year matching pay_date year; load from DB (with hardcoded fallback)
+	payYear := 2025
+	if len(p.PayDate) >= 4 {
+		if y, err2 := strconv.Atoi(p.PayDate[:4]); err2 == nil && y > 2000 {
+			payYear = y
+		}
+	}
+	rates := s.Store.GetPayrollRatesForYear(payYear)
 
 	entries, err := s.Store.CalculatePeriod(periodID, rates)
 	if err != nil {

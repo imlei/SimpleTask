@@ -790,4 +790,7 @@ func Register(mux *http.ServeMux, s *Server) {
 	mux.HandleFunc("/api/payroll/earnings-codes", s.handleEarningsCodes)
 	mux.HandleFunc("/api/payroll/company-rules", s.handleCompanyRules)
 	mux.HandleFunc("/api/payroll/entries/", s.handleEntryEarnings)
+
+	// Admin-only payroll settings (rates + plans)
+	mux.HandleFunc("/api/admin/payroll-settings/", s.handleAdminPayrollSettings)
 }

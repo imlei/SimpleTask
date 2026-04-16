@@ -1,0 +1,483 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Payroll Settings — SimpleTask Admin</title>
+  <link href="/vendor/daisyui-themes.css" rel="stylesheet" />
+  <link href="/vendor/daisyui-components.css" rel="stylesheet" />
+  <script src="/vendor/tailwind-browser.js"></script>
+</head>
+<body class="bg-base-200 min-h-screen">
+
+  <div class="drawer lg:drawer-open">
+    <input id="sidebar-toggle" type="checkbox" class="drawer-toggle" />
+
+    <!-- Main Content -->
+    <div class="drawer-content flex flex-col min-h-screen">
+
+      <!-- Top Navbar -->
+      <header class="sticky top-0 z-30 bg-base-100 border-b border-base-300 px-4 h-16 flex items-center gap-3">
+        <label for="sidebar-toggle" class="btn btn-ghost btn-sm btn-square lg:hidden">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
+          </svg>
+        </label>
+        <div class="flex-1">
+          <h2 class="text-base font-semibold text-base-content">Payroll Settings</h2>
+        </div>
+        <div class="flex items-center gap-3">
+          <div class="hidden sm:flex items-center gap-2">
+            <div class="avatar placeholder">
+              <div class="bg-primary text-primary-content rounded-full w-8">
+                <span id="nav-avatar" class="text-xs font-bold">AD</span>
+              </div>
+            </div>
+            <span id="nav-username" class="text-sm font-medium text-base-content/70"></span>
+          </div>
+          <button id="btn-logout" class="btn btn-ghost btn-sm">Logout</button>
+        </div>
+      </header>
+
+      <!-- Page Body -->
+      <main class="flex-1 p-4 md:p-6 w-full max-w-6xl mx-auto">
+
+        <div id="alertBox" class="hidden mb-4"></div>
+
+        <!-- Two-column card layout -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+          <!-- Left: section picker cards -->
+          <div class="flex flex-col gap-3">
+            <button id="tab-rates" onclick="showSection('rates')"
+              class="card bg-base-100 shadow-sm p-5 text-left border-2 border-primary transition-all">
+              <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl bg-primary/10 text-primary flex items-center justify-center shrink-0">
+                  <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 11h.01M12 11h.01M15 11h.01M4 19h16a2 2 0 002-2V7a2 2 0 00-2-2H4a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
+                </div>
+                <div>
+                  <p class="font-bold text-sm">RATE SETTING</p>
+                  <p class="text-xs text-base-content/50 mt-0.5">CPP / EI rates by tax year</p>
+                </div>
+              </div>
+            </button>
+
+            <button id="tab-plans" onclick="showSection('plans')"
+              class="card bg-base-100 shadow-sm p-5 text-left border-2 border-transparent hover:border-base-300 transition-all">
+              <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl bg-secondary/10 text-secondary flex items-center justify-center shrink-0">
+                  <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/></svg>
+                </div>
+                <div>
+                  <p class="font-bold text-sm">PLAN SETTING</p>
+                  <p class="text-xs text-base-content/50 mt-0.5">Subscription plans &amp; limits</p>
+                </div>
+              </div>
+            </button>
+          </div>
+
+          <!-- Right: section content -->
+          <div class="lg:col-span-2">
+
+            <!-- ── RATE SETTING ── -->
+            <div id="section-rates" class="card bg-base-100 shadow-sm p-6">
+              <div class="flex items-center justify-between mb-5">
+                <div>
+                  <h3 class="font-bold text-base">Rate Setting</h3>
+                  <p class="text-xs text-base-content/50 mt-0.5">CRA CPP / EI parameters per tax year</p>
+                </div>
+                <div class="flex items-center gap-2">
+                  <label class="text-sm text-base-content/60">Tax Year</label>
+                  <select id="rateYear" class="select select-bordered select-sm w-24">
+                    <option value="2025">2025</option>
+                    <option value="2026">2026</option>
+                    <option value="2027">2027</option>
+                  </select>
+                </div>
+              </div>
+
+              <!-- CPP Section -->
+              <div class="mb-5">
+                <p class="text-xs font-semibold uppercase tracking-wider text-base-content/40 mb-3">Canada Pension Plan (CPP)</p>
+                <div class="grid grid-cols-2 gap-3">
+                  <div class="form-control">
+                    <label class="label py-1"><span class="label-text text-xs">CPP Rate</span><span class="label-text-alt text-base-content/40 text-xs">e.g. 0.0595</span></label>
+                    <input type="number" step="0.0001" class="input input-bordered input-sm font-mono" id="r-cppRate" />
+                  </div>
+                  <div class="form-control">
+                    <label class="label py-1"><span class="label-text text-xs">YMPE ($)</span><span class="label-text-alt text-base-content/40 text-xs">Max pensionable</span></label>
+                    <input type="number" step="1" class="input input-bordered input-sm font-mono" id="r-ympe" />
+                  </div>
+                  <div class="form-control">
+                    <label class="label py-1"><span class="label-text text-xs">YBE ($)</span><span class="label-text-alt text-base-content/40 text-xs">Basic exemption</span></label>
+                    <input type="number" step="1" class="input input-bordered input-sm font-mono" id="r-ybe" />
+                  </div>
+                  <div class="form-control">
+                    <label class="label py-1"><span class="label-text text-xs">CPP Max EE Annual ($)</span></label>
+                    <input type="number" step="0.01" class="input input-bordered input-sm font-mono" id="r-cppMaxEe" />
+                  </div>
+                </div>
+              </div>
+
+              <!-- CPP2 Section -->
+              <div class="mb-5">
+                <p class="text-xs font-semibold uppercase tracking-wider text-base-content/40 mb-3">CPP2 (Second Additional)</p>
+                <div class="grid grid-cols-2 gap-3">
+                  <div class="form-control">
+                    <label class="label py-1"><span class="label-text text-xs">CPP2 Rate</span><span class="label-text-alt text-base-content/40 text-xs">e.g. 0.04</span></label>
+                    <input type="number" step="0.0001" class="input input-bordered input-sm font-mono" id="r-cpp2Rate" />
+                  </div>
+                  <div class="form-control">
+                    <label class="label py-1"><span class="label-text text-xs">YAMPE ($)</span><span class="label-text-alt text-base-content/40 text-xs">Additional max</span></label>
+                    <input type="number" step="1" class="input input-bordered input-sm font-mono" id="r-yampe" />
+                  </div>
+                  <div class="form-control">
+                    <label class="label py-1"><span class="label-text text-xs">CPP2 Max EE Annual ($)</span></label>
+                    <input type="number" step="0.01" class="input input-bordered input-sm font-mono" id="r-cpp2MaxEe" />
+                  </div>
+                </div>
+              </div>
+
+              <!-- EI Section -->
+              <div class="mb-5">
+                <p class="text-xs font-semibold uppercase tracking-wider text-base-content/40 mb-3">Employment Insurance (EI)</p>
+                <div class="grid grid-cols-2 gap-3">
+                  <div class="form-control">
+                    <label class="label py-1"><span class="label-text text-xs">EI Rate (non-QC)</span><span class="label-text-alt text-base-content/40 text-xs">e.g. 0.0164</span></label>
+                    <input type="number" step="0.0001" class="input input-bordered input-sm font-mono" id="r-eiRate" />
+                  </div>
+                  <div class="form-control">
+                    <label class="label py-1"><span class="label-text text-xs">EI Rate (QC)</span><span class="label-text-alt text-base-content/40 text-xs">e.g. 0.0131</span></label>
+                    <input type="number" step="0.0001" class="input input-bordered input-sm font-mono" id="r-eiRateQc" />
+                  </div>
+                  <div class="form-control">
+                    <label class="label py-1"><span class="label-text text-xs">Max Insurable Earnings ($)</span></label>
+                    <input type="number" step="1" class="input input-bordered input-sm font-mono" id="r-maxInsurable" />
+                  </div>
+                  <div class="form-control">
+                    <label class="label py-1"><span class="label-text text-xs">EI Max EE Annual ($)</span></label>
+                    <input type="number" step="0.01" class="input input-bordered input-sm font-mono" id="r-eiMaxEe" />
+                  </div>
+                  <div class="form-control">
+                    <label class="label py-1"><span class="label-text text-xs">EI Max EE Annual QC ($)</span></label>
+                    <input type="number" step="0.01" class="input input-bordered input-sm font-mono" id="r-eiMaxEeQc" />
+                  </div>
+                  <div class="form-control">
+                    <label class="label py-1"><span class="label-text text-xs">EI Employer Factor</span><span class="label-text-alt text-base-content/40 text-xs">e.g. 1.4</span></label>
+                    <input type="number" step="0.01" class="input input-bordered input-sm font-mono" id="r-eiErFactor" />
+                  </div>
+                </div>
+              </div>
+
+              <!-- Federal BPA -->
+              <div class="mb-6">
+                <p class="text-xs font-semibold uppercase tracking-wider text-base-content/40 mb-3">Federal</p>
+                <div class="grid grid-cols-2 gap-3">
+                  <div class="form-control">
+                    <label class="label py-1"><span class="label-text text-xs">Federal BPA ($)</span><span class="label-text-alt text-base-content/40 text-xs">Basic Personal Amount</span></label>
+                    <input type="number" step="1" class="input input-bordered input-sm font-mono" id="r-federalBpa" />
+                  </div>
+                </div>
+              </div>
+
+              <div class="flex items-center gap-3">
+                <button id="btnSaveRates" class="btn btn-primary btn-sm">Save Rates</button>
+                <button id="btnResetRates" class="btn btn-ghost btn-sm">Reset to 2025 Defaults</button>
+                <span id="ratesSavedMsg" class="text-xs text-success hidden">✓ Saved</span>
+              </div>
+            </div>
+
+            <!-- ── PLAN SETTING ── -->
+            <div id="section-plans" class="hidden card bg-base-100 shadow-sm p-6">
+              <div class="mb-5">
+                <h3 class="font-bold text-base">Plan Setting</h3>
+                <p class="text-xs text-base-content/50 mt-0.5">Manage subscription plans and usage limits</p>
+              </div>
+
+              <div id="plansGrid" class="grid grid-cols-1 gap-4">
+                <!-- Plans rendered by JS -->
+              </div>
+
+              <div class="mt-4">
+                <p class="text-xs text-base-content/40">Changes take effect immediately. Plan enforcement is applied on company and employee creation.</p>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+      </main>
+    </div><!-- end drawer-content -->
+
+    <!-- Sidebar -->
+    <div class="drawer-side z-40">
+      <label for="sidebar-toggle" class="drawer-overlay"></label>
+      <aside class="w-64 min-h-screen bg-base-100 border-r border-base-300 flex flex-col">
+        <div class="flex items-center gap-3 px-5 h-16 border-b border-base-300 shrink-0">
+          <div class="flex items-center justify-center w-9 h-9 rounded-xl bg-primary text-primary-content font-bold text-sm select-none">ST</div>
+          <div>
+            <p class="text-sm font-bold text-base-content leading-tight">SimpleTask</p>
+            <p class="text-xs text-base-content/40">Admin Console</p>
+          </div>
+        </div>
+        <nav class="flex-1 px-3 py-5 overflow-y-auto">
+          <p class="px-3 mb-2 text-xs font-semibold uppercase tracking-widest text-base-content/35">Management</p>
+          <ul class="menu menu-sm p-0 gap-0.5">
+            <li>
+              <a href="/admin/" class="rounded-xl text-base-content/70 hover:bg-base-200">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"/>
+                </svg>
+                Users
+              </a>
+            </li>
+            <li>
+              <a href="/admin/payroll-settings.html" class="rounded-xl font-medium bg-primary/10 text-primary hover:bg-primary/15">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><circle cx="12" cy="12" r="3"/>
+                </svg>
+                Payroll Settings
+              </a>
+            </li>
+          </ul>
+          <div class="divider my-3 text-base-content/20"></div>
+          <p class="px-3 mb-2 text-xs font-semibold uppercase tracking-widest text-base-content/35">Application</p>
+          <ul class="menu menu-sm p-0 gap-0.5">
+            <li><a href="/" class="rounded-xl text-base-content/70"><svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>Main App</a></li>
+            <li><a href="/payroll/dashboard.html" class="rounded-xl text-base-content/70"><svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"/></svg>Payroll</a></li>
+          </ul>
+        </nav>
+        <div class="px-4 py-4 border-t border-base-300 shrink-0">
+          <div class="flex items-center gap-3">
+            <div class="avatar placeholder shrink-0">
+              <div class="bg-primary/15 text-primary rounded-full w-9">
+                <span id="sidebar-avatar" class="text-xs font-bold">AD</span>
+              </div>
+            </div>
+            <div class="min-w-0">
+              <p id="sidebar-username" class="text-sm font-semibold text-base-content truncate">Admin</p>
+              <p class="text-xs text-base-content/40">Administrator</p>
+            </div>
+          </div>
+        </div>
+      </aside>
+    </div>
+  </div>
+
+  <!-- Edit Plan Modal -->
+  <dialog id="modal-plan" class="modal">
+    <div class="modal-box max-w-sm">
+      <h3 class="font-bold text-lg mb-4">Edit Plan</h3>
+      <input type="hidden" id="plan-id" />
+      <div class="space-y-3">
+        <div class="form-control">
+          <label class="label py-1"><span class="label-text text-sm">Plan Name</span></label>
+          <input type="text" id="plan-name" class="input input-bordered input-sm" />
+        </div>
+        <div class="grid grid-cols-2 gap-3">
+          <div class="form-control">
+            <label class="label py-1"><span class="label-text text-sm">Max Companies</span></label>
+            <input type="number" min="1" id="plan-maxCo" class="input input-bordered input-sm font-mono" />
+          </div>
+          <div class="form-control">
+            <label class="label py-1"><span class="label-text text-sm">Max Employees</span></label>
+            <input type="number" min="1" id="plan-maxEmp" class="input input-bordered input-sm font-mono" />
+          </div>
+        </div>
+        <div class="form-control">
+          <label class="label py-1"><span class="label-text text-sm">Price / month ($)</span></label>
+          <input type="number" min="0" step="0.01" id="plan-price" class="input input-bordered input-sm font-mono" />
+        </div>
+        <div class="form-control">
+          <label class="label py-1"><span class="label-text text-sm">Description</span></label>
+          <input type="text" id="plan-desc" class="input input-bordered input-sm" />
+        </div>
+        <div class="flex items-center gap-2">
+          <input type="checkbox" id="plan-active" class="checkbox checkbox-sm checkbox-primary" />
+          <label for="plan-active" class="text-sm">Active</label>
+        </div>
+        <div id="plan-error" class="alert alert-error text-sm py-2 hidden"></div>
+      </div>
+      <div class="modal-action">
+        <button id="btnSavePlan" class="btn btn-primary btn-sm">Save</button>
+        <form method="dialog"><button class="btn btn-ghost btn-sm">Cancel</button></form>
+      </div>
+    </div>
+    <form method="dialog" class="modal-backdrop"><button>close</button></form>
+  </dialog>
+
+  <script src="/admin/admin.js"></script>
+  <script>
+    var currentSection = 'rates';
+    var currentRates = null;
+    var plans = [];
+
+    function showSection(s) {
+      currentSection = s;
+      document.getElementById('section-rates').classList.toggle('hidden', s !== 'rates');
+      document.getElementById('section-plans').classList.toggle('hidden', s !== 'plans');
+      document.getElementById('tab-rates').classList.toggle('border-primary', s === 'rates');
+      document.getElementById('tab-rates').classList.toggle('border-transparent', s !== 'rates');
+      document.getElementById('tab-plans').classList.toggle('border-primary', s === 'plans');
+      document.getElementById('tab-plans').classList.toggle('border-transparent', s !== 'plans');
+    }
+
+    // ── Rates ──────────────────────────────────────────────────────────────
+    function loadRates(year) {
+      fetch('/api/admin/payroll-settings/rates?year=' + year, { credentials: 'same-origin' })
+        .then(function(r) { return r.ok ? r.json() : null; })
+        .then(function(d) {
+          if (!d) return;
+          currentRates = d;
+          document.getElementById('r-cppRate').value     = d.cppRate;
+          document.getElementById('r-ympe').value        = d.ympe;
+          document.getElementById('r-ybe').value         = d.ybe;
+          document.getElementById('r-cppMaxEe').value    = d.cppMaxEe;
+          document.getElementById('r-cpp2Rate').value    = d.cpp2Rate;
+          document.getElementById('r-yampe').value       = d.yampe;
+          document.getElementById('r-cpp2MaxEe').value   = d.cpp2MaxEe;
+          document.getElementById('r-eiRate').value      = d.eiRate;
+          document.getElementById('r-eiRateQc').value    = d.eiRateQc;
+          document.getElementById('r-maxInsurable').value = d.maxInsurable;
+          document.getElementById('r-eiMaxEe').value     = d.eiMaxEe;
+          document.getElementById('r-eiMaxEeQc').value   = d.eiMaxEeQc;
+          document.getElementById('r-eiErFactor').value  = d.eiErFactor;
+          document.getElementById('r-federalBpa').value  = d.federalBpa;
+        });
+    }
+
+    document.getElementById('rateYear').addEventListener('change', function() {
+      loadRates(this.value);
+      document.getElementById('ratesSavedMsg').classList.add('hidden');
+    });
+
+    document.getElementById('btnSaveRates').addEventListener('click', function() {
+      var year = parseInt(document.getElementById('rateYear').value, 10);
+      var body = {
+        year:         year,
+        cppRate:      parseFloat(document.getElementById('r-cppRate').value),
+        ympe:         parseFloat(document.getElementById('r-ympe').value),
+        ybe:          parseFloat(document.getElementById('r-ybe').value),
+        cppMaxEe:     parseFloat(document.getElementById('r-cppMaxEe').value),
+        cpp2Rate:     parseFloat(document.getElementById('r-cpp2Rate').value),
+        yampe:        parseFloat(document.getElementById('r-yampe').value),
+        cpp2MaxEe:    parseFloat(document.getElementById('r-cpp2MaxEe').value),
+        eiRate:       parseFloat(document.getElementById('r-eiRate').value),
+        eiRateQc:     parseFloat(document.getElementById('r-eiRateQc').value),
+        maxInsurable: parseFloat(document.getElementById('r-maxInsurable').value),
+        eiMaxEe:      parseFloat(document.getElementById('r-eiMaxEe').value),
+        eiMaxEeQc:    parseFloat(document.getElementById('r-eiMaxEeQc').value),
+        eiErFactor:   parseFloat(document.getElementById('r-eiErFactor').value),
+        federalBpa:   parseFloat(document.getElementById('r-federalBpa').value),
+      };
+      fetch('/api/admin/payroll-settings/rates', {
+        method: 'PUT', credentials: 'same-origin',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body)
+      }).then(function(r) {
+        if (!r.ok) return r.text().then(function(t) { throw new Error(t); });
+        document.getElementById('ratesSavedMsg').classList.remove('hidden');
+        setTimeout(function() { document.getElementById('ratesSavedMsg').classList.add('hidden'); }, 3000);
+      }).catch(function(err) { alert('Save failed: ' + err.message); });
+    });
+
+    document.getElementById('btnResetRates').addEventListener('click', function() {
+      if (!confirm('Reset to 2025 CRA defaults?')) return;
+      // Reload without DB override by deleting — just re-fetch (defaults are returned if no row)
+      loadRates(document.getElementById('rateYear').value);
+    });
+
+    // ── Plans ──────────────────────────────────────────────────────────────
+    function loadPlans() {
+      fetch('/api/admin/payroll-settings/plans', { credentials: 'same-origin' })
+        .then(function(r) { return r.ok ? r.json() : []; })
+        .then(function(list) { plans = list || []; renderPlans(); });
+    }
+
+    function renderPlans() {
+      var grid = document.getElementById('plansGrid');
+      if (!plans.length) {
+        grid.innerHTML = '<p class="text-sm text-base-content/40">No plans found.</p>';
+        return;
+      }
+      grid.innerHTML = plans.map(function(p) {
+        var priceLabel = p.priceMonthly === 0 ? '<span class="text-success font-bold">Free</span>' :
+          '<span class="font-bold">$' + p.priceMonthly.toFixed(2) + '</span><span class="text-xs text-base-content/50">/month</span>';
+        var activeBadge = p.isActive
+          ? '<span class="badge badge-success badge-xs">Active</span>'
+          : '<span class="badge badge-ghost badge-xs">Inactive</span>';
+        return '<div class="border border-base-300 rounded-xl p-4 flex items-start justify-between gap-3">' +
+          '<div class="flex-1">' +
+            '<div class="flex items-center gap-2 mb-1">' +
+              '<p class="font-bold text-sm">' + esc(p.name) + '</p>' + activeBadge +
+            '</div>' +
+            '<p class="text-sm text-base-content/60 mb-2">' + esc(p.description) + '</p>' +
+            '<div class="flex gap-4 text-xs text-base-content/50">' +
+              '<span>🏢 ' + p.maxCompanies + ' compan' + (p.maxCompanies === 1 ? 'y' : 'ies') + '</span>' +
+              '<span>👤 ' + p.maxEmployees + ' employee' + (p.maxEmployees === 1 ? '' : 's') + '</span>' +
+            '</div>' +
+          '</div>' +
+          '<div class="flex flex-col items-end gap-2">' +
+            '<div class="text-right">' + priceLabel + '</div>' +
+            '<button class="btn btn-xs btn-ghost" onclick="openPlanModal(\'' + esc(p.id) + '\')">Edit</button>' +
+          '</div>' +
+        '</div>';
+      }).join('');
+    }
+
+    function openPlanModal(id) {
+      var p = plans.find(function(x) { return x.id === id; });
+      if (!p) return;
+      document.getElementById('plan-id').value      = p.id;
+      document.getElementById('plan-name').value    = p.name;
+      document.getElementById('plan-maxCo').value   = p.maxCompanies;
+      document.getElementById('plan-maxEmp').value  = p.maxEmployees;
+      document.getElementById('plan-price').value   = p.priceMonthly;
+      document.getElementById('plan-desc').value    = p.description;
+      document.getElementById('plan-active').checked = p.isActive;
+      document.getElementById('plan-error').classList.add('hidden');
+      document.getElementById('modal-plan').showModal();
+    }
+
+    document.getElementById('btnSavePlan').addEventListener('click', function() {
+      var body = {
+        id:           document.getElementById('plan-id').value,
+        name:         document.getElementById('plan-name').value.trim(),
+        maxCompanies: parseInt(document.getElementById('plan-maxCo').value, 10),
+        maxEmployees: parseInt(document.getElementById('plan-maxEmp').value, 10),
+        priceMonthly: parseFloat(document.getElementById('plan-price').value),
+        description:  document.getElementById('plan-desc').value.trim(),
+        isActive:     document.getElementById('plan-active').checked,
+        sortOrder:    (plans.find(function(p) { return p.id === document.getElementById('plan-id').value; }) || {}).sortOrder || 0,
+      };
+      fetch('/api/admin/payroll-settings/plans', {
+        method: 'PUT', credentials: 'same-origin',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body)
+      }).then(function(r) {
+        if (!r.ok) return r.text().then(function(t) { throw new Error(t); });
+        return r.json();
+      }).then(function(list) {
+        plans = list || [];
+        renderPlans();
+        document.getElementById('modal-plan').close();
+      }).catch(function(err) {
+        var el = document.getElementById('plan-error');
+        el.textContent = err.message;
+        el.classList.remove('hidden');
+      });
+    });
+
+    function esc(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+    // ── Init ───────────────────────────────────────────────────────────────
+    // Auth guard is handled by admin.js initDashboard; we piggyback by running both.
+    // Set year selector to current year
+    var curYear = new Date().getFullYear().toString();
+    document.getElementById('rateYear').value = curYear;
+
+    loadRates(curYear);
+    loadPlans();
+  </script>
+</body>
+</html>

@@ -1173,5 +1173,51 @@ func ensureEmployeeExtraColumns(db *sql.DB) error {
 			}
 		}
 	}
+
+	// ── Payroll Rate Settings ────────────────────────────────────────
+	if _, err := db.Exec(`CREATE TABLE IF NOT EXISTS payroll_rate_settings (
+		year          INTEGER PRIMARY KEY,
+		cpp_rate      REAL    NOT NULL DEFAULT 0.0595,
+		ympe          REAL    NOT NULL DEFAULT 71300,
+		ybe           REAL    NOT NULL DEFAULT 3500,
+		cpp_max_ee    REAL    NOT NULL DEFAULT 4034.10,
+		cpp2_rate     REAL    NOT NULL DEFAULT 0.04,
+		yampe         REAL    NOT NULL DEFAULT 81200,
+		cpp2_max_ee   REAL    NOT NULL DEFAULT 396.00,
+		ei_rate       REAL    NOT NULL DEFAULT 0.0164,
+		ei_rate_qc    REAL    NOT NULL DEFAULT 0.0131,
+		max_insurable REAL    NOT NULL DEFAULT 65700,
+		ei_max_ee     REAL    NOT NULL DEFAULT 1077.48,
+		ei_max_ee_qc  REAL    NOT NULL DEFAULT 860.67,
+		ei_er_factor  REAL    NOT NULL DEFAULT 1.4,
+		federal_bpa   REAL    NOT NULL DEFAULT 16129,
+		updated_at    TEXT    NOT NULL DEFAULT ''
+	)`); err != nil {
+		return err
+	}
+
+	// ── Payroll Plans ────────────────────────────────────────────────
+	if _, err := db.Exec(`CREATE TABLE IF NOT EXISTS payroll_plans (
+		id             TEXT    PRIMARY KEY,
+		name           TEXT    NOT NULL,
+		max_companies  INTEGER NOT NULL DEFAULT 1,
+		max_employees  INTEGER NOT NULL DEFAULT 3,
+		price_monthly  REAL    NOT NULL DEFAULT 0.0,
+		description    TEXT    NOT NULL DEFAULT '',
+		is_active      INTEGER NOT NULL DEFAULT 1,
+		sort_order     INTEGER NOT NULL DEFAULT 0
+	)`); err != nil {
+		return err
+	}
+	// Seed default plans if table is empty
+	var planCount int
+	_ = db.QueryRow(`SELECT COUNT(*) FROM payroll_plans`).Scan(&planCount)
+	if planCount == 0 {
+		_, _ = db.Exec(`INSERT INTO payroll_plans (id,name,max_companies,max_employees,price_monthly,description,sort_order) VALUES
+			('free','Free',1,3,0.0,'1 company · 3 employees · $0/month',0),
+			('lite','Lite',3,10,9.99,'3 companies · 10 employees · $9.99/month',1),
+			('pro','Pro',10,50,29.99,'10 companies · 50 employees · $29.99/month',2)`)
+	}
+
 	return nil
 }
