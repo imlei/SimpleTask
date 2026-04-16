@@ -871,6 +871,10 @@ table.data tbody tr:hover td {
   color: #4ade80;
 }
 
+.status-invoiced {
+  color: #60a5fa;
+}
+
 dialog {
   border: 1px solid var(--border);
   border-radius: 10px;

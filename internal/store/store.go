@@ -765,6 +765,14 @@ func (s *Store) CreateInvoice(inv models.Invoice) (models.Invoice, error) {
 	if err != nil {
 		return models.Invoice{}, err
 	}
+	// Mark all linked tasks as Invoiced so they no longer appear in the New Invoice list.
+	for _, tid := range invoiceLinkedTaskIDs(inv) {
+		if tid == "" {
+			continue
+		}
+		_, _ = s.db.Exec(`UPDATE tasks SET status=? WHERE id=? AND status=?`,
+			string(models.StatusInvoiced), tid, string(models.StatusDone))
+	}
 	return inv, nil
 }
 

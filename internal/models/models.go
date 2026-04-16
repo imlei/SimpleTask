@@ -13,10 +13,11 @@ type CompanyInfo struct {
 type TaskStatus string
 
 const (
-	StatusPending TaskStatus = "Pending"
-	StatusDone    TaskStatus = "Done"
-	StatusSent    TaskStatus = "Sent"
-	StatusPaid    TaskStatus = "Paid"
+	StatusPending  TaskStatus = "Pending"
+	StatusDone     TaskStatus = "Done"
+	StatusInvoiced TaskStatus = "Invoiced" // invoice created, not yet sent
+	StatusSent     TaskStatus = "Sent"
+	StatusPaid     TaskStatus = "Paid"
 )
 
 // Customer 客户（任务从客户中选择；公司名为任务上的具体名称）

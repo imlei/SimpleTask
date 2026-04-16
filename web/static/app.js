@@ -175,6 +175,9 @@ function renderTasks() {
     const canDelete = t.status === "Pending";
     const cust = escapeHtml(t.customerName || "");
     const cn = escapeHtml(t.companyName || "");
+    const statusCls = t.status === "Done" ? "status-done"
+                    : t.status === "Invoiced" ? "status-invoiced"
+                    : "status-pending";
     tr.innerHTML = `
       <td>${escapeHtml(t.id)}</td>
       <td>${cust}</td>
@@ -182,7 +185,7 @@ function renderTasks() {
       <td class="td-date">${escapeHtml(formatDisplayDate(t.date || ""))}</td>
       <td>${escapeHtml(t.service1 || "")}</td>
       <td>${fmtNum(t.price1)}</td>
-      <td><span class="${done ? "status-done" : "status-pending"}">${escapeHtml(t.status)}</span></td>
+      <td><span class="${statusCls}">${escapeHtml(t.status)}</span></td>
       <td class="td-date">${escapeHtml(formatDisplayDate(t.completedAt || ""))}</td>
       <td>${escapeHtml(t.note || "")}</td>
       <td class="row-actions">
@@ -369,7 +372,7 @@ async function openTaskDialog(t, opts = {}) {
   }
   taskDialogInvoiceEdit = !!(opts && opts.invoiceEdit);
   const locked =
-    !!(t && (t.status === "Done" || t.status === "Sent" || t.status === "Paid") && !taskDialogInvoiceEdit);
+    !!(t && (t.status === "Done" || t.status === "Invoiced" || t.status === "Sent" || t.status === "Paid") && !taskDialogInvoiceEdit);
   lastOpenedTask = t || null;
   await ensureCustomersLoaded();
   await ensurePricesLoaded();
@@ -974,7 +977,7 @@ function renderInvoices() {
           alert("Paid 任务不可修改。");
           return;
         }
-        const ie = task.status === "Done" || task.status === "Sent";
+        const ie = task.status === "Done" || task.status === "Invoiced" || task.status === "Sent";
         openTaskDialog(task, { invoiceEdit: ie });
       } catch (err) {
         alert("加载任务失败: " + err.message);
