@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"strings"
 
+	"simpletask/internal/auth"
 	"simpletask/internal/models"
 	"simpletask/internal/store"
 )
@@ -66,6 +67,10 @@ func (s *Server) handlePayrollEmployees(w http.ResponseWriter, r *http.Request) 
 		}
 		if strings.TrimSpace(e.CompanyID) == "" {
 			http.Error(w, "companyId is required", http.StatusBadRequest)
+			return
+		}
+		if auth.RoleFromContext(r.Context()) == "user1" && s.Store.CountPayrollEmployees(e.CompanyID) >= 3 {
+			writeJSON(w, http.StatusForbidden, map[string]string{"error": "试用账户每家公司最多只能添加 3 名员工"})
 			return
 		}
 		e.Province = resolveProvince(e.Province)

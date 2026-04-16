@@ -405,6 +405,32 @@ func (c *Config) HandleUsers(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// HandleRegister POST /api/register — open registration, always creates a user1 account
+func (c *Config) HandleRegister(w http.ResponseWriter, r *http.Request) {
+	if c.Disabled {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "auth disabled"})
+		return
+	}
+	if r.Method != http.MethodPost {
+		w.WriteHeader(http.StatusMethodNotAllowed)
+		return
+	}
+	var body struct {
+		Username string `json:"username"`
+		Password string `json:"password"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	if err := c.Store.CreateUser(body.Username, body.Password, "user1"); err != nil {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": err.Error()})
+		return
+	}
+	setSessionCookieFor(c, w, body.Username)
+	writeJSON(w, http.StatusOK, map[string]any{"ok": true, "user": body.Username, "role": "user1"})
+}
+
 // Register registers all auth-related routes.
 func Register(mux *http.ServeMux, c *Config) {
 	mux.HandleFunc("/api/login", c.HandleLogin)
@@ -413,6 +439,7 @@ func Register(mux *http.ServeMux, c *Config) {
 	mux.HandleFunc("/api/me", c.HandleMe)
 	mux.HandleFunc("/api/auth/password", c.HandleChangePassword)
 	mux.HandleFunc("/api/users", c.HandleUsers)
+	mux.HandleFunc("/api/register", c.HandleRegister)
 }
 
 func isPublicPath(c *Config, path string, r *http.Request) bool {
@@ -448,6 +475,9 @@ func isPublicPath(c *Config, path string, r *http.Request) bool {
 		return true
 	}
 	if path == "/api/login" && r.Method == http.MethodPost {
+		return true
+	}
+	if path == "/api/register" && r.Method == http.MethodPost {
 		return true
 	}
 	if path == "/api/logout" && r.Method == http.MethodPost {

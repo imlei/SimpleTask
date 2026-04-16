@@ -256,6 +256,14 @@ func (s *Store) decryptSINMasked(sinEnc string) string {
 	return sinMask(plain)
 }
 
+func (s *Store) CountPayrollEmployees(companyID string) int {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	var n int
+	_ = s.db.QueryRow(`SELECT COUNT(*) FROM payroll_employees WHERE company_id = ? AND status != 'terminated'`, companyID).Scan(&n)
+	return n
+}
+
 func (s *Store) nextEmployeeID() string {
 	rows, err := s.db.Query(`SELECT id FROM payroll_employees WHERE id LIKE 'EMP%'`)
 	if err != nil {

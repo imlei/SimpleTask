@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"strings"
 
+	"simpletask/internal/auth"
 	"simpletask/internal/models"
 	"simpletask/internal/store"
 )
@@ -23,6 +24,10 @@ func (s *Server) handlePayrollCompanies(w http.ResponseWriter, r *http.Request) 
 		writeJSON(w, http.StatusOK, list)
 
 	case http.MethodPost:
+		if auth.RoleFromContext(r.Context()) == "user1" && s.Store.CountPayrollCompanies() >= 1 {
+			writeJSON(w, http.StatusForbidden, map[string]string{"error": "试用账户最多只能创建 1 家公司"})
+			return
+		}
 		var c models.PayrollCompany
 		if err := json.NewDecoder(r.Body).Decode(&c); err != nil {
 			http.Error(w, err.Error(), http.StatusBadRequest)

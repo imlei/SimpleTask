@@ -7,19 +7,49 @@
   <link rel="stylesheet" href="/style.css" />
 </head>
 <body class="login-page">
-  <main class="login-card">
-    <div id="login-brand-logo" class="login-brand-logo" hidden></div>
-    <h1 id="login-title">SimpleTask</h1>
-    <p class="login-sub">请登录后继续</p>
-    <form id="form-login">
-      <label>用户名 <input id="login-user" name="username" autocomplete="username" required /></label>
-      <label>密码 <input id="login-pass" name="password" type="password" autocomplete="current-password" required /></label>
-      <p id="login-err" class="login-err" hidden></p>
-      <div class="dlg-actions login-actions">
-        <button type="submit" class="primary">登录</button>
+  <div class="login-wrap">
+    <main class="login-card">
+      <div id="login-brand-logo" class="login-brand-logo" hidden></div>
+      <h1 id="login-title">SimpleTask</h1>
+
+      <div class="login-tabs">
+        <button type="button" class="login-tab active" id="tab-login" onclick="switchTab('login')">登录</button>
+        <button type="button" class="login-tab" id="tab-reg" onclick="switchTab('reg')">注册试用</button>
       </div>
-    </form>
-  </main>
+
+      <!-- Login form -->
+      <div id="panel-login">
+        <p class="login-sub">请登录后继续</p>
+        <form id="form-login">
+          <label>用户名 <input id="login-user" name="username" autocomplete="username" required /></label>
+          <label>密码 <input id="login-pass" name="password" type="password" autocomplete="current-password" required /></label>
+          <p id="login-err" class="login-err" hidden></p>
+          <div class="dlg-actions login-actions">
+            <button type="submit" class="primary">登录</button>
+          </div>
+        </form>
+      </div>
+
+      <!-- Register form -->
+      <div id="panel-reg" hidden>
+        <p class="login-sub">免费注册，体验 Payroll 功能（限 1 家公司 / 3 名员工）</p>
+        <form id="form-reg">
+          <label>用户名 <input id="reg-user" name="username" autocomplete="username" required minlength="3" maxlength="40" /></label>
+          <label>密码 <input id="reg-pass" name="password" type="password" autocomplete="new-password" required /></label>
+          <label>确认密码 <input id="reg-pass2" name="password2" type="password" autocomplete="new-password" required /></label>
+          <p id="reg-err" class="login-err" hidden></p>
+          <p id="reg-ok" class="login-ok" hidden></p>
+          <div class="dlg-actions login-actions">
+            <button type="submit" class="primary">立即注册</button>
+          </div>
+        </form>
+      </div>
+    </main>
+
+    <footer class="login-disclaimer">
+      <p>⚠️ 本网站目前处于测试阶段，对于数据安全与完整性不承担任何责任。请勿上传真实敏感信息。</p>
+    </footer>
+  </div>
   <script src="/login.js"></script>
 </body>
 </html>

@@ -137,6 +137,14 @@ func (s *Store) DeletePayrollCompany(id string) error {
 	return nil
 }
 
+func (s *Store) CountPayrollCompanies() int {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	var n int
+	_ = s.db.QueryRow(`SELECT COUNT(*) FROM payroll_companies`).Scan(&n)
+	return n
+}
+
 func (s *Store) nextPayrollCompanyID() string {
 	rows, err := s.db.Query(`SELECT id FROM payroll_companies WHERE id LIKE 'PC%'`)
 	if err != nil {
