@@ -10,7 +10,13 @@ import (
 
 // ChequeData holds all fields needed to render a printable cheque.
 type ChequeData struct {
-	CompanyName string
+	// Issuer (company)
+	CompanyName     string
+	CompanyStreet   string
+	CompanyCity     string
+	CompanyProvince string
+	CompanyPostal   string
+	// Cheque fields
 	CheckNo     string
 	Date        string // display format: 2026/04/16
 	Payee       string
@@ -18,13 +24,13 @@ type ChequeData struct {
 	AmountWords string // e.g. "TWO THOUSAND FIVE HUNDRED AND 00/100 DOLLARS"
 	Memo        string
 	MICRLine    string
-	// Bank address block (printed on stub / remittance)
+	// Bank info (printed on cheque face and stub)
 	BankName       string
 	BankAddress    string
 	BankCity       string
 	BankProvince   string
 	BankPostalCode string
-	// Pass-through for template logic
+	// Pass-through
 	Currency string
 }
 

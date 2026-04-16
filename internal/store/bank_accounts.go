@@ -245,19 +245,31 @@ func incrementChequeString(s string) string {
 	return fmt.Sprintf("%0*d", width, n)
 }
 
-// GetPayrollCompanyName returns the name of a payroll company by ID.
-// Used by the writecheque service to resolve company name for the cheque header.
-func (s *Store) GetPayrollCompanyName(id string) (string, error) {
+// GetPayrollCompanyInfo returns name + address info for a payroll company.
+// Used by the writecheque service to populate the cheque header.
+func (s *Store) GetPayrollCompanyInfo(id string) (models.CompanyInfo, error) {
 	id = strings.TrimSpace(id)
 	if id == "" {
-		return "", ErrNotFound
+		return models.CompanyInfo{}, ErrNotFound
 	}
-	var name string
-	err := s.db.QueryRow(`SELECT COALESCE(name,'') FROM payroll_companies WHERE id=?`, id).Scan(&name)
+	var name, street, city, province, postal string
+	err := s.db.QueryRow(
+		`SELECT COALESCE(name,''), COALESCE(address,''), COALESCE(city,''), COALESCE(province,''), COALESCE(postal_code,'')
+		 FROM payroll_companies WHERE id=?`, id,
+	).Scan(&name, &street, &city, &province, &postal)
 	if errors.Is(err, sql.ErrNoRows) {
-		return "", ErrNotFound
+		return models.CompanyInfo{}, ErrNotFound
 	}
-	return strings.TrimSpace(name), err
+	if err != nil {
+		return models.CompanyInfo{}, err
+	}
+	return models.CompanyInfo{
+		Name:     strings.TrimSpace(name),
+		Street:   strings.TrimSpace(street),
+		City:     strings.TrimSpace(city),
+		Province: strings.TrimSpace(province),
+		Postal:   strings.TrimSpace(postal),
+	}, nil
 }
 
 // GetAppSettingsCompanyName returns the global company name from app_settings.

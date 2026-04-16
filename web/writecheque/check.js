@@ -321,10 +321,14 @@ async function deleteBankAccount() {
 // ── Menu / panel switching ────────────────────────────────────────────────────
 
 function activateMenu(tab) {
-  ["write","list","add"].forEach(t => {
-    const btn = get(`menu-${t === "write" ? "write-cheque" : t === "list" ? "bank-list" : "bank-add"}`);
-    const panel = get(`panel-${t === "write" ? "write-cheque" : t === "list" ? "bank-list" : "bank-add"}-main`);
-    if (btn) btn.classList.toggle("active", t === tab);
+  const map = {
+    write: { btn: "menu-write-cheque",  panel: "panel-write-cheque-main" },
+    list:  { btn: "menu-bank-list",     panel: "panel-bank-list-main" },
+    add:   { btn: "menu-bank-add",      panel: "panel-bank-add-main" },
+  };
+  Object.entries(map).forEach(([t, ids]) => {
+    get(ids.btn)?.classList.toggle("active", t === tab);
+    const panel = get(ids.panel);
     if (panel) panel.hidden = t !== tab;
   });
   if (tab === "write") refreshPreview();

@@ -10,8 +10,6 @@ import (
 )
 
 // Params are the query parameters for building a ChequeData.
-// They can come from URL query string (manual entry) or be assembled
-// from a payroll period (see FromPeriod).
 type Params struct {
 	BankID   string
 	Payee    string
@@ -26,7 +24,7 @@ type Params struct {
 type Store interface {
 	GetBankAccount(id string) (models.BankAccount, error)
 	GetDefaultBankAccount() (models.BankAccount, error)
-	GetPayrollCompanyName(id string) (string, error)
+	GetPayrollCompanyInfo(id string) (models.CompanyInfo, error)
 	GetAppSettingsCompanyName() string
 }
 
@@ -43,13 +41,13 @@ func Build(st Store, p Params) (ChequeData, error) {
 		return ChequeData{}, fmt.Errorf("bank account: %w", err)
 	}
 
-	// Company name: prefer bank-linked payroll company, then global settings
-	companyName := ""
+	// Company info: prefer bank-linked payroll company, then global settings
+	var company models.CompanyInfo
 	if strings.TrimSpace(bank.CompanyID) != "" {
-		companyName, _ = st.GetPayrollCompanyName(bank.CompanyID)
+		company, _ = st.GetPayrollCompanyInfo(bank.CompanyID)
 	}
-	if companyName == "" {
-		companyName = st.GetAppSettingsCompanyName()
+	if company.Name == "" {
+		company.Name = st.GetAppSettingsCompanyName()
 	}
 
 	checkNo := strings.TrimSpace(p.CheckNo)
@@ -86,20 +84,24 @@ func Build(st Store, p Params) (ChequeData, error) {
 	)
 
 	return ChequeData{
-		CompanyName:    companyName,
-		CheckNo:        checkNo,
-		Date:           displayDate,
-		Payee:          strings.TrimSpace(p.Payee),
-		AmountBox:      FormatAmountBox(p.Amount, currency),
-		AmountWords:    AmountToWords(p.Amount),
-		Memo:           strings.TrimSpace(p.Memo),
-		MICRLine:       micrLine,
-		Currency:       currency,
-		BankName:       bank.BankName,
-		BankAddress:    bank.BankAddress,
-		BankCity:       bank.BankCity,
-		BankProvince:   bank.BankProvince,
-		BankPostalCode: bank.BankPostalCode,
+		CompanyName:     company.Name,
+		CompanyStreet:   company.Street,
+		CompanyCity:     company.City,
+		CompanyProvince: company.Province,
+		CompanyPostal:   company.Postal,
+		CheckNo:         checkNo,
+		Date:            displayDate,
+		Payee:           strings.TrimSpace(p.Payee),
+		AmountBox:       FormatAmountBox(p.Amount, currency),
+		AmountWords:     AmountToWords(p.Amount),
+		Memo:            strings.TrimSpace(p.Memo),
+		MICRLine:        micrLine,
+		Currency:        currency,
+		BankName:        bank.BankName,
+		BankAddress:     bank.BankAddress,
+		BankCity:        bank.BankCity,
+		BankProvince:    bank.BankProvince,
+		BankPostalCode:  bank.BankPostalCode,
 	}, nil
 }
 

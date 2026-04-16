@@ -1,5 +1,14 @@
 package models
 
+// CompanyInfo holds the display info for a payroll company used in cheque rendering.
+type CompanyInfo struct {
+	Name     string
+	Street   string
+	City     string
+	Province string
+	Postal   string
+}
+
 // TaskStatus 任务状态（避免手写拼写错误，如 Penging）
 type TaskStatus string
 

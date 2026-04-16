@@ -9,36 +9,25 @@
     * { box-sizing: border-box; }
     body { margin: 0; font-family: "Segoe UI", system-ui, sans-serif; background: var(--bg); color: var(--text); }
 
-    .layout {
-      max-width: 1320px;
-      margin: 0 auto;
-      padding: 12px 16px 24px;
-      display: grid;
-      grid-template-columns: 280px minmax(0, 1fr);
-      gap: 14px;
-      align-items: start;
+    /* ── Top tab bar ── */
+    .page-wrap { max-width: 1320px; margin: 0 auto; padding: 12px 16px 24px; }
+    .tab-bar {
+      display: flex; gap: 4px; margin-bottom: 14px;
+      border-bottom: 2px solid var(--border); padding-bottom: 0;
     }
-    .sidebar {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      box-shadow: 0 1px 3px rgba(0,0,0,.06);
-      padding: 12px;
-      position: sticky;
-      top: 12px;
+    .tab-bar button {
+      padding: 7px 16px; border: 1px solid transparent;
+      border-bottom: none; border-radius: 6px 6px 0 0;
+      background: transparent; cursor: pointer;
+      color: var(--muted); font-weight: 600; font-size: 13px;
+      position: relative; bottom: -2px;
     }
-    .side-menu { display: flex; flex-direction: column; gap: 6px; margin-bottom: 12px; }
-    .side-menu button {
-      text-align: left; padding: 8px 10px;
-      border: 1px solid var(--border); background: var(--bg);
-      border-radius: 6px; cursor: pointer; color: var(--text); font-weight: 600;
-    }
-    .side-menu button.active {
-      background: rgba(126,91,239,.2);
-      border-color: var(--link-accent); color: #fff;
+    .tab-bar button.active {
+      background: var(--surface); color: var(--text);
+      border-color: var(--border); border-bottom-color: var(--surface);
     }
     .content-panel {
-      border: 1px solid var(--border); border-radius: 8px;
+      border: 1px solid var(--border); border-radius: 0 8px 8px 8px;
       background: var(--surface); padding: 12px; margin-bottom: 12px;
     }
     .content-panel h3 { margin: 0 0 10px; font-size: .95rem; color: var(--text); }
@@ -109,10 +98,6 @@
     }
     .bank-field-us[hidden], .bank-field-ca[hidden], .bank-field-eu[hidden] { display: none !important; }
 
-    @media (max-width: 1024px) {
-      .layout { grid-template-columns: 1fr; }
-      .sidebar { position: static; }
-    }
     @media (max-width: 1200px) {
       .bank-item-row { grid-template-columns: 1fr 1fr; }
       .bank-row-actions { grid-column: 1 / -1; justify-content: flex-start; }
@@ -120,14 +105,13 @@
   </style>
 </head>
 <body>
-<div class="layout">
-  <aside class="sidebar">
-    <div class="side-menu">
-      <button type="button" id="menu-write-cheque">Write Cheque</button>
-      <button type="button" id="menu-bank-list" class="active">Bank Account List</button>
-      <button type="button" id="menu-bank-add">Add New Acct</button>
-    </div>
-  </aside>
+<div class="page-wrap">
+  <!-- Tab bar -->
+  <div class="tab-bar">
+    <button type="button" id="menu-bank-list" class="active">Bank Accounts</button>
+    <button type="button" id="menu-write-cheque">Write Cheque</button>
+    <button type="button" id="menu-bank-add">Add / Edit Acct</button>
+  </div>
 
   <div class="main-pane">
 
@@ -256,8 +240,8 @@
       </div>
     </section>
 
-  </div>
-</div>
+  </div><!-- .main-pane -->
+</div><!-- .page-wrap -->
 <script src="/writecheque/check.js"></script>
 </body>
 </html>
