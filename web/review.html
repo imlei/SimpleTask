@@ -80,10 +80,6 @@
           <div class="flex items-center justify-between px-4 pt-4 pb-2">
             <h2 class="font-semibold text-sm">Employee Summary</h2>
             <div class="flex gap-2">
-              <a id="btnExportCSV" href="#" class="btn btn-ghost btn-xs gap-1">
-                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
-                Export CSV
-              </a>
             </div>
           </div>
           <table class="table table-sm">
@@ -280,7 +276,6 @@
       document.getElementById('nav-payrules').href  = withC('pay-rules.html');
       document.getElementById('backBrand').href     = withC('run-payroll.html');
       document.getElementById('backLink').href      = withP('salaries.html');
-      document.getElementById('btnExportCSV').href  = '/api/payroll/export/csv?period_id=' + encodeURIComponent(periodId);
 
       var allEntries   = [];
       var periodStatus = '';
@@ -327,9 +322,13 @@
 
       // ── Summary table ─────────────────────────────────────────────────────
       function renderSummaryTable(list) {
+        // Only show calculated / finalized entries; hide drafts
+        list = list.filter(function(e) {
+          return e.status === 'calculated' || e.status === 'finalized';
+        });
         var tbody = document.getElementById('reviewTbody');
         if (!list.length) {
-          tbody.innerHTML = '<tr><td colspan="10" class="text-center py-6 text-base-content/40">No entries. Run Calculate first.</td></tr>';
+          tbody.innerHTML = '<tr><td colspan="10" class="text-center py-6 text-base-content/40">No calculated entries yet. Go back to Salaries, approve employees, then Calculate.</td></tr>';
           return;
         }
 
@@ -355,7 +354,8 @@
             ? '<span class="badge badge-info badge-xs">Calculated</span>'
             : '<span class="badge badge-ghost badge-xs">Draft</span>';
 
-          return '<tr class="hover cursor-pointer" data-idx="' + i + '">' +
+          var aidx = allEntries.findIndex(function(a) { return a.id === e.id; });
+          return '<tr class="hover cursor-pointer" data-idx="' + aidx + '">' +
             '<td class="font-medium text-sm text-primary hover:underline">' + esc(e.employeeName || e.employeeId) + '</td>' +
             '<td class="text-right font-mono text-xs">' + fmtH(e.hours) + '</td>' +
             '<td class="text-right font-mono text-xs">' + fmt(e.grossPay) + '</td>' +
@@ -397,8 +397,8 @@
         var hasCalculated = list.some(function(e) {
           return e.status === 'calculated' || e.status === 'finalized';
         });
-        var hasDraft = list.some(function(e) {
-          return !e.status || e.status === 'draft';
+        var hasDraft = allEntries.some(function(e) {
+          return !e.status || e.status === 'draft' || e.status === 'approved';
         });
         var btnNext = document.getElementById('btnNext');
         if (!hasCalculated) {
