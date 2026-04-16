@@ -164,9 +164,9 @@
       border-top: 2px dashed #999; margin: 0;
     }
 
-    /* ── Stubs: each 3.67in ── */
+    /* ── Stubs: 3.665in each → total 3.67+3.665+3.665 = 11.00in ── */
     .check-stub {
-      height: 3.67in;
+      height: 3.665in;
       padding: 0.2in 0.45in 0.15in;
       display: flex; flex-direction: column;
     }
@@ -211,6 +211,13 @@
       border-bottom: 1px solid #e0e0e0;
     }
     .stub-blank-row:last-child { border-bottom: none; }
+
+    @page { size: letter portrait; margin: 0; }
+    @media print {
+      html, body { background: #fff; overflow: hidden; }
+      .check-sheet { border: none; margin: 0; overflow: hidden; }
+      .check-face { page-break-inside: avoid; }
+    }
 
   </style>
 </head>

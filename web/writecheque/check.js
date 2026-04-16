@@ -402,10 +402,17 @@ async function init() {
   get("menu-bank-list")?.addEventListener("click", () => activateMenu("list"));
   get("menu-bank-add")?.addEventListener("click", () => { clearBankForm(); activateMenu("add"); });
 
-  // Toolbar buttons
+  // Toolbar buttons — open preview in a dedicated popup so @page margin:0
+  // is honoured reliably (iframe.contentWindow.print() can still inherit
+  // browser default margins and headers/footers in some Chrome versions).
   get("btn-print")?.addEventListener("click", () => {
-    const iframe = get("cheque-preview");
-    if (iframe?.contentWindow) iframe.contentWindow.print();
+    const url = previewURL();
+    const w = window.open(url, "cheque_print",
+      "width=1000,height=900,toolbar=0,location=0,menubar=0,status=0");
+    if (!w) { alert("请允许此网站弹出窗口，然后重试。"); return; }
+    w.addEventListener("load", () => {
+      setTimeout(() => { w.focus(); w.print(); }, 300);
+    });
   });
   get("btn-cheque-next")?.addEventListener("click", saveChequeNext);
 
