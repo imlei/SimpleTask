@@ -132,6 +132,7 @@ internal/
   │    ├── service/          # Payroll 服务层 (生成、快照、文档)
   │    └── repository/       # Payroll 数据库操作
   ├── Invoicing/             # Invoicing的生成和管理模块
+  ├── writecheque/           # 写支票的功能
   ├── task/                  # 任务管理模块
   ├── employee/              # 员工与 Contractor 管理 + TD1
   ├── config/                # tax_rates_2026.json 等配置
