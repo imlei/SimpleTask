@@ -17,6 +17,7 @@ import (
 
 var (
 	ErrNotFound         = errors.New("not found")
+	ErrForbidden        = errors.New("access denied")
 	ErrTaskLocked       = errors.New("task locked")
 	ErrTaskPaidLocked   = errors.New("paid task cannot be modified")
 	ErrTaskDeleteLocked = errors.New("only pending tasks can be deleted")

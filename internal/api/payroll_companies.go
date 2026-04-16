@@ -11,20 +11,40 @@ import (
 	"simpletask/internal/store"
 )
 
+// checkCompanyAccess verifies the current user may access companyID.
+// Writes 404 or 403 and returns false on failure.
+func (s *Server) checkCompanyAccess(w http.ResponseWriter, r *http.Request, companyID string) bool {
+	username := auth.UsernameFromContext(r.Context())
+	role := auth.RoleFromContext(r.Context())
+	_, err := s.Store.GetPayrollCompanyForUser(username, role, companyID)
+	if errors.Is(err, store.ErrNotFound) {
+		http.NotFound(w, r)
+		return false
+	}
+	if errors.Is(err, store.ErrForbidden) {
+		http.Error(w, "access denied", http.StatusForbidden)
+		return false
+	}
+	return err == nil
+}
+
 // GET  /api/payroll/companies?status=active|all
 // POST /api/payroll/companies
 func (s *Server) handlePayrollCompanies(w http.ResponseWriter, r *http.Request) {
+	username := auth.UsernameFromContext(r.Context())
+	role := auth.RoleFromContext(r.Context())
+
 	switch r.Method {
 	case http.MethodGet:
 		statusFilter := strings.TrimSpace(r.URL.Query().Get("status"))
 		if statusFilter == "" {
 			statusFilter = "active"
 		}
-		list := s.Store.ListPayrollCompanies(statusFilter)
+		list := s.Store.ListPayrollCompanies(username, role, statusFilter)
 		writeJSON(w, http.StatusOK, list)
 
 	case http.MethodPost:
-		if auth.RoleFromContext(r.Context()) == "user1" && s.Store.CountPayrollCompanies() >= 1 {
+		if role == "user1" && s.Store.CountPayrollCompanies(username, role) >= 1 {
 			writeJSON(w, http.StatusForbidden, map[string]string{"error": "试用账户最多只能创建 1 家公司"})
 			return
 		}
@@ -37,7 +57,7 @@ func (s *Server) handlePayrollCompanies(w http.ResponseWriter, r *http.Request) 
 			http.Error(w, "name is required", http.StatusBadRequest)
 			return
 		}
-		created := s.Store.CreatePayrollCompany(c)
+		created := s.Store.CreatePayrollCompany(username, c)
 		writeJSON(w, http.StatusCreated, created)
 
 	default:
@@ -50,6 +70,9 @@ func (s *Server) handlePayrollCompanies(w http.ResponseWriter, r *http.Request) 
 // PUT    /api/payroll/companies/{id}
 // DELETE /api/payroll/companies/{id}
 func (s *Server) handlePayrollCompanyByID(w http.ResponseWriter, r *http.Request) {
+	username := auth.UsernameFromContext(r.Context())
+	role := auth.RoleFromContext(r.Context())
+
 	rest := strings.TrimPrefix(r.URL.Path, "/api/payroll/companies/")
 	parts := strings.SplitN(rest, "/", 2)
 	id := strings.TrimSpace(parts[0])
@@ -60,6 +83,9 @@ func (s *Server) handlePayrollCompanyByID(w http.ResponseWriter, r *http.Request
 
 	// Sub-route: /summary
 	if len(parts) == 2 && parts[1] == "summary" && r.Method == http.MethodGet {
+		if !s.checkCompanyAccess(w, r, id) {
+			return
+		}
 		sum, err := s.Store.GetCompanySummary(id)
 		if errors.Is(err, store.ErrNotFound) {
 			http.NotFound(w, r)
@@ -75,9 +101,13 @@ func (s *Server) handlePayrollCompanyByID(w http.ResponseWriter, r *http.Request
 
 	switch r.Method {
 	case http.MethodGet:
-		c, err := s.Store.GetPayrollCompany(id)
+		c, err := s.Store.GetPayrollCompanyForUser(username, role, id)
 		if errors.Is(err, store.ErrNotFound) {
 			http.NotFound(w, r)
+			return
+		}
+		if errors.Is(err, store.ErrForbidden) {
+			http.Error(w, "access denied", http.StatusForbidden)
 			return
 		}
 		if err != nil {
@@ -96,9 +126,13 @@ func (s *Server) handlePayrollCompanyByID(w http.ResponseWriter, r *http.Request
 			http.Error(w, "name is required", http.StatusBadRequest)
 			return
 		}
-		updated, err := s.Store.UpdatePayrollCompany(id, patch)
+		updated, err := s.Store.UpdatePayrollCompany(username, role, id, patch)
 		if errors.Is(err, store.ErrNotFound) {
 			http.NotFound(w, r)
+			return
+		}
+		if errors.Is(err, store.ErrForbidden) {
+			http.Error(w, "access denied", http.StatusForbidden)
 			return
 		}
 		if err != nil {
@@ -108,9 +142,13 @@ func (s *Server) handlePayrollCompanyByID(w http.ResponseWriter, r *http.Request
 		writeJSON(w, http.StatusOK, updated)
 
 	case http.MethodDelete:
-		if err := s.Store.DeletePayrollCompany(id); err != nil {
+		if err := s.Store.DeletePayrollCompany(username, role, id); err != nil {
 			if errors.Is(err, store.ErrNotFound) {
 				http.NotFound(w, r)
+				return
+			}
+			if errors.Is(err, store.ErrForbidden) {
+				http.Error(w, "access denied", http.StatusForbidden)
 				return
 			}
 			http.Error(w, err.Error(), http.StatusInternalServerError)

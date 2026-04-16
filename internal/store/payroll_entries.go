@@ -108,6 +108,19 @@ func (s *Store) UpsertPayrollEntry(e models.PayrollEntry) (models.PayrollEntry, 
 }
 
 // ListPayrollEntries returns all entries for a period, joined with employee name.
+// GetPayrollEntry returns a single entry by ID (used for ownership checks).
+func (s *Store) GetPayrollEntry(id string) (models.PayrollEntry, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	var e models.PayrollEntry
+	err := s.db.QueryRow(`SELECT id, period_id, employee_id, company_id FROM payroll_entries WHERE id=?`, id).
+		Scan(&e.ID, &e.PeriodID, &e.EmployeeID, &e.CompanyID)
+	if err != nil {
+		return e, ErrNotFound
+	}
+	return e, nil
+}
+
 func (s *Store) ListPayrollEntries(periodID string) []models.PayrollEntry {
 	s.mu.Lock()
 	defer s.mu.Unlock()

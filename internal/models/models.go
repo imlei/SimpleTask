@@ -135,7 +135,7 @@ type ExpenseCodeRow struct {
 	BalanceYear int     `json:"balanceYear"`
 }
 
-// PayrollCompany Payroll 模块中管理的公司（单用户可管理多家公司）
+// PayrollCompany Payroll 模块中管理的公司（每家公司归属某个用户账号）
 type PayrollCompany struct {
 	ID             string `json:"id"`
 	Name           string `json:"name"`           // 常用名 / 显示名
@@ -149,6 +149,7 @@ type PayrollCompany struct {
 	Status         string `json:"status"`        // active | inactive
 	CreatedAt      string `json:"createdAt,omitempty"`
 	UpdatedAt      string `json:"updatedAt,omitempty"`
+	OwnerUsername  string `json:"-"` // 归属用户，不暴露给前端
 }
 
 // MemberType 员工/承包商类型

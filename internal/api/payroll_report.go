@@ -2,10 +2,13 @@ package api
 
 import (
 	"encoding/csv"
+	"errors"
 	"fmt"
 	"net/http"
 	"strings"
 	"time"
+
+	"simpletask/internal/store"
 )
 
 // GET /api/payroll/report/period-summary?period_id=PP00001
@@ -17,6 +20,14 @@ func (s *Server) handleReportPeriodSummary(w http.ResponseWriter, r *http.Reques
 	periodID := strings.TrimSpace(r.URL.Query().Get("period_id"))
 	if periodID == "" {
 		http.Error(w, "period_id is required", http.StatusBadRequest)
+		return
+	}
+	p, err := s.Store.GetPayrollPeriod(periodID)
+	if errors.Is(err, store.ErrNotFound) {
+		http.NotFound(w, r)
+		return
+	}
+	if !s.checkCompanyAccess(w, r, p.CompanyID) {
 		return
 	}
 	sm := s.Store.GetPeriodSummary(periodID)
@@ -33,6 +44,9 @@ func (s *Server) handleReportRemittance(w http.ResponseWriter, r *http.Request) 
 	month := strings.TrimSpace(r.URL.Query().Get("month"))
 	if companyID == "" {
 		http.Error(w, "company_id is required", http.StatusBadRequest)
+		return
+	}
+	if !s.checkCompanyAccess(w, r, companyID) {
 		return
 	}
 	if month == "" {
@@ -107,8 +121,15 @@ func (s *Server) handleExportCSV(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	period, pErr := s.Store.GetPayrollPeriod(periodID)
+	if errors.Is(pErr, store.ErrNotFound) {
+		http.NotFound(w, r)
+		return
+	}
+	if !s.checkCompanyAccess(w, r, period.CompanyID) {
+		return
+	}
 	entries := s.Store.ListPayrollEntries(periodID)
-	period, _ := s.Store.GetPayrollPeriod(periodID)
 
 	fname := fmt.Sprintf("payroll-%s-%s.csv", periodID, period.PayDate)
 	w.Header().Set("Content-Type", "text/csv; charset=utf-8")

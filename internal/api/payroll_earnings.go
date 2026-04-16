@@ -19,6 +19,9 @@ func (s *Server) handleEarningsCodes(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, "company_id required", http.StatusBadRequest)
 			return
 		}
+		if !s.checkCompanyAccess(w, r, companyID) {
+			return
+		}
 		// Auto-seed system codes if company has none yet
 		s.Store.EnsureSystemCodes(companyID)
 		list := s.Store.ListEarningsCodes(companyID)
@@ -32,6 +35,9 @@ func (s *Server) handleEarningsCodes(w http.ResponseWriter, r *http.Request) {
 		}
 		if strings.TrimSpace(c.CompanyID) == "" {
 			http.Error(w, "companyId required", http.StatusBadRequest)
+			return
+		}
+		if !s.checkCompanyAccess(w, r, c.CompanyID) {
 			return
 		}
 		if strings.TrimSpace(c.Name) == "" {
@@ -120,6 +126,9 @@ func (s *Server) handleCompanyRules(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "company_id required", http.StatusBadRequest)
 		return
 	}
+	if !s.checkCompanyAccess(w, r, companyID) {
+		return
+	}
 	switch r.Method {
 	case http.MethodGet:
 		rules := s.Store.GetCompanyRules(companyID)
@@ -155,6 +164,16 @@ func (s *Server) handleEntryEarnings(w http.ResponseWriter, r *http.Request) {
 	entryID := strings.TrimSpace(parts[0])
 	if entryID == "" {
 		http.NotFound(w, r)
+		return
+	}
+
+	// Verify ownership via entry → company_id
+	entry, err := s.Store.GetPayrollEntry(entryID)
+	if err != nil {
+		http.NotFound(w, r)
+		return
+	}
+	if !s.checkCompanyAccess(w, r, entry.CompanyID) {
 		return
 	}
 

@@ -930,9 +930,44 @@ CREATE TABLE IF NOT EXISTS payroll_companies (
   pay_frequency TEXT NOT NULL DEFAULT 'biweekly',
   status TEXT NOT NULL DEFAULT 'active',
   created_at TEXT NOT NULL DEFAULT '',
-  updated_at TEXT NOT NULL DEFAULT ''
+  updated_at TEXT NOT NULL DEFAULT '',
+  owner_username TEXT NOT NULL DEFAULT ''
 );`)
-	return err
+	if err != nil {
+		return err
+	}
+	return migratePayrollCompaniesOwner(db)
+}
+
+// migratePayrollCompaniesOwner adds owner_username column if missing,
+// then assigns any unowned companies to the primary admin account.
+func migratePayrollCompaniesOwner(db *sql.DB) error {
+	rows, err := db.Query(`PRAGMA table_info(payroll_companies)`)
+	if err != nil {
+		return err
+	}
+	hasOwner := false
+	for rows.Next() {
+		var cid, notnull, pk int
+		var name, ctype string
+		var dflt sql.NullString
+		if rows.Scan(&cid, &name, &ctype, &notnull, &dflt, &pk) == nil && name == "owner_username" {
+			hasOwner = true
+		}
+	}
+	rows.Close()
+	if !hasOwner {
+		if _, err := db.Exec(`ALTER TABLE payroll_companies ADD COLUMN owner_username TEXT NOT NULL DEFAULT ''`); err != nil {
+			return err
+		}
+	}
+	// Assign orphaned companies (owner_username='') to the primary admin.
+	var adminName string
+	_ = db.QueryRow(`SELECT username FROM app_user WHERE id=1`).Scan(&adminName)
+	if adminName != "" {
+		_, _ = db.Exec(`UPDATE payroll_companies SET owner_username=? WHERE owner_username=''`, adminName)
+	}
+	return nil
 }
 
 func ensurePayrollPeriodsTable(db *sql.DB) error {

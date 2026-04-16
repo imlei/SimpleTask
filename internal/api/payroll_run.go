@@ -21,6 +21,9 @@ func (s *Server) handlePayrollPeriods(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, "company_id is required", http.StatusBadRequest)
 			return
 		}
+		if !s.checkCompanyAccess(w, r, companyID) {
+			return
+		}
 		list := s.Store.ListPayrollPeriods(companyID)
 		writeJSON(w, http.StatusOK, list)
 
@@ -32,6 +35,9 @@ func (s *Server) handlePayrollPeriods(w http.ResponseWriter, r *http.Request) {
 		}
 		if strings.TrimSpace(p.CompanyID) == "" {
 			http.Error(w, "companyId is required", http.StatusBadRequest)
+			return
+		}
+		if !s.checkCompanyAccess(w, r, p.CompanyID) {
 			return
 		}
 		if strings.TrimSpace(p.PayDate) == "" {
@@ -93,12 +99,24 @@ func (s *Server) handlePayrollPeriodByID(w http.ResponseWriter, r *http.Request)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
+	if !s.checkCompanyAccess(w, r, p.CompanyID) {
+		return
+	}
 	writeJSON(w, http.StatusOK, p)
 }
 
 // GET  /api/payroll/periods/{id}/entries   — list entries (with calculated values if calculated)
 // POST /api/payroll/periods/{id}/entries   — upsert entry (gross pay / hours input)
 func (s *Server) handlePeriodEntries(w http.ResponseWriter, r *http.Request, periodID string) {
+	p, err := s.Store.GetPayrollPeriod(periodID)
+	if errors.Is(err, store.ErrNotFound) {
+		http.NotFound(w, r)
+		return
+	}
+	if !s.checkCompanyAccess(w, r, p.CompanyID) {
+		return
+	}
+
 	switch r.Method {
 	case http.MethodGet:
 		entries := s.Store.ListPayrollEntries(periodID)
@@ -160,6 +178,9 @@ func (s *Server) handlePeriodCalculate(w http.ResponseWriter, r *http.Request, p
 		http.NotFound(w, r)
 		return
 	}
+	if !s.checkCompanyAccess(w, r, p.CompanyID) {
+		return
+	}
 	if p.Status == "finalized" {
 		http.Error(w, "period is already finalized", http.StatusConflict)
 		return
@@ -193,6 +214,9 @@ func (s *Server) handlePeriodFinalize(w http.ResponseWriter, r *http.Request, pe
 		http.NotFound(w, r)
 		return
 	}
+	if !s.checkCompanyAccess(w, r, p.CompanyID) {
+		return
+	}
 	if p.Status != "calculated" {
 		http.Error(w, "period must be in 'calculated' status before finalizing", http.StatusConflict)
 		return
@@ -223,6 +247,9 @@ func (s *Server) handleInitPeriodEntries(w http.ResponseWriter, r *http.Request)
 	p, err := s.Store.GetPayrollPeriod(periodID)
 	if errors.Is(err, store.ErrNotFound) {
 		http.NotFound(w, r)
+		return
+	}
+	if !s.checkCompanyAccess(w, r, p.CompanyID) {
 		return
 	}
 

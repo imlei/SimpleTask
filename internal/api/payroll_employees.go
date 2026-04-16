@@ -48,6 +48,9 @@ func (s *Server) handlePayrollEmployees(w http.ResponseWriter, r *http.Request) 
 			http.Error(w, "company_id is required", http.StatusBadRequest)
 			return
 		}
+		if !s.checkCompanyAccess(w, r, companyID) {
+			return
+		}
 		statusFilter := strings.TrimSpace(r.URL.Query().Get("status"))
 		if statusFilter == "" {
 			statusFilter = "active"
@@ -67,6 +70,9 @@ func (s *Server) handlePayrollEmployees(w http.ResponseWriter, r *http.Request) 
 		}
 		if strings.TrimSpace(e.CompanyID) == "" {
 			http.Error(w, "companyId is required", http.StatusBadRequest)
+			return
+		}
+		if !s.checkCompanyAccess(w, r, e.CompanyID) {
 			return
 		}
 		if auth.RoleFromContext(r.Context()) == "user1" && s.Store.CountPayrollEmployees(e.CompanyID) >= 3 {
@@ -109,9 +115,21 @@ func (s *Server) handlePayrollEmployeeByID(w http.ResponseWriter, r *http.Reques
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
+		if !s.checkCompanyAccess(w, r, e.CompanyID) {
+			return
+		}
 		writeJSON(w, http.StatusOK, e)
 
 	case http.MethodPut:
+		// Verify ownership before fetching patch
+		existing, err := s.Store.GetPayrollEmployee(id)
+		if errors.Is(err, store.ErrNotFound) {
+			http.NotFound(w, r)
+			return
+		}
+		if !s.checkCompanyAccess(w, r, existing.CompanyID) {
+			return
+		}
 		var patch models.PayrollEmployee
 		if err := json.NewDecoder(r.Body).Decode(&patch); err != nil {
 			http.Error(w, err.Error(), http.StatusBadRequest)
@@ -135,6 +153,15 @@ func (s *Server) handlePayrollEmployeeByID(w http.ResponseWriter, r *http.Reques
 		writeJSON(w, http.StatusOK, updated)
 
 	case http.MethodDelete:
+		// Verify ownership before soft-terminate
+		existing, err := s.Store.GetPayrollEmployee(id)
+		if errors.Is(err, store.ErrNotFound) {
+			http.NotFound(w, r)
+			return
+		}
+		if !s.checkCompanyAccess(w, r, existing.CompanyID) {
+			return
+		}
 		// Soft-terminate: CRA requires 6-year record retention (T4001 §8)
 		if err := s.Store.TerminatePayrollEmployee(id); err != nil {
 			if errors.Is(err, store.ErrNotFound) {
