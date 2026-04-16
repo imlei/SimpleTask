@@ -334,20 +334,32 @@ func (s *Server) handleInvoiceByID(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if len(parts) == 1 || parts[1] == "" {
-		if r.Method != http.MethodGet {
+		switch r.Method {
+		case http.MethodGet:
+			inv, err := s.Store.GetInvoice(invoiceID)
+			if errors.Is(err, store.ErrNotFound) {
+				http.NotFound(w, r)
+				return
+			}
+			if err != nil {
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+				return
+			}
+			writeJSON(w, http.StatusOK, inv)
+		case http.MethodDelete:
+			err := s.Store.DeleteInvoice(invoiceID)
+			if errors.Is(err, store.ErrNotFound) {
+				http.NotFound(w, r)
+				return
+			}
+			if err != nil {
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+				return
+			}
+			w.WriteHeader(http.StatusNoContent)
+		default:
 			w.WriteHeader(http.StatusMethodNotAllowed)
-			return
 		}
-		inv, err := s.Store.GetInvoice(invoiceID)
-		if errors.Is(err, store.ErrNotFound) {
-			http.NotFound(w, r)
-			return
-		}
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-		writeJSON(w, http.StatusOK, inv)
 		return
 	}
 	switch parts[1] {

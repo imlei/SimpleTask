@@ -776,6 +776,44 @@ func (s *Store) CreateInvoice(inv models.Invoice) (models.Invoice, error) {
 	return inv, nil
 }
 
+// DeleteInvoice removes the invoice and reverts linked tasks from Invoiced → Done.
+func (s *Store) DeleteInvoice(id string) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	id = strings.TrimSpace(id)
+	if id == "" {
+		return ErrNotFound
+	}
+	// Fetch linked task IDs before deleting.
+	var taskID, taskIDsJSON string
+	_ = s.db.QueryRow(`SELECT COALESCE(task_id,''), COALESCE(task_ids_json,'[]') FROM invoices WHERE id=?`, id).
+		Scan(&taskID, &taskIDsJSON)
+
+	res, err := s.db.Exec(`DELETE FROM invoices WHERE id=?`, id)
+	if err != nil {
+		return err
+	}
+	n, _ := res.RowsAffected()
+	if n == 0 {
+		return ErrNotFound
+	}
+	// Revert Invoiced tasks back to Done.
+	var tids []string
+	if err2 := json.Unmarshal([]byte(taskIDsJSON), &tids); err2 != nil || len(tids) == 0 {
+		if strings.TrimSpace(taskID) != "" {
+			tids = []string{strings.TrimSpace(taskID)}
+		}
+	}
+	for _, tid := range tids {
+		if tid == "" {
+			continue
+		}
+		_, _ = s.db.Exec(`UPDATE tasks SET status=? WHERE id=? AND status=?`,
+			string(models.StatusDone), tid, string(models.StatusInvoiced))
+	}
+	return nil
+}
+
 func (s *Store) GetInvoice(id string) (models.Invoice, error) {
 	var inv models.Invoice
 	var itemsJSON, taskIDsJSON string

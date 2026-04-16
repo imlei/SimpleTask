@@ -950,37 +950,21 @@ function renderInvoices() {
         <button type="button" class="ghost" data-act="open">打开</button>
         <button type="button" class="ghost" data-act="send">Send</button>
         <button type="button" class="ghost success" data-act="pay">收款</button>
-        ${
-          Number(inv.balanceDue) > 0
-            ? `<button type="button" class="ghost small" data-act="check">支票</button>`
-            : ""
-        }
-        <button type="button" class="ghost small" data-act="edit-task">编辑任务</button>
+        <button type="button" class="ghost small danger" data-act="delete-inv">删除</button>
       </td>`;
     tr.querySelector('[data-act="open"]').addEventListener("click", () => {
       window.open(`/invoice.html?id=${encodeURIComponent(inv.id)}`, "_blank");
     });
     tr.querySelector('[data-act="send"]').addEventListener("click", () => openSendInvoice(inv.id));
     tr.querySelector('[data-act="pay"]').addEventListener("click", () => openPayDialog(inv.id));
-    const chkBtn = tr.querySelector('[data-act="check"]');
-    if (chkBtn) {
-      chkBtn.addEventListener("click", () => {
-        window.open(`/writecheque/?id=${encodeURIComponent(inv.id)}`, "_blank");
-      });
-    }
-    tr.querySelector('[data-act="edit-task"]').addEventListener("click", async () => {
-      const tid = (inv.taskId || "").trim();
-      if (!tid) return;
+    tr.querySelector('[data-act="delete-inv"]').addEventListener("click", async () => {
+      if (!confirm(`删除发票 ${inv.invoiceNo}？\n关联任务状态将恢复为 Done。`)) return;
       try {
-        const task = await api(`/api/tasks/${encodeURIComponent(tid)}`);
-        if (task.status === "Paid") {
-          alert("Paid 任务不可修改。");
-          return;
-        }
-        const ie = task.status === "Done" || task.status === "Invoiced" || task.status === "Sent";
-        openTaskDialog(task, { invoiceEdit: ie });
+        await api(`/api/invoices/${encodeURIComponent(inv.id)}`, { method: "DELETE" });
+        await loadTasks();
+        await loadInvoices();
       } catch (err) {
-        alert("加载任务失败: " + err.message);
+        alert("删除失败: " + err.message);
       }
     });
     body.appendChild(tr);
