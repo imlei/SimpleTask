@@ -191,7 +191,7 @@ function renderTasks() {
   // 渲染当前页
   for (const t of pageRows) {
     const tr = document.createElement("tr");
-    const done = t.status === "Done";
+    const done = t.status === "Done" || t.status === "Invoiced";
     const canDelete = t.status === "Pending";
     const cust = escapeHtml(t.customerName || "");
     const cn = escapeHtml(t.companyName || "");
