@@ -52,6 +52,7 @@
           <a href="payrun.html" id="nav-payrun" class="btn btn-ghost btn-sm justify-start gap-2 font-normal w-full bg-primary/10 text-primary pl-5">Pay run</a>
           <a href="remittance.html" id="nav-remittance" class="btn btn-ghost btn-sm justify-start font-normal w-full pl-5">Remittance</a>
           <a href="cheques-payslips.html" id="nav-payslips" class="btn btn-ghost btn-sm justify-start font-normal w-full pl-5">Cheques / Payslips</a>
+          <a href="accountant/index.html" id="nav-accountant" class="btn btn-ghost btn-sm justify-start font-normal w-full pl-5">Accountant</a>
         </div>
         <a id="nav-employees" href="../employees.html" class="btn btn-ghost btn-sm justify-start gap-2 font-normal mt-1">
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
@@ -145,6 +146,7 @@
       document.getElementById('nav-employees').href = withC('../employees.html');
       document.getElementById('nav-remittance').href = 'remittance.html' + (companyId ? '?company=' + encodeURIComponent(companyId) : '');
       document.getElementById('nav-payslips').href   = 'cheques-payslips.html' + (companyId ? '?company=' + encodeURIComponent(companyId) : '');
+      document.getElementById('nav-accountant').href = 'accountant/index.html' + (companyId ? '?company=' + encodeURIComponent(companyId) : '');
       document.getElementById('nav-payrun').href     = 'payrun.html' + (companyId ? '?company=' + encodeURIComponent(companyId) : '');
 
       if (companyId) {

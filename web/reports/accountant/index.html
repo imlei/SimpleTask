@@ -3,68 +3,144 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Accountant — Payroll Works</title>
-    <link rel="stylesheet" href="../../employees-theme.css" />
-    <link rel="stylesheet" href="../../reports.css" />
+    <title>Accountant — SimpleTask Payroll</title>
+    <script>(function(){var t=localStorage.getItem('pw-theme')||(window.matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');document.documentElement.setAttribute('data-theme',t);})();</script>
+    <link href="/vendor/daisyui-themes.css" rel="stylesheet" />
+    <link href="/vendor/daisyui-components.css" rel="stylesheet" />
+    <script src="/vendor/tailwind-browser.js"></script>
+    <style type="text/tailwindcss">@import "tailwindcss";</style>
   </head>
-  <body class="pe-app">
-    <div class="pe-shell">
-      <header class="pe-topbar">
-        <div class="pe-brand">
-          <span>SimpleTask - Payroll</span>
-          <span class="sep">|</span>
-          <span class="sub">Payroll</span>
-          <span class="pe-flag">🇨🇦</span>
-          <span class="pe-tax-pill">2026</span>
-        </div>
-        <nav class="pe-topbar-nav">
-          <a href="../../run-payroll.html" class="pe-topbar-nav-item">Payroll</a>
-        </nav>
-        <div class="pe-topbar-right">
-          <span class="pe-badge-admin">Admin</span>
-          <span>RORO HOLDING LTD</span>
-          <button type="button" class="pe-icon-btn">🔔</button>
-          <button type="button" class="pe-icon-btn">?</button>
-          <div class="pe-avatar">LH</div>
-        </div>
-      </header>
+  <body class="bg-base-200 min-h-screen">
 
-      <div class="pe-strip">
-        <span style="opacity: 0.9">Payroll reports</span>
-        <span style="opacity: 0.85">Accountant</span>
+    <!-- Navbar -->
+    <div class="navbar bg-base-100 border-b border-base-300 px-4 min-h-12 sticky top-0 z-30 shadow-sm">
+      <div class="navbar-start gap-2">
+        <a id="backBrand" href="../../run-payroll.html" class="btn btn-ghost btn-sm text-base-content/60">←</a>
+        <span class="font-bold text-sm tracking-wide">SimpleTask - Payroll</span>
+        <span class="text-base">🇨🇦</span>
+        <span class="badge badge-ghost badge-sm font-mono" id="taxYear">2025</span>
       </div>
-
-      <aside class="pe-sidebar">
-        <a class="pe-nav" href="../../dashboard.html"><span>⌂</span> Home</a>
-        <a class="pe-nav" href="../../run-payroll.html"><span>▤</span> Run payroll</a>
-        <a class="pe-nav" href="#"><span>☰</span> Actions</a>
-        <div class="pe-nav-group">
-          <div class="pe-nav-heading">Reports</div>
-          <a class="pe-nav active" href="../payrun.html" style="margin: 0 0.5rem"><span>▦</span> Reports</a>
-          <div class="pe-nav-sub">
-            <a href="../payrun.html">Pay run</a>
-            <a href="../remittance.html">Remittance report</a>
-            <a href="../cheques-payslips.html">Cheques / payslips</a>
-            <a class="active" href="index.html">Accountant</a>
-          </div>
+      <div class="navbar-center">
+        <a id="nav-run" href="../../run-payroll.html" class="btn btn-ghost btn-sm font-medium">Payroll</a>
+      </div>
+      <div class="navbar-end gap-3">
+        <span class="text-sm text-base-content/60" id="companyName">—</span>
+        <button onclick="toggleTheme()" class="btn btn-ghost btn-sm btn-circle" title="Toggle dark mode">
+          <svg id="iconSun" class="w-4 h-4 hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364-6.364l-.707.707M6.343 17.657l-.707.707M17.657 17.657l-.707-.707M6.343 6.343l-.707-.707M12 5a7 7 0 100 14A7 7 0 0012 5z"/></svg>
+          <svg id="iconMoon" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/></svg>
+        </button>
+        <div class="avatar avatar-placeholder">
+          <div class="bg-primary text-primary-content rounded-full w-8 text-xs"><span id="topbar-avatar">PW</span></div>
         </div>
-        <a class="pe-nav" href="../../employees.html"><span>👤</span> Employees</a>
-        <span class="pe-nav spacer"></span>
-        <a class="pe-nav" href="#"><span>⚙</span> Settings</a>
+      </div>
+    </div>
+
+    <div class="flex">
+      <!-- Sidebar -->
+      <aside class="w-56 bg-base-100 border-r border-base-300 min-h-[calc(100vh-3rem)] hidden md:flex flex-col gap-1 p-3 shrink-0">
+        <a id="nav-home" href="../../dashboard.html" class="btn btn-ghost btn-sm justify-start gap-2 font-normal">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
+          Home
+        </a>
+        <a id="nav-runSide" href="../../run-payroll.html" class="btn btn-ghost btn-sm justify-start gap-2 font-normal">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
+          Run Payroll
+        </a>
+        <!-- Reports sub-nav -->
+        <div class="mt-1 flex flex-col">
+          <div class="text-xs font-semibold uppercase tracking-wider text-base-content/40 px-2 py-1 mb-0.5">Reports</div>
+          <a href="../payrun.html" id="nav-payrun" class="btn btn-ghost btn-sm justify-start font-normal w-full pl-5">Pay run</a>
+          <a href="../remittance.html" id="nav-remittance" class="btn btn-ghost btn-sm justify-start font-normal w-full pl-5">Remittance</a>
+          <a href="../cheques-payslips.html" id="nav-payslips" class="btn btn-ghost btn-sm justify-start font-normal w-full pl-5">Cheques / Payslips</a>
+          <a href="index.html" id="nav-accountant" class="btn btn-ghost btn-sm justify-start font-normal w-full pl-5 bg-primary/10 text-primary">Accountant</a>
+        </div>
+        <a id="nav-employees" href="../../employees.html" class="btn btn-ghost btn-sm justify-start gap-2 font-normal mt-1">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+          Employees
+        </a>
+
+        <!-- Sidebar Footer -->
+        <div class="mt-auto -mx-3 -mb-3 px-3 py-3 border-t border-base-300">
+          <p class="text-xs text-base-content/40 font-medium">SimpleTask v0.0.17</p>
+          <a href="https://github.com/imlei/SimpleTask/issues" target="_blank" rel="noopener"
+             class="text-xs text-base-content/40 hover:text-primary transition-colors">Report a bug</a>
+        </div>
       </aside>
 
-      <main class="pe-main">
-        <div class="pe-card" style="max-width: 560px">
-          <h2 style="margin-top: 0; border: none; padding: 0">Accountant reports</h2>
-          <p style="color: var(--pe-text-secondary); line-height: 1.5">
-            Placeholder for accountant-facing exports (trial balance, G/L mapping, working papers). Next iteration will list
-            report types and download links aligned with your chart of accounts.
-          </p>
-          <p style="margin-bottom: 0">
-            <a class="pe-link" href="../payrun.html">← Back to pay run</a>
-          </p>
+      <!-- Main -->
+      <main class="flex-1 p-4 md:p-6 min-w-0">
+
+        <div class="mb-6">
+          <h1 class="text-xl font-bold">Accountant Reports</h1>
+          <p class="text-sm text-base-content/60 mt-0.5">Payroll reports</p>
         </div>
+
+        <!-- Placeholder card -->
+        <div class="bg-base-100 rounded-xl shadow-sm border border-base-300 p-6 max-w-lg">
+          <div class="flex items-start gap-4">
+            <div class="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+              <svg class="w-5 h-5 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+            </div>
+            <div>
+              <h2 class="font-semibold text-base mb-1">Coming soon</h2>
+              <p class="text-sm text-base-content/60 leading-relaxed">
+                Accountant-facing exports — trial balance, G/L mapping, and working papers — will be available here.
+                The next iteration will list report types and download links aligned with your chart of accounts.
+              </p>
+              <a id="nav-back" href="../payrun.html" class="btn btn-ghost btn-sm mt-4 px-0 text-primary hover:bg-transparent">
+                ← Back to Pay run
+              </a>
+            </div>
+          </div>
+        </div>
+
       </main>
     </div>
+
+    <script>
+      function toggleTheme() {
+        var html = document.documentElement;
+        var next = html.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+        html.setAttribute('data-theme', next);
+        localStorage.setItem('pw-theme', next);
+        document.getElementById('iconSun').classList.toggle('hidden', next !== 'dark');
+        document.getElementById('iconMoon').classList.toggle('hidden', next === 'dark');
+      }
+      document.addEventListener('DOMContentLoaded', function() {
+        var isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+        document.getElementById('iconSun').classList.toggle('hidden', !isDark);
+        document.getElementById('iconMoon').classList.toggle('hidden', isDark);
+      });
+
+      var params    = new URLSearchParams(location.search);
+      var companyId = params.get('company') || '';
+
+      function withC(href) { return companyId ? href + '?company=' + encodeURIComponent(companyId) : href; }
+
+      document.getElementById('nav-home').href       = companyId ? '../../company.html?company=' + encodeURIComponent(companyId) : '../../dashboard.html';
+      document.getElementById('nav-run').href        = withC('../../run-payroll.html');
+      document.getElementById('nav-runSide').href    = withC('../../run-payroll.html');
+      document.getElementById('nav-employees').href  = withC('../../employees.html');
+      document.getElementById('nav-payrun').href     = withC('../payrun.html');
+      document.getElementById('nav-remittance').href = withC('../remittance.html');
+      document.getElementById('nav-payslips').href   = withC('../cheques-payslips.html');
+      document.getElementById('nav-back').href       = withC('../payrun.html');
+      document.getElementById('taxYear').textContent = new Date().getFullYear();
+
+      fetch('/api/me', { credentials: 'same-origin' })
+        .then(function(r) { return r.ok ? r.json() : null; })
+        .then(function(me) {
+          if (!me || !me.authenticated) { window.location.href = '/'; return; }
+          var av = document.getElementById('topbar-avatar');
+          if (av && me.user) av.textContent = me.user.slice(0, 2).toUpperCase();
+        })
+        .catch(function() {});
+
+      if (companyId) {
+        fetch('/api/payroll/companies/' + encodeURIComponent(companyId), { credentials: 'same-origin' })
+          .then(function(r) { return r.ok ? r.json() : null; })
+          .then(function(c) { if (c) document.getElementById('companyName').textContent = c.name || c.legalName; });
+      }
+    </script>
   </body>
 </html>

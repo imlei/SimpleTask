@@ -3,146 +3,197 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Cheques / Payslips — Payroll Works</title>
-    <link rel="stylesheet" href="../employees-theme.css" />
-    <link rel="stylesheet" href="../reports.css" />
+    <title>Cheques / Payslips — SimpleTask Payroll</title>
+    <script>(function(){var t=localStorage.getItem('pw-theme')||(window.matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');document.documentElement.setAttribute('data-theme',t);})();</script>
+    <link href="/vendor/daisyui-themes.css" rel="stylesheet" />
+    <link href="/vendor/daisyui-components.css" rel="stylesheet" />
+    <script src="/vendor/tailwind-browser.js"></script>
+    <style type="text/tailwindcss">@import "tailwindcss";</style>
   </head>
-  <body class="pe-app">
-    <div class="pe-shell">
-      <header class="pe-topbar">
-        <div class="pe-brand">
-          <span>SimpleTask - Payroll</span>
-          <span class="sep">|</span>
-          <span class="sub">Payroll</span>
-          <span class="pe-flag">🇨🇦</span>
-          <span class="pe-tax-pill" id="taxYear">2025</span>
-        </div>
-        <nav class="pe-topbar-nav">
-          <a href="../run-payroll.html" class="pe-topbar-nav-item" id="nav-run">Payroll</a>
-        </nav>
-        <div class="pe-topbar-right">
-          <span id="companyName">—</span>
-          <div class="pe-avatar">PW</div>
-        </div>
-      </header>
+  <body class="bg-base-200 min-h-screen">
 
-      <div class="pe-strip">
-        <span style="opacity: 0.9">Payroll reports</span>
-        <span style="opacity: 0.85">Cheques / payslips</span>
+    <!-- Navbar -->
+    <div class="navbar bg-base-100 border-b border-base-300 px-4 min-h-12 sticky top-0 z-30 shadow-sm">
+      <div class="navbar-start gap-2">
+        <a id="backBrand" href="../run-payroll.html" class="btn btn-ghost btn-sm text-base-content/60">←</a>
+        <span class="font-bold text-sm tracking-wide">SimpleTask - Payroll</span>
+        <span class="text-base">🇨🇦</span>
+        <span class="badge badge-ghost badge-sm font-mono" id="taxYear">2025</span>
       </div>
-
-      <aside class="pe-sidebar">
-        <a class="pe-nav" href="../dashboard.html" id="nav-home"><span>⌂</span> Home</a>
-        <a class="pe-nav" href="../run-payroll.html" id="nav-runSide"><span>▤</span> Run payroll</a>
-        <a class="pe-nav" href="#" onclick="return false"><span>☰</span> Actions</a>
-        <div class="pe-nav-group">
-          <div class="pe-nav-heading">Reports</div>
-          <a class="pe-nav active" href="payrun.html" style="margin: 0 0.5rem"><span>▦</span> Reports</a>
-          <div class="pe-nav-sub">
-            <a href="payrun.html" id="nav-payrun">Pay run</a>
-            <a href="remittance.html" id="nav-remittance">Remittance report</a>
-            <a class="active" href="cheques-payslips.html">Cheques / payslips</a>
-            <a href="accountant/index.html">Accountant</a>
-          </div>
+      <div class="navbar-center">
+        <a id="nav-run" href="../run-payroll.html" class="btn btn-ghost btn-sm font-medium">Payroll</a>
+      </div>
+      <div class="navbar-end gap-3">
+        <span class="text-sm text-base-content/60" id="companyName">—</span>
+        <button onclick="toggleTheme()" class="btn btn-ghost btn-sm btn-circle" title="Toggle dark mode">
+          <svg id="iconSun" class="w-4 h-4 hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364-6.364l-.707.707M6.343 17.657l-.707.707M17.657 17.657l-.707-.707M6.343 6.343l-.707-.707M12 5a7 7 0 100 14A7 7 0 0012 5z"/></svg>
+          <svg id="iconMoon" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/></svg>
+        </button>
+        <div class="avatar avatar-placeholder">
+          <div class="bg-primary text-primary-content rounded-full w-8 text-xs"><span id="topbar-avatar">PW</span></div>
         </div>
-        <a class="pe-nav" href="../employees.html" id="nav-employees"><span>👤</span> Employees</a>
+      </div>
+    </div>
+
+    <div class="flex">
+      <!-- Sidebar -->
+      <aside class="w-56 bg-base-100 border-r border-base-300 min-h-[calc(100vh-3rem)] hidden md:flex flex-col gap-1 p-3 shrink-0">
+        <a id="nav-home" href="../dashboard.html" class="btn btn-ghost btn-sm justify-start gap-2 font-normal">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
+          Home
+        </a>
+        <a id="nav-runSide" href="../run-payroll.html" class="btn btn-ghost btn-sm justify-start gap-2 font-normal">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
+          Run Payroll
+        </a>
+        <!-- Reports sub-nav -->
+        <div class="mt-1 flex flex-col">
+          <div class="text-xs font-semibold uppercase tracking-wider text-base-content/40 px-2 py-1 mb-0.5">Reports</div>
+          <a href="payrun.html" id="nav-payrun" class="btn btn-ghost btn-sm justify-start font-normal w-full pl-5">Pay run</a>
+          <a href="remittance.html" id="nav-remittance" class="btn btn-ghost btn-sm justify-start font-normal w-full pl-5">Remittance</a>
+          <a href="cheques-payslips.html" id="nav-payslips" class="btn btn-ghost btn-sm justify-start font-normal w-full pl-5 bg-primary/10 text-primary">Cheques / Payslips</a>
+          <a href="accountant/index.html" id="nav-accountant" class="btn btn-ghost btn-sm justify-start font-normal w-full pl-5">Accountant</a>
+        </div>
+        <a id="nav-employees" href="../employees.html" class="btn btn-ghost btn-sm justify-start gap-2 font-normal mt-1">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+          Employees
+        </a>
+
+        <!-- Sidebar Footer -->
+        <div class="mt-auto -mx-3 -mb-3 px-3 py-3 border-t border-base-300">
+          <p class="text-xs text-base-content/40 font-medium">SimpleTask v0.0.17</p>
+          <a href="https://github.com/imlei/SimpleTask/issues" target="_blank" rel="noopener"
+             class="text-xs text-base-content/40 hover:text-primary transition-colors">Report a bug</a>
+        </div>
       </aside>
 
-      <main class="pe-main">
-        <div class="pe-report-toolbar">
-          <h1>Cheques / Payslips</h1>
-          <div class="pe-report-filters">
-            <label for="periodSel">Pay period</label>
-            <select id="periodSel" aria-label="Pay period" style="min-width:220px">
+      <!-- Main -->
+      <main class="flex-1 p-4 md:p-6 min-w-0">
+
+        <!-- Page header + toolbar -->
+        <div class="flex flex-wrap items-center justify-between gap-3 mb-5">
+          <div>
+            <h1 class="text-xl font-bold">Cheques / Payslips</h1>
+            <p class="text-sm text-base-content/60 mt-0.5">Payroll reports</p>
+          </div>
+          <div class="flex items-center gap-2 flex-wrap">
+            <label class="text-sm text-base-content/60 whitespace-nowrap">Pay period</label>
+            <select id="periodSel" class="select select-bordered select-sm" style="min-width:220px">
               <option value="">— Select a period —</option>
             </select>
-            <button type="button" class="pe-btn" id="btnLoad">Load</button>
-            <a id="btnCSV" href="#" class="pe-btn pe-btn-primary" style="display:none" download>⬇ CSV export</a>
+            <button type="button" class="btn btn-outline btn-sm" id="btnLoad">Load</button>
+            <a id="btnCSV" href="#" class="btn btn-primary btn-sm gap-1 hidden" download>
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+              CSV export
+            </a>
           </div>
         </div>
 
-        <div class="pe-info" style="margin-bottom:1rem; max-width:720px">
-          Select a pay period to view individual pay stubs. Click <strong>📄 View</strong> on any employee to open
-          the printable pay stub — use <em>File → Print → Save as PDF</em> to produce a PDF copy.
+        <!-- Info banner -->
+        <div class="alert alert-info text-sm py-2 px-4 mb-5 max-w-2xl">
+          <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+          <span>Select a pay period to view individual pay stubs. Click <strong>View</strong> on any employee to open the printable pay stub — use <em>File → Print → Save as PDF</em> to produce a PDF copy.</span>
         </div>
 
-        <div class="pe-table-wrap">
-          <table class="pe-table">
+        <!-- Table -->
+        <div class="bg-base-100 rounded-xl shadow-sm border border-base-300">
+          <table class="table table-sm w-full">
             <thead>
-              <tr>
-                <th>#</th>
-                <th>Employee</th>
-                <th style="text-align:right">Hours</th>
-                <th style="text-align:right">Gross Pay</th>
-                <th style="text-align:right">Total Deductions</th>
-                <th style="text-align:right">Net Pay</th>
-                <th>Status</th>
-                <th>Payslip</th>
+              <tr class="bg-base-300/50 text-xs font-semibold text-base-content/60 uppercase tracking-wide border-b border-base-300">
+                <th class="pl-4 py-3 w-10">#</th>
+                <th class="py-3">Employee</th>
+                <th class="py-3 text-right">Hours</th>
+                <th class="py-3 text-right">Gross Pay</th>
+                <th class="py-3 text-right">Total Deductions</th>
+                <th class="py-3 text-right">Net Pay</th>
+                <th class="py-3">Status</th>
+                <th class="py-3 text-center w-20">Payslip</th>
               </tr>
             </thead>
             <tbody id="entriesTbody">
-              <tr><td colspan="8" style="padding:1rem;opacity:0.6">Select a pay period to load employees.</td></tr>
+              <tr><td colspan="8" class="text-center py-10 text-base-content/40 text-sm">Select a pay period to load employees.</td></tr>
             </tbody>
-            <tfoot>
-              <tr style="font-weight:700; background:var(--pe-row-alt)">
-                <td colspan="3" style="text-align:right">Totals:</td>
-                <td style="text-align:right; font-family:monospace" id="totGross">—</td>
-                <td style="text-align:right; font-family:monospace" id="totDed">—</td>
-                <td style="text-align:right; font-family:monospace" id="totNet">—</td>
+            <tfoot id="tableFooter" class="hidden">
+              <tr class="border-t border-base-300 font-bold text-sm">
+                <td colspan="3" class="pl-4 py-3 text-right text-base-content/60">Totals:</td>
+                <td class="py-3 text-right font-mono" id="totGross">—</td>
+                <td class="py-3 text-right font-mono" id="totDed">—</td>
+                <td class="py-3 text-right font-mono text-success" id="totNet">—</td>
                 <td colspan="2"></td>
               </tr>
             </tfoot>
           </table>
         </div>
+
       </main>
     </div>
 
     <script>
-      var params    = new URLSearchParams(location.search);
-      var companyId = params.get('company') || '';
+      function toggleTheme() {
+        var html = document.documentElement;
+        var next = html.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+        html.setAttribute('data-theme', next);
+        localStorage.setItem('pw-theme', next);
+        document.getElementById('iconSun').classList.toggle('hidden', next !== 'dark');
+        document.getElementById('iconMoon').classList.toggle('hidden', next === 'dark');
+      }
+      document.addEventListener('DOMContentLoaded', function() {
+        var isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+        document.getElementById('iconSun').classList.toggle('hidden', !isDark);
+        document.getElementById('iconMoon').classList.toggle('hidden', isDark);
+      });
+
+      var params     = new URLSearchParams(location.search);
+      var companyId  = params.get('company') || '';
       var initPeriod = params.get('period')  || '';
 
       function withC(href) { return companyId ? href + '?company=' + encodeURIComponent(companyId) : href; }
-      document.getElementById('nav-home').href       = companyId ? '../company.html?company=' + encodeURIComponent(companyId) : '../dashboard.html';
-      document.getElementById('nav-run').href        = withC('../run-payroll.html');
-      document.getElementById('nav-runSide').href    = withC('../run-payroll.html');
-      document.getElementById('nav-employees').href  = withC('../employees.html');
-      document.getElementById('nav-payrun').href     = 'payrun.html' + (companyId ? '?company=' + encodeURIComponent(companyId) : '');
-      document.getElementById('nav-remittance').href = 'remittance.html' + (companyId ? '?company=' + encodeURIComponent(companyId) : '');
-      document.getElementById('taxYear').textContent = new Date().getFullYear();
+
+      document.getElementById('nav-home').href        = companyId ? '../company.html?company=' + encodeURIComponent(companyId) : '../dashboard.html';
+      document.getElementById('nav-run').href         = withC('../run-payroll.html');
+      document.getElementById('nav-runSide').href     = withC('../run-payroll.html');
+      document.getElementById('nav-employees').href   = withC('../employees.html');
+      document.getElementById('nav-payrun').href      = withC('payrun.html');
+      document.getElementById('nav-remittance').href  = withC('remittance.html');
+      document.getElementById('nav-payslips').href    = withC('cheques-payslips.html');
+      document.getElementById('nav-accountant').href  = withC('accountant/index.html');
+      document.getElementById('taxYear').textContent  = new Date().getFullYear();
+
+      fetch('/api/me', { credentials: 'same-origin' })
+        .then(function(r) { return r.ok ? r.json() : null; })
+        .then(function(me) {
+          if (!me || !me.authenticated) { window.location.href = '/'; return; }
+          var av = document.getElementById('topbar-avatar');
+          if (av && me.user) av.textContent = me.user.slice(0, 2).toUpperCase();
+        })
+        .catch(function() {});
 
       if (companyId) {
         fetch('/api/payroll/companies/' + encodeURIComponent(companyId), { credentials: 'same-origin' })
-          .then(function (r) { return r.ok ? r.json() : null; })
-          .then(function (c) { if (c) document.getElementById('companyName').textContent = c.name || c.legalName; });
+          .then(function(r) { return r.ok ? r.json() : null; })
+          .then(function(c) { if (c) document.getElementById('companyName').textContent = c.name || c.legalName; });
 
         fetch('/api/payroll/periods?company_id=' + encodeURIComponent(companyId), { credentials: 'same-origin' })
-          .then(function (r) { return r.ok ? r.json() : []; })
-          .then(function (list) {
+          .then(function(r) { return r.ok ? r.json() : []; })
+          .then(function(list) {
             var sel = document.getElementById('periodSel');
-            // Only show finalized periods — these are the completed pay runs
-            var finalized = (list || []).filter(function (p) { return p.status === 'finalized'; });
-            finalized.forEach(function (p) {
+            var finalized = (list || []).filter(function(p) { return p.status === 'finalized'; });
+            finalized.forEach(function(p) {
               var opt = document.createElement('option');
               opt.value = p.id;
               opt.textContent = p.payDate + ' · ' + (p.periodStart || '') + ' – ' + (p.periodEnd || '');
               sel.appendChild(opt);
             });
-            // Auto-select: prefer initPeriod from URL, else most recent finalized
             var target = initPeriod || (finalized.length ? finalized[0].id : '');
-            if (target) {
-              sel.value = target;
-              loadEntries(target);
-            }
+            if (target) { sel.value = target; loadEntries(target); }
           });
       }
 
-      document.getElementById('periodSel').addEventListener('change', function () {
-        var pid = this.value;
-        if (pid) loadEntries(pid);
+      document.getElementById('periodSel').addEventListener('change', function() {
+        if (this.value) loadEntries(this.value);
       });
 
-      document.getElementById('btnLoad').addEventListener('click', function () {
+      document.getElementById('btnLoad').addEventListener('click', function() {
         var pid = document.getElementById('periodSel').value;
         if (pid) loadEntries(pid);
       });
@@ -152,40 +203,50 @@
       }
 
       function loadEntries(periodId) {
-        document.getElementById('btnCSV').href = '/api/payroll/export/csv?period_id=' + encodeURIComponent(periodId);
-        document.getElementById('btnCSV').style.display = 'inline-flex';
+        var csvBtn = document.getElementById('btnCSV');
+        csvBtn.href = '/api/payroll/export/csv?period_id=' + encodeURIComponent(periodId);
+        csvBtn.classList.remove('hidden');
 
         fetch('/api/payroll/periods/' + encodeURIComponent(periodId) + '/entries', { credentials: 'same-origin' })
-          .then(function (r) { return r.ok ? r.json() : []; })
-          .then(function (list) {
+          .then(function(r) { return r.ok ? r.json() : []; })
+          .then(function(list) {
             var tbody = document.getElementById('entriesTbody');
+            var tfoot = document.getElementById('tableFooter');
             if (!list || !list.length) {
-              tbody.innerHTML = '<tr><td colspan="8" style="padding:1rem;opacity:0.6">No entries for this period.</td></tr>';
+              tbody.innerHTML = '<tr><td colspan="8" class="text-center py-10 text-base-content/40 text-sm">No entries for this period.</td></tr>';
+              tfoot.classList.add('hidden');
               return;
             }
             var totGross = 0, totDed = 0, totNet = 0;
-            tbody.innerHTML = list.map(function (e, i) {
-              totGross += parseFloat(e.grossPay)||0;
-              totDed   += parseFloat(e.totalDeductions)||0;
-              totNet   += parseFloat(e.netPay)||0;
+            tbody.innerHTML = list.map(function(e, i) {
+              totGross += parseFloat(e.grossPay)       || 0;
+              totDed   += parseFloat(e.totalDeductions) || 0;
+              totNet   += parseFloat(e.netPay)          || 0;
               var stubHref = 'paystub.html?period=' + encodeURIComponent(periodId) +
                 '&employee=' + encodeURIComponent(e.employeeId) +
                 (companyId ? '&company=' + encodeURIComponent(companyId) : '');
-              var statusColor = e.status === 'approved' ? 'var(--pe-success)' : '#64748b';
-              return '<tr>' +
-                '<td class="mono" style="font-size:0.8rem">' + (i+1) + '</td>' +
-                '<td>' + (e.employeeName || e.employeeId) + '</td>' +
-                '<td style="text-align:right; font-family:monospace">' + (parseFloat(e.hours)||0).toFixed(2) + '</td>' +
-                '<td style="text-align:right; font-family:monospace">' + fmt(e.grossPay) + '</td>' +
-                '<td style="text-align:right; font-family:monospace">' + fmt(e.totalDeductions) + '</td>' +
-                '<td style="text-align:right; font-family:monospace; font-weight:600">' + fmt(e.netPay) + '</td>' +
-                '<td style="color:' + statusColor + '; font-size:0.8rem">' + (e.status||'') + '</td>' +
-                '<td><a href="' + stubHref + '" target="_blank" title="View payslip" class="pe-icon-action">📄</a></td>' +
+              var statusBadge = e.status === 'approved'
+                ? '<span class="badge badge-success badge-sm">approved</span>'
+                : '<span class="badge badge-ghost badge-sm">' + (e.status || '—') + '</span>';
+              return '<tr class="hover:bg-base-200/40 border-b border-base-200 last:border-0">' +
+                '<td class="pl-4 py-3 text-base-content/50 text-xs">' + (i + 1) + '</td>' +
+                '<td class="py-3 font-medium text-sm">' + (e.employeeName || e.employeeId) + '</td>' +
+                '<td class="py-3 text-right font-mono text-sm">' + (parseFloat(e.hours)||0).toFixed(2) + '</td>' +
+                '<td class="py-3 text-right font-mono text-sm">' + fmt(e.grossPay) + '</td>' +
+                '<td class="py-3 text-right font-mono text-sm">' + fmt(e.totalDeductions) + '</td>' +
+                '<td class="py-3 text-right font-mono text-sm font-semibold text-success">' + fmt(e.netPay) + '</td>' +
+                '<td class="py-3">' + statusBadge + '</td>' +
+                '<td class="py-3 text-center">' +
+                  '<a href="' + stubHref + '" target="_blank" title="View payslip" class="btn btn-ghost btn-xs btn-square tooltip" data-tip="View payslip">' +
+                    '<svg class="w-4 h-4 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>' +
+                  '</a>' +
+                '</td>' +
                 '</tr>';
             }).join('');
             document.getElementById('totGross').textContent = fmt(totGross);
             document.getElementById('totDed').textContent   = fmt(totDed);
             document.getElementById('totNet').textContent   = fmt(totNet);
+            tfoot.classList.remove('hidden');
           });
       }
     </script>
