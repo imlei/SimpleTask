@@ -1428,7 +1428,8 @@ document.getElementById("btn-invoicing-go")?.addEventListener("click", async () 
   if (selected.length === 0) return;
   const custIds = new Set(selected.map((t) => (t.customerId || "").trim()));
   if (custIds.size !== 1 || [...custIds][0] === "") return;
-  await ensurePricesLoaded(); // 需要 pricesCache 来判断每个 task 的货币
+  await ensureCustomersLoaded(); // 确保 customersCache 有完整客户名用于 Bill To
+  await ensurePricesLoaded();   // 需要 pricesCache 来判断每个 task 的货币
   openInvoiceDialogMulti(selected);
 });
 
