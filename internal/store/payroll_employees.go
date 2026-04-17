@@ -94,7 +94,7 @@ func (s *Store) CreatePayrollEmployee(e models.PayrollEmployee) (models.PayrollE
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	e.ID = s.nextEmployeeID()
+	e.ID = s.nextEmployeeID(e.CompanyID)
 	now := time.Now().UTC().Format(time.RFC3339)
 	e.CreatedAt = now
 	e.UpdatedAt = now
@@ -264,8 +264,8 @@ func (s *Store) CountPayrollEmployees(companyID string) int {
 	return n
 }
 
-func (s *Store) nextEmployeeID() string {
-	rows, err := s.db.Query(`SELECT id FROM payroll_employees WHERE id LIKE 'EMP%'`)
+func (s *Store) nextEmployeeID(companyID string) string {
+	rows, err := s.db.Query(`SELECT id FROM payroll_employees WHERE company_id = ? AND id LIKE 'EMP%'`, companyID)
 	if err != nil {
 		return "EMP00001"
 	}

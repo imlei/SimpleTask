@@ -84,7 +84,7 @@ func (s *Store) CreatePayrollPeriod(p models.PayrollPeriod) models.PayrollPeriod
 		_, _ = s.db.Exec(`DELETE FROM payroll_periods WHERE id = ?`, id)
 	}
 
-	p.ID = s.nextPeriodID()
+	p.ID = s.nextPeriodID(p.CompanyID)
 	now := time.Now().UTC().Format(time.RFC3339)
 	p.CreatedAt = now
 	p.UpdatedAt = now
@@ -124,8 +124,8 @@ func (s *Store) UpdatePayrollPeriodStatus(id, status string) error {
 	return nil
 }
 
-func (s *Store) nextPeriodID() string {
-	rows, err := s.db.Query(`SELECT id FROM payroll_periods WHERE id LIKE 'PP%'`)
+func (s *Store) nextPeriodID(companyID string) string {
+	rows, err := s.db.Query(`SELECT id FROM payroll_periods WHERE company_id = ? AND id LIKE 'PP%'`, companyID)
 	if err != nil {
 		return "PP00001"
 	}
