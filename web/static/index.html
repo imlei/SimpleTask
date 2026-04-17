@@ -4,76 +4,228 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>SimpleTask</title>
-  <link rel="stylesheet" href="/style.css" />
-</head>
-<body>
-  <header class="top">
-    <div class="top-inner">
-      <div class="top-brand">
-        <div id="app-header-logo" class="app-header-logo" hidden></div>
-        <h1 id="app-title">SimpleTask</h1>
-        <span class="app-version" aria-label="version" id="app-version"></span>
-      </div>
-      <div class="top-actions">
-        <a href="/settings.html" class="top-nav-link" id="link-settings">Settings</a>
-        <button type="button" id="btn-logout" class="ghost" hidden>退出登录</button>
-      </div>
-    </div>
-    <nav class="tabs">
-      <button type="button" class="tab active" data-tab="tasks">Tasks</button>
-      <button type="button" class="tab" data-tab="trend">Trend</button>
-      <button type="button" class="tab" data-tab="invoices">Invoicing</button>
-      <button type="button" class="tab" data-tab="report">报表 Report</button>
-      <button type="button" class="tab" data-tab="prices">价目表 Price list</button>
-      <button type="button" class="tab" data-tab="expense">Expense</button>
-      <button type="button" class="tab" data-tab="exchange">Exchange Rate</button>
-      <button type="button" class="tab" data-tab="cheque">Print Cheque</button>
-      <a href="/payroll/dashboard.html" class="tab">Payroll</a>
-    </nav>
-  </header>
+  <script>(function(){var t=localStorage.getItem('st-theme')||(window.matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light');document.documentElement.setAttribute('data-theme',t);})();</script>
+  <link href="/vendor/daisyui-themes.css" rel="stylesheet" />
+  <link href="/vendor/daisyui-components.css" rel="stylesheet" />
+  <script src="/vendor/tailwind-browser.js"></script>
+  <style type="text/tailwindcss">
+    @import "tailwindcss";
 
-  <main>
+    /* Tab strip */
+    .app-tab {
+      padding: 0.6rem 1rem;
+      font-size: 0.8rem;
+      font-weight: 500;
+      color: oklch(var(--bc) / 0.55);
+      border-bottom: 2px solid transparent;
+      cursor: pointer;
+      white-space: nowrap;
+      background: none;
+      border-top: none; border-left: none; border-right: none;
+      transition: color 0.15s, border-color 0.15s;
+    }
+    .app-tab:hover { color: oklch(var(--bc)); }
+    .app-tab.active {
+      color: oklch(var(--p));
+      border-bottom-color: oklch(var(--p));
+      font-weight: 600;
+    }
+
+    /* Panel visibility */
+    .panel { display: none; }
+    .panel.active { display: block; }
+
+    /* Row action cell */
+    .row-actions { display: flex; align-items: center; gap: 3px; justify-content: flex-end; }
+    .td-date { font-family: monospace; font-size: 0.78rem; white-space: nowrap; }
+
+    /* Dialogs */
+    dialog { @apply rounded-xl shadow-2xl; max-width: min(90vw, 520px); width: 100%; padding: 0; }
+    dialog::backdrop { background: rgba(0,0,0,0.55); }
+    .dlg-head { @apply bg-primary text-primary-content px-5 py-4; }
+    .dlg-head h2 { @apply text-base font-bold m-0; }
+    .dlg-body { @apply px-5 py-4; }
+    dialog form label {
+      @apply block mb-3 text-sm font-medium text-base-content;
+    }
+    dialog form label input:not([type=checkbox]),
+    dialog form label textarea {
+      @apply block w-full mt-1 input input-bordered input-sm;
+    }
+    dialog form label textarea { @apply textarea textarea-bordered h-20 !important; }
+    dialog form label select { @apply block w-full mt-1 select select-bordered select-sm; }
+    dialog form input[type=hidden] { display: none; }
+    .dlg-actions { @apply flex gap-2 justify-end mt-5 pt-4 border-t border-base-300; }
+    .dlg-task-wide { max-width: min(90vw, 560px); }
+    .task-customer-row { @apply flex items-end gap-2 mb-3; }
+    .task-customer-row label { @apply mb-0; }
+    .task-no-edit-wrap { @apply text-sm mb-3 text-base-content/60; }
+    .price-pick-block { @apply bg-base-200 rounded-lg p-3 mb-3; }
+    .price-pick-head { @apply flex items-center justify-between mb-1 text-sm font-medium; }
+    .price-pick-list { @apply flex flex-wrap gap-2 mt-2 max-h-28 overflow-y-auto; }
+    .price-preview { @apply mt-2 text-xs bg-base-100 rounded p-2 border border-base-300; }
+    .customer-inline-check { @apply flex items-center gap-2 mb-3; }
+    .customer-edit-display-hint, .customer-edit-title { @apply text-xs text-base-content/50 mb-2; }
+    .invoice-new-footer { @apply flex items-center justify-between mt-3; }
+    .invoice-new-hint { @apply text-xs text-base-content/50; }
+    .inv-multi-table-wrap { @apply max-h-60 overflow-y-auto mt-2; }
+    #inv-fx-banner { @apply text-xs text-warning bg-warning/10 px-3 py-2 rounded-lg mb-3; }
+    #inv-fx-rate-info { @apply text-xs text-info; }
+    .dlg-head-row { @apply flex items-center justify-between mb-3; }
+    .dlg-head-row h2 { @apply text-base font-bold; }
+
+    /* Report / common toolbar */
+    .toolbar { @apply flex flex-wrap items-center gap-3 mb-4; }
+    .report-toolbar { @apply flex flex-wrap items-center gap-3 mb-3; }
+    .report-summary { @apply text-sm text-base-content/60 mb-3; }
+    .table-wrap { @apply overflow-x-auto; }
+    table.data { @apply table table-sm w-full; }
+
+    /* Hint */
+    .hint { @apply text-xs text-base-content/50 leading-relaxed; }
+    p.hint { @apply mb-2; }
+
+    /* Trend panel */
+    .trend-page { @apply space-y-5; }
+    .trend-card { @apply bg-base-100 rounded-xl border border-base-300 p-5 shadow-sm; }
+    .trend-title { @apply text-base font-bold mb-1; }
+    .trend-subtitle { @apply text-xs text-base-content/50 mb-4; }
+    .trend-grid-3 { @apply grid grid-cols-1 md:grid-cols-3 gap-4; }
+    .trend-pie h3 { @apply text-sm font-semibold mb-1 text-center; }
+    .trend-kpi { @apply text-2xl font-bold my-1 text-center; }
+    .trend-kpi-note { @apply text-xs text-base-content/50 text-center; }
+    .trend-pie-chart { @apply max-w-[160px] mx-auto mt-3; }
+    .trend-chart-wrap { @apply overflow-x-auto; }
+    .trend-chart-inner { @apply min-w-[480px] h-64 relative; }
+    .trend-big-number { @apply text-3xl font-bold text-primary; }
+    .trend-summary-row { @apply flex items-center gap-6; }
+    .trend-summary-note { @apply text-xs text-base-content/50 mt-1; }
+    .trend-card--invoice .trend-summary-row { @apply mt-2; }
+
+    /* Invoices panel */
+    .invoices-layout { @apply flex gap-4 min-h-96; }
+    .invoices-sidebar { @apply w-44 shrink-0 flex flex-col gap-1; }
+    .invoices-nav-btn { @apply btn btn-ghost btn-sm justify-start w-full font-normal; }
+    .invoices-main { @apply flex-1 min-w-0; }
+    .invoices-view { @apply w-full; }
+    .invoices-subtitle { @apply text-base font-bold; }
+    .invoices-subhead { @apply flex items-center justify-between mb-3; }
+    .invoices-customers-footer { @apply mt-3; }
+    .invoices-customers-table-wrap { @apply max-h-80 overflow-y-auto rounded-lg border border-base-300; }
+
+    /* Exchange panel */
+    .exchange-converter { @apply bg-base-100 rounded-xl border border-base-300 p-4 mb-4 max-w-lg; }
+    .exchange-conv-date-label { @apply block mb-3 text-sm font-medium; }
+    .exchange-conv-hint { @apply block text-xs text-base-content/50 mb-3; }
+    .exchange-conv-row { @apply flex items-center gap-3 flex-wrap; }
+    .exchange-conv-box { @apply flex-1 min-w-[180px]; }
+    .exchange-conv-tag { @apply block text-xs text-base-content/50 mb-1 font-semibold uppercase tracking-wide; }
+    .exchange-conv-inner { @apply flex items-stretch border border-base-300 rounded-lg overflow-hidden; }
+    .exchange-conv-amt { @apply flex-1 bg-base-100 px-3 py-2 text-right text-sm outline-none min-w-0; }
+    .exchange-conv-swap { @apply btn btn-ghost btn-sm btn-circle; }
+    .exchange-conv-rate { @apply text-sm font-semibold mt-3; }
+    .exchange-conv-note { @apply text-xs text-base-content/50 mt-1; }
+    .exchange-footnote { @apply text-xs text-base-content/40 mt-2; }
+
+    /* Cheque panel */
+    .cheque-iframe { @apply w-full border-none; min-height: 600px; }
+
+    /* Inline check for price sync */
+    .price-sync-pending-label { @apply flex items-center gap-2 text-sm font-normal mb-3 cursor-pointer; }
+
+    /* Misc */
+    .flex-grow { flex: 1 1 0%; }
+    .col-check { width: 2rem; }
+  </style>
+</head>
+<body class="bg-base-200 min-h-screen">
+
+  <!-- Navbar -->
+  <div class="navbar bg-base-100 border-b border-base-300 px-4 min-h-12 sticky top-0 z-30 shadow-sm">
+    <div class="navbar-start gap-2">
+      <div id="app-header-logo" class="hidden w-7 h-7 rounded" hidden></div>
+      <span class="font-bold text-sm tracking-wide" id="app-title">SimpleTask</span>
+      <span class="badge badge-ghost badge-sm font-mono" id="app-version"></span>
+    </div>
+    <div class="navbar-end gap-1">
+      <button onclick="toggleTheme()" class="btn btn-ghost btn-sm btn-circle" title="Toggle theme">
+        <svg id="iconSun" class="w-4 h-4 hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364-6.364l-.707.707M6.343 17.657l-.707.707M17.657 17.657l-.707-.707M6.343 6.343l-.707-.707M12 5a7 7 0 100 14A7 7 0 0012 5z"/></svg>
+        <svg id="iconMoon" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/></svg>
+      </button>
+      <a href="/settings.html" class="btn btn-ghost btn-sm" id="link-settings">Settings</a>
+      <button type="button" id="btn-logout" class="btn btn-ghost btn-sm hidden">退出登录</button>
+    </div>
+  </div>
+
+  <!-- Tab strip -->
+  <div class="bg-base-100 border-b border-base-300 sticky top-12 z-20 overflow-x-auto">
+    <div class="flex px-4 min-w-max">
+      <button type="button" class="app-tab tab active" data-tab="tasks">Tasks</button>
+      <button type="button" class="app-tab tab" data-tab="trend">Trend</button>
+      <button type="button" class="app-tab tab" data-tab="invoices">Invoicing</button>
+      <button type="button" class="app-tab tab" data-tab="report">报表 Report</button>
+      <button type="button" class="app-tab tab" data-tab="prices">价目表</button>
+      <button type="button" class="app-tab tab" data-tab="expense">Expense</button>
+      <button type="button" class="app-tab tab" data-tab="exchange">Exchange Rate</button>
+      <button type="button" class="app-tab tab" data-tab="cheque">Print Cheque</button>
+      <a href="/payroll/dashboard.html" class="app-tab tab">Payroll ↗</a>
+    </div>
+  </div>
+
+  <!-- Main content -->
+  <main class="p-4 md:p-6 max-w-[1600px] mx-auto">
+
+    <!-- ── Tasks panel ───────────────────────────────────────────── -->
     <section id="panel-tasks" class="panel active">
-      <div class="toolbar">
-        <label>状态筛选
-          <select id="filter-status">
+      <div class="flex flex-wrap items-center justify-between gap-3 mb-4">
+        <div class="flex items-center gap-2">
+          <label class="text-sm text-base-content/60 font-medium">状态筛选</label>
+          <select id="filter-status" class="select select-bordered select-sm">
             <option value="">全部</option>
             <option value="Pending">Pending</option>
             <option value="Done">Done</option>
             <option value="Sent">Sent</option>
           </select>
-        </label>
-        <button type="button" id="btn-new-task" class="primary">新建任务</button>
+        </div>
+        <button type="button" id="btn-new-task" class="btn btn-primary btn-sm gap-1">
+          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"/></svg>
+          新建任务
+        </button>
       </div>
-      <div class="table-wrap">
-        <table class="data">
+
+      <div class="bg-base-100 rounded-xl shadow-sm border border-base-300">
+        <table class="table table-sm w-full">
           <thead>
-            <tr>
-              <th>No.</th>
-              <th>Customer</th>
-              <th>Task Name</th>
-              <th>日期</th>
-              <th>Task</th>
-              <th>Price</th>
-              <th>状态</th>
-              <th>完成日期</th>
-              <th>备注</th>
-              <th></th>
+            <tr class="bg-base-300/50 text-xs font-semibold text-base-content/60 uppercase tracking-wide border-b border-base-300">
+              <th class="pl-4 py-3 w-24">No.</th>
+              <th class="py-3">Customer</th>
+              <th class="py-3">Task Name</th>
+              <th class="py-3">日期</th>
+              <th class="py-3">Task</th>
+              <th class="py-3 text-right">Price</th>
+              <th class="py-3">状态</th>
+              <th class="py-3">完成日期</th>
+              <th class="py-3">备注</th>
+              <th class="py-3 w-52"></th>
             </tr>
           </thead>
-          <tbody id="tasks-body"></tbody>
+          <tbody id="tasks-body">
+            <tr><td colspan="10" class="text-center py-10 text-base-content/40 text-sm">Loading…</td></tr>
+          </tbody>
         </table>
       </div>
-      <div class="tasks-page-bar">
-        <span id="tasks-page-info">共 0 条</span>
-        <div id="tasks-page-buttons">
-          <button id="tasks-prev">«</button>
-          <button id="tasks-page-current">1</button>
-          <button id="tasks-next">»</button>
+
+      <!-- Pagination -->
+      <div class="flex items-center justify-between mt-4 px-1">
+        <span class="text-sm text-base-content/50" id="tasks-page-info">共 0 条</span>
+        <div class="join" id="tasks-page-buttons">
+          <button class="join-item btn btn-sm" id="tasks-prev">«</button>
+          <button class="join-item btn btn-sm btn-primary" id="tasks-page-current">1</button>
+          <button class="join-item btn btn-sm" id="tasks-next">»</button>
         </div>
-        <label>
+        <label class="flex items-center gap-2 text-sm text-base-content/60">
           每页
-          <select id="tasks-page-size">
+          <select id="tasks-page-size" class="select select-bordered select-xs w-16">
             <option value="20" selected>20</option>
             <option value="30">30</option>
             <option value="40">40</option>
@@ -84,6 +236,7 @@
       </div>
     </section>
 
+    <!-- ── Trend panel ───────────────────────────────────────────── -->
     <section id="panel-trend" class="panel">
       <div class="trend-page">
         <div class="trend-card trend-card--pies">
@@ -108,15 +261,11 @@
             </div>
           </div>
         </div>
-
         <div class="trend-card trend-card--bar">
           <h2 class="trend-title">最近 12 个月新增任务与金额</h2>
           <p class="trend-subtitle">每月新增金额（CAD）；柱内数字为当月新增任务数。</p>
-          <div class="trend-chart-wrap">
-            <div class="trend-chart-inner"><canvas id="trend-bar-monthly"></canvas></div>
-          </div>
+          <div class="trend-chart-wrap"><div class="trend-chart-inner"><canvas id="trend-bar-monthly"></canvas></div></div>
         </div>
-
         <div class="trend-card trend-card--invoice">
           <h2 class="trend-title">本月开票金额</h2>
           <p class="trend-subtitle">按 Invoice Date 统计，币种为 CAD。</p>
@@ -130,28 +279,29 @@
       </div>
     </section>
 
+    <!-- ── Report panel ──────────────────────────────────────────── -->
     <section id="panel-report" class="panel">
-      <div class="toolbar report-toolbar">
-        <label>完成月份
-          <input type="month" id="report-month" />
+      <div class="report-toolbar">
+        <label class="flex items-center gap-2 text-sm font-medium">完成月份
+          <input type="month" id="report-month" class="input input-bordered input-sm" />
         </label>
-        <button type="button" id="btn-report-load" class="primary">查询</button>
-        <button type="button" id="btn-report-export" class="ghost">导出 CSV</button>
+        <button type="button" id="btn-report-load" class="btn btn-primary btn-sm">查询</button>
+        <button type="button" id="btn-report-export" class="btn btn-ghost btn-sm">导出 CSV</button>
       </div>
       <p class="report-summary" id="report-summary">请选择月份并查询。</p>
-      <div class="table-wrap">
-        <table class="data">
+      <div class="bg-base-100 rounded-xl border border-base-300 overflow-x-auto shadow-sm">
+        <table class="table table-sm w-full">
           <thead>
-            <tr>
-              <th>No.</th>
-              <th>Customer</th>
-              <th>Task Name</th>
-              <th>日期</th>
-              <th>Task</th>
-              <th>Price</th>
-              <th class="num">利润率</th>
-              <th>完成日期</th>
-              <th>备注</th>
+            <tr class="bg-base-300/50 text-xs font-semibold text-base-content/60 uppercase tracking-wide border-b border-base-300">
+              <th class="pl-4 py-3">No.</th>
+              <th class="py-3">Customer</th>
+              <th class="py-3">Task Name</th>
+              <th class="py-3">日期</th>
+              <th class="py-3">Task</th>
+              <th class="py-3 text-right">Price</th>
+              <th class="py-3 text-right">利润率</th>
+              <th class="py-3">完成日期</th>
+              <th class="py-3">备注</th>
             </tr>
           </thead>
           <tbody id="report-body"></tbody>
@@ -159,20 +309,24 @@
       </div>
     </section>
 
+    <!-- ── Prices panel ──────────────────────────────────────────── -->
     <section id="panel-prices" class="panel">
       <div class="toolbar">
-        <button type="button" id="btn-new-price" class="primary">新建价目</button>
+        <button type="button" id="btn-new-price" class="btn btn-primary btn-sm gap-1">
+          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"/></svg>
+          新建价目
+        </button>
       </div>
-      <div class="table-wrap">
-        <table class="data">
+      <div class="bg-base-100 rounded-xl border border-base-300 overflow-x-auto shadow-sm">
+        <table class="table table-sm w-full">
           <thead>
-            <tr>
-              <th>编号</th>
-              <th>服务项目</th>
-              <th>金额</th>
-              <th>货币</th>
-              <th>说明</th>
-              <th></th>
+            <tr class="bg-base-300/50 text-xs font-semibold text-base-content/60 uppercase tracking-wide border-b border-base-300">
+              <th class="pl-4 py-3">编号</th>
+              <th class="py-3">服务项目</th>
+              <th class="py-3 text-right">金额</th>
+              <th class="py-3">货币</th>
+              <th class="py-3">说明</th>
+              <th class="py-3 w-16"></th>
             </tr>
           </thead>
           <tbody id="prices-body"></tbody>
@@ -180,22 +334,26 @@
       </div>
     </section>
 
+    <!-- ── Expense panel ─────────────────────────────────────────── -->
     <section id="panel-expense" class="panel">
-      <div class="toolbar expense-toolbar">
-        <span class="hint">Expense 列表</span>
-        <button type="button" id="btn-new-expense" class="primary">New expense</button>
+      <div class="toolbar">
+        <span class="text-sm text-base-content/60">Expense 列表</span>
+        <button type="button" id="btn-new-expense" class="btn btn-primary btn-sm gap-1">
+          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"/></svg>
+          New expense
+        </button>
       </div>
-      <div class="table-wrap">
-        <table class="data">
+      <div class="bg-base-100 rounded-xl border border-base-300 overflow-x-auto shadow-sm">
+        <table class="table table-sm w-full">
           <thead>
-            <tr>
-              <th>Task name</th>
-              <th>Vendor</th>
-              <th>Date</th>
-              <th>Account</th>
-              <th>Description</th>
-              <th>Amount</th>
-              <th></th>
+            <tr class="bg-base-300/50 text-xs font-semibold text-base-content/60 uppercase tracking-wide border-b border-base-300">
+              <th class="pl-4 py-3">Task name</th>
+              <th class="py-3">Vendor</th>
+              <th class="py-3">Date</th>
+              <th class="py-3">Account</th>
+              <th class="py-3">Description</th>
+              <th class="py-3 text-right">Amount</th>
+              <th class="py-3 w-12"></th>
             </tr>
           </thead>
           <tbody id="expenses-body"></tbody>
@@ -203,44 +361,45 @@
       </div>
     </section>
 
+    <!-- ── Exchange panel ────────────────────────────────────────── -->
     <section id="panel-exchange" class="panel">
       <div class="exchange-converter">
         <label class="exchange-conv-date-label">换算日期
-          <input type="date" id="exchange-conv-date" />
+          <input type="date" id="exchange-conv-date" class="input input-bordered input-sm mt-1 w-full" />
         </label>
-        <p class="hint exchange-conv-hint">先选日期；修改 From 或 To 金额会联动。当日为即时汇率且<strong>不写入</strong>数据库；历史日以本地缓存为准，缺失则拉取并保存。</p>
+        <p class="exchange-conv-hint">先选日期；修改 From 或 To 金额会联动。当日为即时汇率且<strong>不写入</strong>数据库；历史日以本地缓存为准，缺失则拉取并保存。</p>
         <div class="exchange-conv-row">
           <div class="exchange-conv-box">
             <span class="exchange-conv-tag">From</span>
             <div class="exchange-conv-inner">
               <input type="text" class="exchange-conv-amt" id="exchange-conv-from-amt" inputmode="decimal" autocomplete="off" placeholder="0" />
-              <select id="exchange-conv-from"></select>
+              <select id="exchange-conv-from" class="select select-bordered select-sm rounded-none border-l"></select>
             </div>
           </div>
-          <button type="button" class="ghost exchange-conv-swap" id="exchange-conv-swap" title="Swap">⇄</button>
+          <button type="button" class="exchange-conv-swap" id="exchange-conv-swap" title="Swap">⇄</button>
           <div class="exchange-conv-box">
             <span class="exchange-conv-tag">To</span>
             <div class="exchange-conv-inner">
               <input type="text" class="exchange-conv-amt" id="exchange-conv-to-amt" inputmode="decimal" autocomplete="off" placeholder="0" />
-              <select id="exchange-conv-to"></select>
+              <select id="exchange-conv-to" class="select select-bordered select-sm rounded-none border-l"></select>
             </div>
           </div>
         </div>
         <p class="exchange-conv-rate" id="exchange-conv-rate" aria-live="polite"></p>
         <p class="exchange-conv-note hint" id="exchange-conv-note"></p>
       </div>
-      <div class="toolbar report-toolbar exchange-rates-toolbar">
-        <label>搜索
-          <input type="search" id="exchange-q" placeholder="代码或名称" autocomplete="off" />
+      <div class="report-toolbar">
+        <label class="flex items-center gap-2 text-sm font-medium">搜索
+          <input type="search" id="exchange-q" class="input input-bordered input-sm w-40" placeholder="代码或名称" autocomplete="off" />
         </label>
-        <label>表格截止日期
-          <input type="date" id="exchange-date" />
+        <label class="flex items-center gap-2 text-sm font-medium">表格截止日期
+          <input type="date" id="exchange-date" class="input input-bordered input-sm" />
         </label>
-        <button type="button" id="btn-exchange-load" class="primary">查询</button>
+        <button type="button" id="btn-exchange-load" class="btn btn-primary btn-sm">查询</button>
       </div>
       <p class="report-summary" id="exchange-summary">基准货币在 Settings → Company Profile；表格货币在 Settings → 汇率货币。表格显示<strong>5 个工作日</strong>（截至所选日或昨日）；当日列用即时汇率且不写入库。</p>
-      <div class="table-wrap">
-        <table class="data exchange-rates-table">
+      <div class="bg-base-100 rounded-xl border border-base-300 overflow-x-auto shadow-sm">
+        <table class="table table-sm w-full">
           <thead id="exchange-thead"></thead>
           <tbody id="exchange-body"></tbody>
         </table>
@@ -248,12 +407,12 @@
       <p class="exchange-footnote">表格未选日期时，以<strong>昨日</strong>为截止日显示 5 个工作日。非「当日」列：先读本地库，无缓存再请求 Frankfurter 并保存。</p>
     </section>
 
+    <!-- ── Cheque panel ──────────────────────────────────────────── -->
     <section id="panel-cheque" class="panel">
-      <div class="toolbar cheque-panel-toolbar">
-      </div>
       <iframe id="iframe-cheque" class="cheque-iframe" title="Print cheque"></iframe>
     </section>
 
+    <!-- ── Invoices panel ────────────────────────────────────────── -->
     <section id="panel-invoices" class="panel">
       <div class="invoices-layout">
         <aside class="invoices-sidebar" aria-label="Invoices menu">
@@ -263,33 +422,26 @@
         </aside>
         <div class="invoices-main">
           <div id="invoices-view-list" class="invoices-view">
-            <div class="toolbar report-toolbar" id="invoices-toolbar">
-              <label>状态
-                <select id="invoice-filter">
+            <div class="report-toolbar" id="invoices-toolbar">
+              <label class="flex items-center gap-2 text-sm font-medium">状态
+                <select id="invoice-filter" class="select select-bordered select-sm">
                   <option value="">全部</option>
                   <option value="Draft">Draft</option>
                   <option value="Sent">Sent</option>
                   <option value="Paid">Paid</option>
                 </select>
               </label>
-              <button type="button" id="btn-invoices-load" class="primary">刷新</button>
+              <button type="button" id="btn-invoices-load" class="btn btn-primary btn-sm">刷新</button>
             </div>
             <p class="report-summary" id="invoices-summary">已发送/已收款发票列表。</p>
-            <div class="table-wrap">
-              <table class="data">
+            <div class="bg-base-100 rounded-xl border border-base-300 overflow-x-auto shadow-sm">
+              <table class="table table-sm w-full">
                 <thead>
-                  <tr>
-                    <th>Invoice</th>
-                    <th>Task</th>
-                    <th>Bill To</th>
-                    <th>日期</th>
-                    <th>到期</th>
-                    <th>状态</th>
-                    <th>总额</th>
-                    <th>已收</th>
-                    <th>未收</th>
-                    <th>发送时间</th>
-                    <th></th>
+                  <tr class="bg-base-300/50 text-xs font-semibold text-base-content/60 uppercase tracking-wide border-b border-base-300">
+                    <th class="pl-4 py-3">Invoice</th><th class="py-3">Task</th><th class="py-3">Bill To</th>
+                    <th class="py-3">日期</th><th class="py-3">到期</th><th class="py-3">状态</th>
+                    <th class="py-3 text-right">总额</th><th class="py-3 text-right">已收</th><th class="py-3 text-right">未收</th>
+                    <th class="py-3">发送时间</th><th class="py-3 w-12"></th>
                   </tr>
                 </thead>
                 <tbody id="invoices-body"></tbody>
@@ -299,47 +451,33 @@
           <div id="invoices-view-customers" class="invoices-view" hidden>
             <div class="invoices-subhead">
               <h3 class="invoices-subtitle">Customers</h3>
-              <button type="button" class="ghost small" id="btn-invoices-back-customers">← 发票列表</button>
+              <button type="button" class="btn btn-ghost btn-sm" id="btn-invoices-back-customers">← 发票列表</button>
             </div>
             <p class="report-summary" id="invoices-customers-hint">系统客户列表。</p>
-            <div class="table-wrap invoices-customers-table-wrap">
-              <table class="data">
-                <thead>
-                  <tr>
-                    <th>ID</th>
-                    <th>名称</th>
-                    <th>状态</th>
-                    <th></th>
-                  </tr>
-                </thead>
+            <div class="invoices-customers-table-wrap">
+              <table class="table table-sm w-full">
+                <thead><tr><th>ID</th><th>名称</th><th>状态</th><th></th></tr></thead>
                 <tbody id="invoices-customers-list"></tbody>
               </table>
             </div>
             <div class="invoices-customers-footer">
-              <button type="button" class="primary" id="btn-invoices-new-customer">New Customer</button>
+              <button type="button" class="btn btn-primary btn-sm" id="btn-invoices-new-customer">New Customer</button>
             </div>
           </div>
           <div id="invoices-view-payment" class="invoices-view" hidden>
             <div class="invoices-subhead">
               <h3 class="invoices-subtitle">Received Payment</h3>
-              <button type="button" class="ghost small" id="btn-invoices-back-payment">← 发票列表</button>
+              <button type="button" class="btn btn-ghost btn-sm" id="btn-invoices-back-payment">← 发票列表</button>
             </div>
             <p class="report-summary" id="invoices-payment-summary">尚有未收金额的发票，可在行内点击「收款」；「支票」打开可打印支票（预填收款人与未收金额）。</p>
-            <div class="table-wrap">
-              <table class="data">
+            <div class="bg-base-100 rounded-xl border border-base-300 overflow-x-auto shadow-sm">
+              <table class="table table-sm w-full">
                 <thead>
-                  <tr>
-                    <th>Invoice</th>
-                    <th>Task</th>
-                    <th>Bill To</th>
-                    <th>日期</th>
-                    <th>到期</th>
-                    <th>状态</th>
-                    <th>总额</th>
-                    <th>已收</th>
-                    <th>未收</th>
-                    <th>发送时间</th>
-                    <th></th>
+                  <tr class="bg-base-300/50 text-xs font-semibold text-base-content/60 uppercase tracking-wide border-b border-base-300">
+                    <th class="pl-4 py-3">Invoice</th><th class="py-3">Task</th><th class="py-3">Bill To</th>
+                    <th class="py-3">日期</th><th class="py-3">到期</th><th class="py-3">状态</th>
+                    <th class="py-3 text-right">总额</th><th class="py-3 text-right">已收</th><th class="py-3 text-right">未收</th>
+                    <th class="py-3">发送时间</th><th class="py-3 w-12"></th>
                   </tr>
                 </thead>
                 <tbody id="invoices-body-payment"></tbody>
@@ -349,56 +487,52 @@
           <div id="invoices-view-new-invoice" class="invoices-view" hidden>
             <div class="invoices-subhead">
               <h3 class="invoices-subtitle">New Invoice</h3>
-              <button type="button" class="ghost small" id="btn-invoices-back-new">← 发票列表</button>
+              <button type="button" class="btn btn-ghost btn-sm" id="btn-invoices-back-new">← 发票列表</button>
             </div>
             <p class="report-summary" id="new-invoice-summary">状态为 Done 的任务可在此合并开票。</p>
-            <div class="table-wrap">
-              <table class="data">
+            <div class="bg-base-100 rounded-xl border border-base-300 overflow-x-auto shadow-sm">
+              <table class="table table-sm w-full">
                 <thead>
-                  <tr>
-                    <th class="col-check"></th>
-                    <th>No.</th>
-                    <th>Customer</th>
-                    <th>Task Name</th>
-                    <th>日期</th>
-                    <th>Task</th>
-                    <th>Price</th>
-                    <th>状态</th>
-                    <th>备注</th>
-                    <th></th>
+                  <tr class="bg-base-300/50 text-xs font-semibold text-base-content/60 uppercase tracking-wide border-b border-base-300">
+                    <th class="pl-4 py-3 w-8"></th><th class="py-3">No.</th><th class="py-3">Customer</th>
+                    <th class="py-3">Task Name</th><th class="py-3">日期</th><th class="py-3">Task</th>
+                    <th class="py-3 text-right">Price</th><th class="py-3">状态</th><th class="py-3">备注</th><th class="py-3 w-12"></th>
                   </tr>
                 </thead>
                 <tbody id="new-invoice-body"></tbody>
               </table>
             </div>
-            <div class="invoice-new-footer">
+            <div class="invoice-new-footer mt-3">
               <span class="invoice-new-hint">勾选同一 Customer 的 Done 任务后，可点击 Invoicing 生成发票。</span>
-              <button type="button" id="btn-invoicing-go" class="primary" disabled>Invoicing</button>
+              <button type="button" id="btn-invoicing-go" class="btn btn-primary btn-sm" disabled>Invoicing</button>
             </div>
           </div>
         </div>
       </div>
     </section>
+
   </main>
 
+  <!-- ── Dialogs ────────────────────────────────────────────────── -->
+
   <dialog id="dlg-task" class="dlg-task-wide">
-    <form method="dialog" id="form-task">
-      <h2 id="dlg-task-title">任务</h2>
+    <div class="dlg-head"><h2 id="dlg-task-title">任务</h2></div>
+    <form method="dialog" id="form-task" class="dlg-body">
       <input type="hidden" id="task-id" />
-      <p id="task-no-new-hint" class="hint">任务编号将在保存后由系统自动生成。</p>
+      <p id="task-no-new-hint" class="hint mb-3">任务编号将在保存后由系统自动生成。</p>
       <p id="task-no-edit-wrap" class="task-no-edit-wrap" hidden>任务编号：<strong id="task-no-value"></strong></p>
       <div class="task-customer-row">
         <label class="flex-grow">Customer
-          <select id="task-customer" required></select>
+          <select id="task-customer" required class="block w-full mt-1 select select-bordered select-sm"></select>
         </label>
-        <button type="button" class="ghost small" id="btn-new-customer" title="添加客户">+ 新建客户</button>
+        <button type="button" class="btn btn-ghost btn-xs mb-0.5" id="btn-new-customer">+ 新建客户</button>
       </div>
       <label>Task Name <input id="task-company" required /></label>
       <label>日期 <input id="task-date" type="date" /></label>
       <div class="price-pick-block">
         <div class="price-pick-head">
           <span>从价目表选择（可多选）</span>
-          <button type="button" class="ghost small" id="task-price-clear" title="清空勾选">清空勾选</button>
+          <button type="button" class="btn btn-ghost btn-xs" id="task-price-clear">清空勾选</button>
         </div>
         <p class="hint">勾选后会自动填入 Task 与 Price；多种货币时，第一币种写入 Price，其余在下方说明。</p>
         <div id="task-price-picks" class="price-pick-list" role="group" aria-label="价目表多选"></div>
@@ -410,93 +544,90 @@
       <label>备注 <input id="task-note" /></label>
       <p id="task-lock-hint" class="hint" hidden></p>
       <div class="dlg-actions">
-        <button type="submit" class="primary" id="task-submit-btn">保存</button>
-        <button type="button" id="task-cancel">取消</button>
+        <button type="button" id="task-cancel" class="btn btn-ghost btn-sm">取消</button>
+        <button type="submit" class="btn btn-primary btn-sm" id="task-submit-btn">保存</button>
       </div>
     </form>
   </dialog>
 
   <dialog id="dlg-expense">
-    <form method="dialog" id="form-expense">
+    <div class="dlg-head"><h2 id="dlg-expense-title">Expense</h2></div>
+    <form method="dialog" id="form-expense" class="dlg-body">
       <input type="hidden" id="expense-id" />
       <div class="dlg-head-row">
-        <h2 id="dlg-expense-title">Expense</h2>
-        <button type="button" class="ghost small" id="btn-expense-new-vendor">New Vendor</button>
+        <span></span>
+        <button type="button" class="btn btn-ghost btn-xs" id="btn-expense-new-vendor">New Vendor</button>
       </div>
       <label>Task name
-        <select id="expense-task-id" required></select>
+        <select id="expense-task-id" required class="block w-full mt-1 select select-bordered select-sm"></select>
       </label>
       <label>Vendor
-        <select id="expense-vendor-id"></select>
+        <select id="expense-vendor-id" class="block w-full mt-1 select select-bordered select-sm"></select>
       </label>
       <label>Expense account
-        <select id="expense-account-code" required></select>
+        <select id="expense-account-code" required class="block w-full mt-1 select select-bordered select-sm"></select>
       </label>
       <label>Date <input id="expense-date" type="date" required /></label>
       <label>Description <textarea id="expense-description" rows="3" required placeholder="支出说明"></textarea></label>
       <label>Amount <input id="expense-amount" type="number" step="0.01" min="0" required /></label>
       <label>Currency
-        <select id="expense-currency">
+        <select id="expense-currency" class="block w-full mt-1 select select-bordered select-sm">
           <option value="CAD">CAD</option>
           <option value="USD">USD</option>
           <option value="CNY">CNY</option>
         </select>
       </label>
       <div class="dlg-actions">
-        <button type="submit" class="primary">保存</button>
-        <button type="button" id="expense-cancel">取消</button>
+        <button type="button" id="expense-cancel" class="btn btn-ghost btn-sm">取消</button>
+        <button type="submit" class="btn btn-primary btn-sm">保存</button>
       </div>
     </form>
   </dialog>
 
   <dialog id="dlg-vendor">
-    <form id="form-vendor">
-      <h2>New vendor</h2>
+    <div class="dlg-head"><h2>New vendor</h2></div>
+    <form id="form-vendor" class="dlg-body">
       <label>Vendor name <input id="vendor-name" type="text" required maxlength="200" autocomplete="organization" /></label>
       <label>Currency
-        <select id="vendor-currency">
-          <option value="CAD">CAD</option>
-          <option value="USD">USD</option>
-          <option value="CNY">CNY</option>
+        <select id="vendor-currency" class="block w-full mt-1 select select-bordered select-sm">
+          <option value="CAD">CAD</option><option value="USD">USD</option><option value="CNY">CNY</option>
         </select>
       </label>
       <label>Email <input id="vendor-email" type="email" maxlength="200" autocomplete="email" placeholder="可选" /></label>
       <label>Address <textarea id="vendor-address" rows="2" maxlength="500" placeholder="可选"></textarea></label>
       <div class="dlg-actions">
-        <button type="submit" class="primary">保存</button>
-        <button type="button" id="vendor-cancel">取消</button>
+        <button type="button" id="vendor-cancel" class="btn btn-ghost btn-sm">取消</button>
+        <button type="submit" class="btn btn-primary btn-sm">保存</button>
       </div>
     </form>
   </dialog>
 
   <dialog id="dlg-price">
-    <form method="dialog" id="form-price">
-      <h2 id="dlg-price-title">价目</h2>
+    <div class="dlg-head"><h2 id="dlg-price-title">价目</h2></div>
+    <form method="dialog" id="form-price" class="dlg-body">
       <input type="hidden" id="price-id" />
       <label>服务项目 <input id="price-name" required /></label>
       <label>金额（空表示面议/未定价） <input id="price-amount" type="number" step="0.01" min="0" /></label>
       <label>货币
-        <select id="price-currency">
-          <option value="CNY">CNY（元）</option>
-          <option value="CAD">CAD（加币）</option>
-          <option value="USD">USD（刀）</option>
+        <select id="price-currency" class="block w-full mt-1 select select-bordered select-sm">
+          <option value="CNY">CNY（元）</option><option value="CAD">CAD（加币）</option><option value="USD">USD（刀）</option>
         </select>
       </label>
       <label>说明 <input id="price-note" placeholder="如：起" /></label>
       <label class="price-sync-pending-label">
-        <input type="checkbox" id="price-sync-pending" />
+        <input type="checkbox" id="price-sync-pending" class="checkbox checkbox-sm" />
         同时更新状态为 Pending 且勾选了该价目的任务（Task / Price）
       </label>
       <div class="dlg-actions">
-        <button type="submit" class="primary">保存</button>
-        <button type="button" id="price-cancel">取消</button>
+        <button type="button" id="price-cancel" class="btn btn-ghost btn-sm">取消</button>
+        <button type="submit" class="btn btn-primary btn-sm">保存</button>
       </div>
     </form>
   </dialog>
 
   <dialog id="dlg-invoice" class="dlg-task-wide">
-    <form method="dialog" id="form-invoice">
-      <h2>生成 Invoice</h2>
+    <div class="dlg-head"><h2>生成 Invoice</h2></div>
+    <form method="dialog" id="form-invoice" class="dlg-body">
       <input type="hidden" id="inv-task-id" />
       <label>Bill To 名称 <input id="inv-bill-name" required /></label>
       <label>Bill To 地址 <input id="inv-bill-addr" /></label>
@@ -507,13 +638,11 @@
       <label>Terms <input id="inv-terms" value="Net 30" /></label>
       <label>Due Date <input id="inv-due-date" type="date" /></label>
       <label>Currency
-        <select id="inv-currency">
-          <option value="CAD">CAD</option>
-          <option value="USD">USD</option>
-          <option value="CNY">CNY</option>
+        <select id="inv-currency" class="block w-full mt-1 select select-bordered select-sm">
+          <option value="CAD">CAD</option><option value="USD">USD</option><option value="CNY">CNY</option>
         </select>
       </label>
-      <p id="inv-fx-rate-info" class="hint" style="margin:2px 0 6px;color:#0891b2;min-height:1em;"></p>
+      <p id="inv-fx-rate-info" class="hint mb-2" style="min-height:1em;"></p>
       <label>Tax Rate(%) <input id="inv-tax-rate" type="number" step="0.01" min="0" value="0" /></label>
       <div id="inv-single-line-fields">
         <label>Description <input id="inv-desc" value="Consulting Services" /></label>
@@ -522,46 +651,38 @@
         <label>Rate <input id="inv-rate" type="number" step="0.01" min="0" value="0" /></label>
       </div>
       <div id="inv-multi-line-block" hidden>
-        <p id="inv-fx-banner" class="hint" hidden style="color:#b45309;background:#fef3c7;padding:6px 8px;border-radius:4px;margin-bottom:6px;"></p>
+        <p id="inv-fx-banner" class="hint" hidden></p>
         <p class="hint">以下明细将合并到一张发票（每行对应一个任务）：</p>
-        <div class="table-wrap inv-multi-table-wrap">
-          <table class="data">
-            <thead>
-              <tr>
-                <th>Description</th>
-                <th>Detail</th>
-                <th>Qty</th>
-                <th>Rate</th>
-                <th>Amount</th>
-              </tr>
-            </thead>
+        <div class="inv-multi-table-wrap">
+          <table class="table table-sm w-full">
+            <thead><tr><th>Description</th><th>Detail</th><th>Qty</th><th>Rate</th><th>Amount</th></tr></thead>
             <tbody id="inv-multi-body"></tbody>
           </table>
         </div>
       </div>
       <div class="dlg-actions">
-        <button type="submit" class="primary">生成并打开</button>
-        <button type="button" id="invoice-cancel">取消</button>
+        <button type="button" id="invoice-cancel" class="btn btn-ghost btn-sm">取消</button>
+        <button type="submit" class="btn btn-primary btn-sm">生成并打开</button>
       </div>
     </form>
   </dialog>
 
   <dialog id="dlg-pay" class="dlg-task-wide">
-    <form method="dialog" id="form-pay">
-      <h2>登记收款</h2>
+    <div class="dlg-head"><h2>登记收款</h2></div>
+    <form method="dialog" id="form-pay" class="dlg-body">
       <input type="hidden" id="pay-invoice-id" />
       <label>收款日期 <input id="pay-date" type="date" /></label>
       <label>收款金额 <input id="pay-amount" type="number" step="0.01" min="0.01" /></label>
       <div class="dlg-actions">
-        <button type="submit" class="primary">保存</button>
-        <button type="button" id="pay-cancel">取消</button>
+        <button type="button" id="pay-cancel" class="btn btn-ghost btn-sm">取消</button>
+        <button type="submit" class="btn btn-primary btn-sm">保存</button>
       </div>
     </form>
   </dialog>
 
   <dialog id="dlg-customer" class="dlg-task-wide">
-    <form id="form-customer" data-customer-mode="">
-      <h2 id="customer-dlg-heading">Edit Customer</h2>
+    <div class="dlg-head"><h2 id="customer-dlg-heading">Edit Customer</h2></div>
+    <form id="form-customer" data-customer-mode="" class="dlg-body">
       <input type="hidden" id="customer-edit-id" />
       <p class="customer-edit-title" id="customer-edit-idname"></p>
       <label>Customer Name <input id="customer-edit-name" type="text" autocomplete="off" required /></label>
@@ -573,17 +694,31 @@
       <label>电话 <input id="customer-edit-phone" type="text" autocomplete="off" /></label>
       <label>地址 <textarea id="customer-edit-address" rows="3"></textarea></label>
       <label id="customer-edit-inactive-wrap" class="customer-inline-check">
-        <input id="customer-edit-inactive" type="checkbox" />
+        <input id="customer-edit-inactive" type="checkbox" class="checkbox checkbox-sm" />
         设为 inactive（不可新建任务与发票）
       </label>
       <div class="dlg-actions">
-        <button type="submit" class="primary">保存</button>
-        <button type="button" id="customer-edit-cancel">取消</button>
+        <button type="button" id="customer-edit-cancel" class="btn btn-ghost btn-sm">取消</button>
+        <button type="submit" class="btn btn-primary btn-sm">保存</button>
       </div>
     </form>
   </dialog>
 
   <script src="/vendor/chart.min.js"></script>
+  <script>
+    function toggleTheme() {
+      var next = document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+      document.documentElement.setAttribute('data-theme', next);
+      localStorage.setItem('st-theme', next);
+      document.getElementById('iconSun').classList.toggle('hidden', next !== 'dark');
+      document.getElementById('iconMoon').classList.toggle('hidden', next === 'dark');
+    }
+    document.addEventListener('DOMContentLoaded', function() {
+      var dark = document.documentElement.getAttribute('data-theme') === 'dark';
+      document.getElementById('iconSun').classList.toggle('hidden', !dark);
+      document.getElementById('iconMoon').classList.toggle('hidden', dark);
+    });
+  </script>
   <script src="/app.js"></script>
 </body>
 </html>

@@ -195,25 +195,25 @@ function renderTasks() {
     const canDelete = t.status === "Pending";
     const cust = escapeHtml(t.customerName || "");
     const cn = escapeHtml(t.companyName || "");
-    const statusCls = t.status === "Done" ? "status-done"
-                    : t.status === "Invoiced" ? "status-invoiced"
-                    : t.status === "Sent" ? "status-sent"
-                    : "status-pending";
+    const statusCls = t.status === "Done" ? "badge badge-success badge-sm"
+                    : t.status === "Invoiced" ? "badge badge-info badge-sm"
+                    : t.status === "Sent" ? "badge badge-primary badge-sm"
+                    : "badge badge-warning badge-sm";
     tr.innerHTML = `
       <td>${escapeHtml(t.id)}</td>
       <td>${cust}</td>
       <td>${cn}</td>
-      <td class="td-date">${escapeHtml(formatDisplayDate(t.date || ""))}</td>
+      <td>${escapeHtml(formatDisplayDate(t.date || ""))}</td>
       <td>${escapeHtml(t.service1 || "")}</td>
       <td>${fmtNum(t.price1)}</td>
       <td><span class="${statusCls}">${escapeHtml(t.status)}</span></td>
-      <td class="td-date">${escapeHtml(formatDisplayDate(t.completedAt || ""))}</td>
+      <td>${escapeHtml(formatDisplayDate(t.completedAt || ""))}</td>
       <td>${escapeHtml(t.note || "")}</td>
-      <td class="row-actions">
-        <button type="button" class="ghost" data-act="edit">编辑</button>
-        <button type="button" class="primary-green" data-act="expense">Expense</button>
-        <button type="button" class="ghost success" data-act="done" ${done ? "disabled" : ""}>Completed</button>
-        <button type="button" class="ghost danger" data-act="del" ${canDelete ? "" : "disabled"}>删除</button>
+      <td>
+        <button type="button" class="btn btn-xs btn-ghost" data-act="edit">编辑</button>
+        <button type="button" class="btn btn-xs btn-success btn-outline" data-act="expense">Expense</button>
+        <button type="button" class="btn btn-xs btn-ghost" data-act="done" ${done ? "disabled" : ""}>Completed</button>
+        <button type="button" class="btn btn-xs btn-error btn-outline" data-act="del" ${canDelete ? "" : "disabled"}>删除</button>
       </td>`;
     tr.querySelector('[data-act="edit"]').addEventListener("click", () => openTaskDialog(t));
     const btnDone = tr.querySelector('[data-act="done"]');
