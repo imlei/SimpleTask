@@ -46,7 +46,7 @@
         <button type="button" id="btn-new-task" class="primary">新建任务</button>
       </div>
       <div class="table-wrap">
-        <table class="table table-zebra">
+        <table class="data">
           <thead>
             <tr>
               <th>No.</th>
@@ -64,16 +64,16 @@
           <tbody id="tasks-body"></tbody>
         </table>
       </div>
-      <div class="flex items-center justify-between mt-4 px-2">
-        <span class="text-sm opacity-70" id="tasks-page-info">共 0 条</span>
-        <div class="join" id="tasks-page-buttons">
-          <button class="join-item btn btn-sm" id="tasks-prev">«</button>
-          <button class="join-item btn btn-sm btn-active" id="tasks-page-current">1</button>
-          <button class="join-item btn btn-sm" id="tasks-next">»</button>
+      <div class="tasks-page-bar">
+        <span id="tasks-page-info">共 0 条</span>
+        <div id="tasks-page-buttons">
+          <button id="tasks-prev">«</button>
+          <button id="tasks-page-current">1</button>
+          <button id="tasks-next">»</button>
         </div>
-        <label class="flex items-center gap-2 text-sm">
+        <label>
           每页
-          <select id="tasks-page-size" class="select select-sm select-bordered w-20">
+          <select id="tasks-page-size">
             <option value="20" selected>20</option>
             <option value="30">30</option>
             <option value="40">40</option>
