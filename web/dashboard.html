@@ -15,7 +15,7 @@
     <!-- Top Navbar -->
     <div class="navbar bg-primary text-primary-content px-4 min-h-12 sticky top-0 z-30 shadow-md">
       <div class="navbar-start gap-3">
-        <span class="font-extrabold text-base tracking-tight">SimpleTask - Payroll</span>
+        <span class="font-extrabold text-base tracking-tight" id="brand-name">SimpleTask - Payroll</span>
         <div class="divider divider-horizontal m-0 opacity-40"></div>
         <span class="text-sm opacity-80">Payroll</span>
         <span class="opacity-40 text-sm">›</span>
@@ -57,6 +57,13 @@
           </a>
 
         </nav>
+
+        <!-- Sidebar Footer -->
+        <div class="mt-auto px-3 py-3 border-t border-base-300">
+          <p class="text-xs text-base-content/40 font-medium">SimpleTask v0.0.17</p>
+          <a href="https://github.com/imlei/SimpleTask/issues" target="_blank" rel="noopener"
+             class="text-xs text-base-content/40 hover:text-primary transition-colors">Report a bug</a>
+        </div>
       </aside>
 
       <!-- Main Content -->
@@ -235,6 +242,15 @@
         document.getElementById('iconSun').classList.toggle('hidden', !isDark);
         document.getElementById('iconMoon').classList.toggle('hidden', isDark);
       });
+
+      fetch('/api/settings/public', { credentials: 'same-origin' })
+        .then(function(r) { return r.ok ? r.json() : null; })
+        .then(function(s) {
+          if (s && s.companyName) {
+            document.getElementById('brand-name').textContent = s.companyName;
+          }
+        })
+        .catch(function() {});
 
       var companyModal = document.getElementById('companyModal');
       var deleteModal  = document.getElementById('deleteModal');
