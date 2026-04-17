@@ -57,10 +57,11 @@ func (s *Server) handlePayrollPeriods(w http.ResponseWriter, r *http.Request) {
 
 // GET /api/payroll/periods/{id}
 // Subroutes:
-//   GET    /api/payroll/periods/{id}/entries
-//   POST   /api/payroll/periods/{id}/entries       — upsert one entry (gross pay input)
-//   POST   /api/payroll/periods/{id}/calculate     — run CPP/EI/Tax for all entries
-//   POST   /api/payroll/periods/{id}/finalize      — mark period as finalized
+//
+//	GET    /api/payroll/periods/{id}/entries
+//	POST   /api/payroll/periods/{id}/entries       — upsert one entry (gross pay input)
+//	POST   /api/payroll/periods/{id}/calculate     — run CPP/EI/Tax for all entries
+//	POST   /api/payroll/periods/{id}/finalize      — mark period as finalized
 func (s *Server) handlePayrollPeriodByID(w http.ResponseWriter, r *http.Request) {
 	rest := strings.TrimPrefix(r.URL.Path, "/api/payroll/periods/")
 	parts := strings.SplitN(rest, "/", 2)
@@ -79,6 +80,8 @@ func (s *Server) handlePayrollPeriodByID(w http.ResponseWriter, r *http.Request)
 			s.handlePeriodCalculate(w, r, periodID)
 		case "finalize":
 			s.handlePeriodFinalize(w, r, periodID)
+		case "recalculate":
+			s.handlePeriodRecalculate(w, r, periodID)
 		default:
 			http.NotFound(w, r)
 		}
@@ -86,6 +89,10 @@ func (s *Server) handlePayrollPeriodByID(w http.ResponseWriter, r *http.Request)
 	}
 
 	// Base: GET /api/payroll/periods/{id}
+	if r.Method == http.MethodDelete {
+		s.handleDeletePeriod(w, r, periodID)
+		return
+	}
 	if r.Method != http.MethodGet {
 		w.WriteHeader(http.StatusMethodNotAllowed)
 		return
@@ -227,6 +234,66 @@ func (s *Server) handlePeriodFinalize(w http.ResponseWriter, r *http.Request, pe
 	}
 	p.Status = "finalized"
 	writeJSON(w, http.StatusOK, p)
+}
+
+// POST /api/payroll/periods/{id}/recalculate
+// Recalculates a period that was already calculated. Resets entries to "approved" status and recalculates.
+func (s *Server) handlePeriodRecalculate(w http.ResponseWriter, r *http.Request, periodID string) {
+	if r.Method != http.MethodPost {
+		w.WriteHeader(http.StatusMethodNotAllowed)
+		return
+	}
+
+	p, err := s.Store.GetPayrollPeriod(periodID)
+	if errors.Is(err, store.ErrNotFound) {
+		http.NotFound(w, r)
+		return
+	}
+	if !s.checkCompanyAccess(w, r, p.CompanyID) {
+		return
+	}
+
+	// Use tax year matching pay_date year
+	payYear := 2025
+	if len(p.PayDate) >= 4 {
+		if y, err2 := strconv.Atoi(p.PayDate[:4]); err2 == nil && y > 2000 {
+			payYear = y
+		}
+	}
+	rates := s.Store.GetPayrollRatesForYear(payYear)
+
+	entries, err := s.Store.RecalculatePeriod(periodID, rates)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	writeJSON(w, http.StatusOK, entries)
+}
+
+// DELETE /api/payroll/periods/{id}
+func (s *Server) handleDeletePeriod(w http.ResponseWriter, r *http.Request, periodID string) {
+	if r.Method != http.MethodDelete {
+		w.WriteHeader(http.StatusMethodNotAllowed)
+		return
+	}
+
+	p, err := s.Store.GetPayrollPeriod(periodID)
+	if errors.Is(err, store.ErrNotFound) {
+		http.NotFound(w, r)
+		return
+	}
+	if !s.checkCompanyAccess(w, r, p.CompanyID) {
+		return
+	}
+
+	// Check query param for force deletion of finalized periods
+	force := strings.TrimSpace(r.URL.Query().Get("force")) == "true"
+
+	if err := s.Store.DeletePayrollPeriod(periodID, force); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]string{"message": "Period deleted"})
 }
 
 // ── helpers ────────────────────────────────────────────────────────────────────

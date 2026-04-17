@@ -90,6 +90,41 @@ func (s *Store) UpsertPayrollEntry(e models.PayrollEntry) (models.PayrollEntry, 
 	if e.CalcSnapshotJSON != "" {
 		snap = e.CalcSnapshotJSON
 	}
+
+	// Fetch existing entry to check status
+	var existingStatus string
+	var existingCPPEe, existingCPP2Ee, existingEIEe, existingFedTax, existingProvTax float64
+	var existingTotalDed, existingNetPay, existingCPPEr, existingCPP2Er, existingEIEr float64
+	_ = s.db.QueryRow(`
+		SELECT status, cpp_ee, cpp2_ee, ei_ee, federal_tax, provincial_tax,
+		       total_deductions, net_pay, cpp_er, cpp2_er, ei_er
+		FROM payroll_entries WHERE id=?`, existingID).Scan(
+		&existingStatus, &existingCPPEe, &existingCPP2Ee, &existingEIEe, &existingFedTax, &existingProvTax,
+		&existingTotalDed, &existingNetPay, &existingCPPEr, &existingCPP2Er, &existingEIEr,
+	)
+
+	// Preserve calculated deduction values if entry was already calculated
+	// and the incoming values are all zeros (which happens from saveAll)
+	if existingStatus == "calculated" || existingStatus == "finalized" {
+		// Only update hours, pay_rate, gross_pay, ytd_*, status, updated_at
+		_, err := s.db.Exec(`
+			UPDATE payroll_entries SET
+			  hours=?, pay_rate=?, gross_pay=?,
+			  cpp_ee=?, cpp2_ee=?, ei_ee=?, federal_tax=?, provincial_tax=?,
+			  total_deductions=?, net_pay=?, cpp_er=?, cpp2_er=?, ei_er=?,
+			  ytd_gross=?, ytd_cpp_ee=?, ytd_cpp2_ee=?, ytd_ei_ee=?,
+			  calc_snapshot_json=?, status=?, updated_at=?
+			WHERE id=?`,
+			e.Hours, e.PayRate, e.GrossPay,
+			existingCPPEe, existingCPP2Ee, existingEIEe, existingFedTax, existingProvTax,
+			existingTotalDed, existingNetPay, existingCPPEr, existingCPP2Er, existingEIEr,
+			e.YTDGross, e.YTDCPPEe, e.YTDCPP2Ee, e.YTDEIEe,
+			snap, e.Status, now, existingID,
+		)
+		return e, err
+	}
+
+	// Normal update for draft/approved entries
 	_, err := s.db.Exec(`
 		UPDATE payroll_entries SET
 		  hours=?, pay_rate=?, gross_pay=?,
@@ -319,17 +354,17 @@ func (s *Store) CalculatePeriod(periodID string, rates calculator.TaxYear) ([]mo
 
 			// Store calc snapshot
 			snap := map[string]any{
-				"province":    info.Province,
-				"payPeriods":  period.PaysPerYear,
-				"grossPay":    e.GrossPay,
-				"td1Federal":  info.TD1Federal,
-				"td1Prov":     info.TD1Prov,
-				"ytdGross":    ytd.Gross,
-				"ytdCPPEe":    ytd.CPPEe,
-				"ytdEIEe":     ytd.EIEe,
-				"ratesYear":   rates.Year,
-				"cppRate":     rates.CPPRate,
-				"eiRate":      rates.EIRate,
+				"province":   info.Province,
+				"payPeriods": period.PaysPerYear,
+				"grossPay":   e.GrossPay,
+				"td1Federal": info.TD1Federal,
+				"td1Prov":    info.TD1Prov,
+				"ytdGross":   ytd.Gross,
+				"ytdCPPEe":   ytd.CPPEe,
+				"ytdEIEe":    ytd.EIEe,
+				"ratesYear":  rates.Year,
+				"cppRate":    rates.CPPRate,
+				"eiRate":     rates.EIRate,
 			}
 			b, _ := json.Marshal(snap)
 			e.CalcSnapshotJSON = string(b)
@@ -346,6 +381,20 @@ func (s *Store) CalculatePeriod(periodID string, rates calculator.TaxYear) ([]mo
 	_ = s.UpdatePayrollPeriodStatus(periodID, "calculated")
 
 	return updated, nil
+}
+
+// RecalculatePeriod resets entry statuses to "approved" and recalculates.
+// Used to fix previously calculated periods.
+func (s *Store) RecalculatePeriod(periodID string, rates calculator.TaxYear) ([]models.PayrollEntry, error) {
+	// First, reset all calculated/finalized entries to "approved"
+	_, _ = s.db.Exec(`
+		UPDATE payroll_entries
+		SET status = 'approved'
+		WHERE period_id = ? AND status IN ('calculated', 'finalized')
+	`, periodID)
+
+	// Then run normal calculation
+	return s.CalculatePeriod(periodID, rates)
 }
 
 func (s *Store) nextEntryID() string {

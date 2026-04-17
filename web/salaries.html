@@ -420,11 +420,14 @@
         var n = Object.keys(selectedRows).length;
         document.getElementById('btnApproveSelected').classList.toggle('hidden', n === 0);
         document.getElementById('selectedCount').textContent = n;
-        var noSel = n === 0;
-        document.getElementById('btnCalculate').disabled  = noSel;
-        document.getElementById('btnCalcFooter').disabled = noSel;
-        document.getElementById('btnCalculate').classList.toggle('btn-disabled', noSel);
-        document.getElementById('btnCalcFooter').classList.toggle('btn-disabled', noSel);
+        
+        // Calculate 按钮只在至少有一个 approved entry 时启用
+        var hasApproved = entries.some(function(e) { return e.status === 'approved'; });
+        var noApproved = !hasApproved;
+        document.getElementById('btnCalculate').disabled  = noApproved;
+        document.getElementById('btnCalcFooter').disabled = noApproved;
+        document.getElementById('btnCalculate').classList.toggle('btn-disabled', noApproved);
+        document.getElementById('btnCalcFooter').classList.toggle('btn-disabled', noApproved);
       }
 
       function updateTotal() {
@@ -457,7 +460,27 @@
       // ── Save & Calculate ──────────────────────────────────────────────────
       function saveAll(cb) {
         var payload = entries.map(function(e) {
-          return { employeeId: e.employeeId, hours: e.hours, payRate: e.payRate, grossPay: e.grossPay, status: e.status || 'draft' };
+          var item = {
+            employeeId: e.employeeId,
+            hours: e.hours,
+            payRate: e.payRate,
+            grossPay: e.grossPay,
+            status: e.status || 'draft'
+          };
+          // Preserve calculated deduction values for already-calculated entries
+          if (e.status === 'calculated' || e.status === 'finalized') {
+            item.cppEmployee    = e.cppEmployee || 0;
+            item.cpp2Employee   = e.cpp2Employee || 0;
+            item.eiEmployee     = e.eiEmployee || 0;
+            item.federalTax     = e.federalTax || 0;
+            item.provincialTax  = e.provincialTax || 0;
+            item.totalDeductions = e.totalDeductions || 0;
+            item.netPay         = e.netPay || 0;
+            item.cppEmployer    = e.cppEmployer || 0;
+            item.cpp2Employer   = e.cpp2Employer || 0;
+            item.eiEmployer     = e.eiEmployer || 0;
+          }
+          return item;
         });
         document.getElementById('tableCard').classList.add('opacity-60', 'pointer-events-none');
         fetch('/api/payroll/periods/' + encodeURIComponent(periodId) + '/entries', {

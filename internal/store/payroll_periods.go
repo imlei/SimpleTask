@@ -144,3 +144,31 @@ func (s *Store) nextPeriodID() string {
 	}
 	return fmt.Sprintf("PP%05d", max+1)
 }
+
+// DeletePayrollPeriod deletes a period and all its entries.
+// Only allows deletion of 'open' or 'calculated' periods.
+// Finalized periods can only be deleted if force=true.
+func (s *Store) DeletePayrollPeriod(id string, force bool) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	// Check period status
+	var status string
+	_ = s.db.QueryRow(`SELECT status FROM payroll_periods WHERE id=?`, id).Scan(&status)
+
+	if status == "" {
+		return ErrNotFound
+	}
+	if status == "finalized" && !force {
+		return fmt.Errorf("cannot delete finalized period without force flag")
+	}
+
+	// Delete entries first (foreign key)
+	_, _ = s.db.Exec(`DELETE FROM payroll_entries WHERE period_id = ?`, id)
+	// Then delete period
+	_, err := s.db.Exec(`DELETE FROM payroll_periods WHERE id = ?`, id)
+	if err != nil {
+		return err
+	}
+	return nil
+}

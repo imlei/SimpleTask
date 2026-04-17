@@ -211,6 +211,8 @@
               (p.status === 'finalized' ? '<a href="' + payslipsHref + '" class="btn btn-xs btn-ghost" title="Payslips">📄</a>' : '') +
               '<a href="' + actionHref + '" class="btn btn-xs btn-ghost" title="' + actionTitle + '">🔍</a>' +
               (p.status === 'finalized' ? '<a href="/api/payroll/export/csv?period_id=' + encodeURIComponent(p.id) + '" class="btn btn-xs btn-ghost" title="CSV" download>⬇</a>' : '') +
+              (p.status !== 'finalized' ? '<button type="button" class="btn btn-xs btn-ghost text-error" onclick="deletePeriod(\'' + p.id + '\', false)" title="Delete">🗑</button>' : 
+              '<button type="button" class="btn btn-xs btn-ghost text-error" onclick="deletePeriod(\'' + p.id + '\', true)" title="Force delete">🗑</button>') +
             '</td>' +
             '</tr>';
         }).join('');
@@ -234,6 +236,52 @@
 
       document.getElementById('y').value = new Date().getFullYear().toString();
       document.getElementById('taxYear').textContent = new Date().getFullYear();
+
+      // Delete period function
+      function deletePeriod(periodId, force) {
+        var msg = force 
+          ? 'This pay run is finalized. Are you sure you want to force delete it? This cannot be undone.' 
+          : 'Are you sure you want to delete this pay run? This cannot be undone.';
+        
+        if (!confirm(msg)) {
+          return;
+        }
+
+        var url = '/api/payroll/periods/' + encodeURIComponent(periodId);
+        if (force) {
+          url += '?force=true';
+        }
+
+        fetch(url, {
+          method: 'DELETE',
+          credentials: 'same-origin'
+        })
+          .then(function(r) { 
+            if (!r.ok) {
+              return r.text().then(function(t) { throw new Error(t); });
+            }
+            return r.json();
+          })
+          .then(function() {
+            // Remove from local cache and re-render
+            allPeriods = allPeriods.filter(function(p) { return p.id !== periodId; });
+            render();
+            showAlert('Pay run deleted successfully.', false);
+          })
+          .catch(function(err) {
+            showAlert('Failed to delete pay run: ' + err.message, true);
+          });
+      }
+
+      function showAlert(msg, isError) {
+        var el = document.getElementById('alertBox');
+        el.textContent = msg;
+        el.className = isError 
+          ? 'alert alert-error text-sm py-2 px-4 mb-4' 
+          : 'alert alert-success text-sm py-2 px-4 mb-4';
+        el.classList.remove('hidden');
+        setTimeout(function() { el.classList.add('hidden'); }, 4000);
+      }
 
       load();
     </script>
