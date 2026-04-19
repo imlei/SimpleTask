@@ -1,0 +1,490 @@
+<!DOCTYPE html>
+<html lang="en-CA">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Year End Task — SimpleTask</title>
+    <script>(function(){var t=localStorage.getItem('pw-theme')||(window.matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');document.documentElement.setAttribute('data-theme',t);})();</script>
+    <link href="/vendor/daisyui-themes.css" rel="stylesheet" />
+    <link href="/vendor/daisyui-components.css" rel="stylesheet" />
+    <script src="/vendor/tailwind-browser.js"></script>
+    <style type="text/tailwindcss">@import "tailwindcss";</style>
+  </head>
+  <body class="bg-base-200 min-h-screen">
+
+    <!-- Navbar -->
+    <div class="navbar bg-base-100 border-b border-base-300 px-4 min-h-12 sticky top-0 z-30 shadow-sm">
+      <div class="navbar-start gap-2">
+        <a id="backBrand" href="dashboard.html" class="btn btn-ghost btn-sm text-base-content/60">←</a>
+        <span class="font-bold text-sm tracking-wide">SimpleTask - Payroll</span>
+        <span class="text-base">🇨🇦</span>
+      </div>
+      <div class="navbar-center">
+        <span class="font-medium text-sm">Year End Task</span>
+      </div>
+      <div class="navbar-end gap-3">
+        <span class="text-sm text-base-content/60" id="companyName">—</span>
+        <button onclick="toggleTheme()" class="btn btn-ghost btn-sm btn-circle" title="Toggle dark mode">
+          <svg id="iconSun" class="w-4 h-4 hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364-6.364l-.707.707M6.343 17.657l-.707.707M17.657 17.657l-.707-.707M6.343 6.343l-.707-.707M12 5a7 7 0 100 14A7 7 0 0012 5z"/></svg>
+          <svg id="iconMoon" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/></svg>
+        </button>
+        <div class="avatar avatar-placeholder">
+          <div class="bg-primary text-primary-content rounded-full w-8 text-xs"><span>PW</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="flex">
+      <!-- Sidebar -->
+      <aside class="w-56 bg-base-100 border-r border-base-300 min-h-[calc(100vh-3rem)] hidden md:flex flex-col gap-1 p-3 shrink-0">
+        <a id="nav-home" href="dashboard.html" class="btn btn-ghost btn-sm justify-start gap-2 font-normal">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
+          Home
+        </a>
+
+        <div class="text-xs font-semibold text-base-content/40 px-2 pt-3 pb-1 uppercase tracking-wider">Payroll</div>
+        <a id="nav-runSide" href="run-payroll.html" class="btn btn-ghost btn-sm justify-start gap-2 font-normal">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
+          Payroll Runs
+        </a>
+        <a id="nav-reports" href="reports/payrun.html" class="btn btn-ghost btn-sm justify-start gap-2 font-normal">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+          Reports
+        </a>
+
+        <div class="text-xs font-semibold text-base-content/40 px-2 pt-3 pb-1 uppercase tracking-wider">Management</div>
+        <a id="nav-employees" href="employees.html" class="btn btn-ghost btn-sm justify-start gap-2 font-normal">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+          Employees
+        </a>
+        <a id="nav-payrules" href="pay-rules.html" class="btn btn-ghost btn-sm justify-start gap-2 font-normal">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><circle cx="12" cy="12" r="3"/></svg>
+          Pay Rules
+        </a>
+
+        <div class="text-xs font-semibold text-base-content/40 px-2 pt-3 pb-1 uppercase tracking-wider">Actions</div>
+        <a id="nav-yearend-task" href="year-end-task.html" class="btn btn-ghost btn-sm justify-start gap-2 font-normal bg-primary/10 text-primary">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+          Year End Task
+        </a>
+        <a id="nav-roe" href="roe.html" class="btn btn-ghost btn-sm justify-start gap-2 font-normal">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
+          Record of Employment
+        </a>
+
+        <div class="mt-auto -mx-3 -mb-3 px-3 py-3 border-t border-base-300">
+          <p class="text-xs text-base-content/40 font-medium">SimpleTask v0.0.18</p>
+          <a href="https://github.com/imlei/SimpleTask/issues" target="_blank" rel="noopener"
+             class="text-xs text-base-content/40 hover:text-primary transition-colors">Report a bug</a>
+        </div>
+      </aside>
+
+      <!-- Main -->
+      <main class="flex-1 p-4 md:p-6 min-w-0 max-w-3xl">
+        <div class="mb-6 flex items-center justify-between gap-4">
+          <div>
+            <h1 class="text-xl font-bold">Year End Task</h1>
+            <p class="text-sm text-base-content/60 mt-0.5">Review → T4/T4s → Submit &amp; Lock</p>
+          </div>
+          <div class="flex items-center gap-2">
+            <label class="text-sm text-base-content/60">Tax Year</label>
+            <select id="yearSelect" class="select select-sm select-bordered w-28" onchange="loadAll()"></select>
+            <button onclick="loadAll()" class="btn btn-sm btn-ghost btn-circle" title="Refresh">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+            </button>
+          </div>
+        </div>
+
+        <!-- Locked year banner -->
+        <div id="lockedBanner" class="hidden alert alert-success mb-6 gap-3">
+          <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
+          <div>
+            <div class="font-semibold" id="lockedBannerTitle">Year Locked</div>
+            <div class="text-sm" id="lockedBannerDetail"></div>
+          </div>
+        </div>
+
+        <!-- Step cards -->
+        <div class="flex flex-col gap-4" id="stepList">
+
+          <!-- Step 1: Year End Review -->
+          <div class="card bg-base-100 shadow-sm border border-base-300" id="card-review">
+            <div class="card-body p-5">
+              <div class="flex items-start gap-4">
+                <div class="flex-shrink-0 w-9 h-9 rounded-full flex items-center justify-center text-sm font-bold border-2 border-primary text-primary" id="step1-circle">1</div>
+                <div class="flex-1 min-w-0">
+                  <div class="flex items-center gap-2 mb-1">
+                    <h2 class="font-semibold text-base">Year End Review</h2>
+                    <span id="step1-badge" class="badge badge-sm badge-ghost">Not Run</span>
+                  </div>
+                  <p class="text-sm text-base-content/60 mb-3">Run 9 compliance checks against finalized payroll data before generating T4s.</p>
+                  <div id="step1-detail" class="text-sm text-base-content/70 mb-3 hidden"></div>
+                  <a id="step1-btn" href="year-end-review.html" class="btn btn-sm btn-outline">Open Year End Review</a>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Step 2: T4 / T4s -->
+          <div class="card bg-base-100 shadow-sm border border-base-300" id="card-t4">
+            <div class="card-body p-5">
+              <div class="flex items-start gap-4">
+                <div class="flex-shrink-0 w-9 h-9 rounded-full flex items-center justify-center text-sm font-bold border-2 border-base-300 text-base-content/40" id="step2-circle">2</div>
+                <div class="flex-1 min-w-0">
+                  <div class="flex items-center gap-2 mb-1">
+                    <h2 class="font-semibold text-base">T4 / T4 Summary</h2>
+                    <span id="step2-badge" class="badge badge-sm badge-ghost">Not Started</span>
+                  </div>
+                  <p class="text-sm text-base-content/60 mb-3">Generate, validate, and finalize T4 slips and T4 Summary for CRA submission.</p>
+                  <div id="step2-detail" class="text-sm text-base-content/70 mb-3 hidden"></div>
+                  <a id="step2-btn" href="year-end-returns.html" class="btn btn-sm btn-outline">Open T4 / Year-End Returns</a>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Step 3: Submit & Lock -->
+          <div class="card bg-base-100 shadow-sm border border-base-300" id="card-lock">
+            <div class="card-body p-5">
+              <div class="flex items-start gap-4">
+                <div class="flex-shrink-0 w-9 h-9 rounded-full flex items-center justify-center text-sm font-bold border-2 border-base-300 text-base-content/40" id="step3-circle">3</div>
+                <div class="flex-1 min-w-0">
+                  <div class="flex items-center gap-2 mb-1">
+                    <h2 class="font-semibold text-base">Submit &amp; Lock</h2>
+                    <span id="step3-badge" class="badge badge-sm badge-ghost">Pending</span>
+                  </div>
+                  <p class="text-sm text-base-content/60 mb-3">
+                    Lock the tax year after filing. Locked years prevent creating or editing payroll data.
+                    You can unlock at any time if a correction is needed.
+                  </p>
+                  <div id="step3-detail" class="text-sm text-base-content/70 mb-3 hidden"></div>
+                  <div class="flex gap-2 flex-wrap">
+                    <button id="lockBtn" class="btn btn-sm btn-primary" onclick="doLock()" disabled>
+                      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
+                      Lock Year
+                    </button>
+                    <button id="unlockBtn" class="btn btn-sm btn-warning hidden" onclick="doUnlock()">
+                      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 11V7a4 4 0 118 0m-4 8v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2z"/></svg>
+                      Unlock Year
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div><!-- /stepList -->
+
+      </main>
+    </div><!-- /flex -->
+
+    <!-- Unlock confirm modal -->
+    <dialog id="unlockModal" class="modal">
+      <div class="modal-box max-w-sm">
+        <h3 class="font-bold text-lg mb-2">Unlock <span id="unlockModalYear"></span>?</h3>
+        <p class="text-sm text-base-content/70 mb-4">
+          This will allow payroll edits for the locked year. Use only if a CRA-approved correction is required.
+        </p>
+        <div class="modal-action">
+          <button class="btn btn-ghost btn-sm" onclick="unlockModal.close()">Cancel</button>
+          <button class="btn btn-warning btn-sm" onclick="confirmUnlock()">Unlock</button>
+        </div>
+      </div>
+      <form method="dialog" class="modal-backdrop"><button>close</button></form>
+    </dialog>
+
+    <script>
+      // ── State ────────────────────────────────────────────────────────
+      const p = new URLSearchParams(location.search);
+      let companyId = p.get('company') || p.get('company_id') || '';
+
+      let reviewData = null;
+      let t4Data     = null;  // { status: 'draft'|'finalized'|null }
+      let lockData   = null;  // { locked: bool, lock?: {...} }
+
+      // ── Init ─────────────────────────────────────────────────────────
+      document.addEventListener('DOMContentLoaded', () => {
+        initThemeIcons();
+        buildYearSelector();
+        initNav();
+        if (companyId) {
+          loadCompanyName();
+          loadAll();
+        }
+      });
+
+      function withC(href) {
+        return companyId ? href + (href.includes('?') ? '&' : '?') + 'company=' + encodeURIComponent(companyId) : href;
+      }
+
+      function initNav() {
+        document.getElementById('backBrand').href    = companyId ? 'company.html?company=' + encodeURIComponent(companyId) : 'dashboard.html';
+        document.getElementById('nav-home').href     = companyId ? 'company.html?company=' + encodeURIComponent(companyId) : 'dashboard.html';
+        document.getElementById('nav-runSide').href  = withC('run-payroll.html');
+        document.getElementById('nav-reports').href  = withC('reports/payrun.html');
+        document.getElementById('nav-employees').href = withC('employees.html');
+        document.getElementById('nav-payrules').href  = withC('pay-rules.html');
+        document.getElementById('nav-yearend-task').href = withC('year-end-task.html');
+        document.getElementById('nav-roe').href       = withC('roe.html');
+        document.getElementById('step1-btn').href     = withC('year-end-review.html');
+        document.getElementById('step2-btn').href     = withC('year-end-returns.html');
+      }
+
+      function buildYearSelector() {
+        const sel = document.getElementById('yearSelect');
+        const now = new Date().getFullYear();
+        const defaultYear = now - 1;
+        for (let y = now; y >= now - 4; y--) {
+          const opt = document.createElement('option');
+          opt.value = y;
+          opt.textContent = y;
+          if (y === defaultYear) opt.selected = true;
+          sel.appendChild(opt);
+        }
+      }
+
+      function selectedYear() {
+        return parseInt(document.getElementById('yearSelect').value, 10);
+      }
+
+      async function loadCompanyName() {
+        try {
+          const r = await fetch('/api/payroll/companies/' + encodeURIComponent(companyId));
+          if (r.ok) {
+            const c = await r.json();
+            document.getElementById('companyName').textContent = c.name || c.legalName || companyId;
+          }
+        } catch (_) {}
+      }
+
+      // ── Load all three data sources ─────────────────────────────────
+      async function loadAll() {
+        if (!companyId) return;
+        const year = selectedYear();
+        await Promise.all([loadReview(year), loadT4(year), loadLock(year)]);
+        renderAll(year);
+      }
+
+      async function loadReview(year) {
+        try {
+          const r = await fetch(`/api/payroll/year-end-review?company=${encodeURIComponent(companyId)}&year=${year}`);
+          reviewData = r.ok ? await r.json() : null;
+        } catch (_) { reviewData = null; }
+      }
+
+      async function loadT4(year) {
+        try {
+          const r = await fetch(`/api/payroll/year-end?company=${encodeURIComponent(companyId)}&year=${year}`);
+          if (r.ok) {
+            const list = await r.json();
+            if (Array.isArray(list) && list.length > 0) {
+              const finalized = list.find(x => x.status === 'finalized');
+              t4Data = finalized ? finalized : list[0];
+            } else {
+              t4Data = null;
+            }
+          } else {
+            t4Data = null;
+          }
+        } catch (_) { t4Data = null; }
+      }
+
+      async function loadLock(year) {
+        try {
+          const r = await fetch(`/api/payroll/year-locks?company=${encodeURIComponent(companyId)}&year=${year}`);
+          lockData = r.ok ? await r.json() : null;
+        } catch (_) { lockData = null; }
+      }
+
+      // ── Render ───────────────────────────────────────────────────────
+      function renderAll(year) {
+        const isLocked = lockData && lockData.locked;
+
+        // --- Step 1: Year End Review ---
+        const s1Circle = document.getElementById('step1-circle');
+        const s1Badge  = document.getElementById('step1-badge');
+        const s1Detail = document.getElementById('step1-detail');
+        let step1ok = false;
+
+        if (!reviewData) {
+          s1Badge.className  = 'badge badge-sm badge-ghost';
+          s1Badge.textContent = 'Not Run';
+          s1Circle.className = 'flex-shrink-0 w-9 h-9 rounded-full flex items-center justify-center text-sm font-bold border-2 border-base-300 text-base-content/40';
+          s1Detail.className = 'hidden';
+        } else {
+          const errors   = reviewData.issues ? reviewData.issues.filter(i => i.severity === 'error').length : 0;
+          const warnings = reviewData.issues ? reviewData.issues.filter(i => i.severity === 'warning').length : 0;
+          step1ok = reviewData.t4Ready === true;
+
+          if (step1ok) {
+            s1Badge.className  = 'badge badge-sm badge-success';
+            s1Badge.textContent = 'Passed';
+            s1Circle.className = 'flex-shrink-0 w-9 h-9 rounded-full flex items-center justify-center text-sm font-bold border-2 border-success bg-success text-success-content';
+            s1Circle.textContent = '✓';
+          } else if (errors > 0) {
+            s1Badge.className  = 'badge badge-sm badge-error';
+            s1Badge.textContent = errors + ' Error' + (errors > 1 ? 's' : '');
+            s1Circle.className = 'flex-shrink-0 w-9 h-9 rounded-full flex items-center justify-center text-sm font-bold border-2 border-error text-error';
+            s1Circle.textContent = '!';
+          } else {
+            s1Badge.className  = 'badge badge-sm badge-warning';
+            s1Badge.textContent = warnings + ' Warning' + (warnings > 1 ? 's' : '');
+            s1Circle.className = 'flex-shrink-0 w-9 h-9 rounded-full flex items-center justify-center text-sm font-bold border-2 border-warning text-warning';
+            s1Circle.textContent = '1';
+          }
+          const parts = [];
+          if (errors)   parts.push(`${errors} blocking error${errors > 1 ? 's' : ''}`);
+          if (warnings) parts.push(`${warnings} warning${warnings > 1 ? 's' : ''}`);
+          const totalEmp = reviewData.totalEmployees || 0;
+          const periods  = reviewData.finalizedPeriods || 0;
+          s1Detail.textContent = `${totalEmp} employee${totalEmp !== 1 ? 's' : ''}, ${periods} finalized period${periods !== 1 ? 's' : ''}` +
+            (parts.length ? ' · ' + parts.join(', ') : '');
+          s1Detail.className = 'text-sm text-base-content/70 mb-3';
+        }
+
+        // --- Step 2: T4 / T4s ---
+        const s2Circle = document.getElementById('step2-circle');
+        const s2Badge  = document.getElementById('step2-badge');
+        const s2Detail = document.getElementById('step2-detail');
+        let step2ok = false;
+
+        if (!t4Data) {
+          s2Badge.className  = 'badge badge-sm badge-ghost';
+          s2Badge.textContent = 'Not Started';
+          s2Circle.className = 'flex-shrink-0 w-9 h-9 rounded-full flex items-center justify-center text-sm font-bold border-2 border-base-300 text-base-content/40';
+          s2Circle.textContent = '2';
+          s2Detail.className = 'hidden';
+        } else if (t4Data.status === 'finalized') {
+          step2ok = true;
+          s2Badge.className  = 'badge badge-sm badge-success';
+          s2Badge.textContent = 'Finalized';
+          s2Circle.className = 'flex-shrink-0 w-9 h-9 rounded-full flex items-center justify-center text-sm font-bold border-2 border-success bg-success text-success-content';
+          s2Circle.textContent = '✓';
+          s2Detail.textContent = 'T4 return finalized' + (t4Data.finalizedAt ? ' on ' + t4Data.finalizedAt.slice(0, 10) : '') + '.';
+          s2Detail.className = 'text-sm text-base-content/70 mb-3';
+        } else {
+          s2Badge.className  = 'badge badge-sm badge-warning';
+          s2Badge.textContent = 'Draft';
+          s2Circle.className = 'flex-shrink-0 w-9 h-9 rounded-full flex items-center justify-center text-sm font-bold border-2 border-warning text-warning';
+          s2Circle.textContent = '2';
+          s2Detail.textContent = 'T4 draft generated — finalize before locking the year.';
+          s2Detail.className = 'text-sm text-base-content/70 mb-3';
+        }
+
+        // --- Step 3: Lock ---
+        const s3Circle  = document.getElementById('step3-circle');
+        const s3Badge   = document.getElementById('step3-badge');
+        const s3Detail  = document.getElementById('step3-detail');
+        const lockBtn   = document.getElementById('lockBtn');
+        const unlockBtn = document.getElementById('unlockBtn');
+        const banner    = document.getElementById('lockedBanner');
+
+        if (isLocked) {
+          const lock = lockData.lock;
+          s3Badge.className  = 'badge badge-sm badge-success';
+          s3Badge.textContent = 'Locked';
+          s3Circle.className = 'flex-shrink-0 w-9 h-9 rounded-full flex items-center justify-center text-sm font-bold border-2 border-success bg-success text-success-content';
+          s3Circle.textContent = '✓';
+          const lockedOn = lock && lock.lockedAt ? lock.lockedAt.slice(0, 10) : '';
+          const lockedBy = lock && lock.lockedBy ? lock.lockedBy : '';
+          s3Detail.textContent = 'Year locked' + (lockedOn ? ' on ' + lockedOn : '') + (lockedBy && lockedBy !== 'system' ? ' by ' + lockedBy : '') + '.';
+          s3Detail.className = 'text-sm text-base-content/70 mb-3';
+          lockBtn.classList.add('hidden');
+          unlockBtn.classList.remove('hidden');
+
+          banner.classList.remove('hidden');
+          document.getElementById('lockedBannerTitle').textContent = year + ' Tax Year Locked';
+          document.getElementById('lockedBannerDetail').textContent =
+            'Payroll data for ' + year + ' is read-only.' +
+            (lockedOn ? ' Locked ' + lockedOn + '.' : '') +
+            ' Click "Unlock Year" if a CRA correction is required.';
+        } else {
+          banner.classList.add('hidden');
+          lockBtn.classList.remove('hidden');
+          unlockBtn.classList.add('hidden');
+
+          if (!step2ok) {
+            s3Badge.className  = 'badge badge-sm badge-ghost';
+            s3Badge.textContent = 'Pending';
+            s3Circle.className = 'flex-shrink-0 w-9 h-9 rounded-full flex items-center justify-center text-sm font-bold border-2 border-base-300 text-base-content/40';
+            s3Circle.textContent = '3';
+            s3Detail.textContent = 'Finalize T4 returns in Step 2 before locking.';
+            s3Detail.className = 'text-sm text-base-content/60 mb-3';
+            lockBtn.disabled = true;
+          } else {
+            s3Badge.className  = 'badge badge-sm badge-info';
+            s3Badge.textContent = 'Ready to Lock';
+            s3Circle.className = 'flex-shrink-0 w-9 h-9 rounded-full flex items-center justify-center text-sm font-bold border-2 border-primary text-primary';
+            s3Circle.textContent = '3';
+            s3Detail.textContent = 'T4 returns are finalized. Lock the year to mark filing complete.';
+            s3Detail.className = 'text-sm text-base-content/70 mb-3';
+            lockBtn.disabled = false;
+          }
+        }
+      }
+
+      // ── Actions ──────────────────────────────────────────────────────
+      async function doLock() {
+        const year = selectedYear();
+        const lockBtn = document.getElementById('lockBtn');
+        lockBtn.disabled = true;
+        lockBtn.textContent = 'Locking…';
+        try {
+          const r = await fetch(`/api/payroll/year-locks?company=${encodeURIComponent(companyId)}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ companyId, year })
+          });
+          if (!r.ok) {
+            const msg = await r.text();
+            alert('Lock failed: ' + msg);
+            lockBtn.disabled = false;
+            lockBtn.innerHTML = '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg> Lock Year';
+            return;
+          }
+          await loadAll();
+        } catch (e) {
+          alert('Lock failed: ' + e.message);
+          lockBtn.disabled = false;
+          lockBtn.innerHTML = '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg> Lock Year';
+        }
+      }
+
+      function doUnlock() {
+        document.getElementById('unlockModalYear').textContent = selectedYear();
+        document.getElementById('unlockModal').showModal();
+      }
+
+      async function confirmUnlock() {
+        document.getElementById('unlockModal').close();
+        const year = selectedYear();
+        try {
+          const r = await fetch(`/api/payroll/year-locks/${year}?company=${encodeURIComponent(companyId)}`, {
+            method: 'DELETE'
+          });
+          if (!r.ok) {
+            const msg = await r.text();
+            alert('Unlock failed: ' + msg);
+            return;
+          }
+          await loadAll();
+        } catch (e) {
+          alert('Unlock failed: ' + e.message);
+        }
+      }
+
+      // ── Theme ────────────────────────────────────────────────────────
+      function initThemeIcons() {
+        const t = document.documentElement.getAttribute('data-theme');
+        document.getElementById('iconSun').classList.toggle('hidden', t !== 'dark');
+        document.getElementById('iconMoon').classList.toggle('hidden', t === 'dark');
+      }
+      function toggleTheme() {
+        const next = document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+        document.documentElement.setAttribute('data-theme', next);
+        localStorage.setItem('pw-theme', next);
+        document.getElementById('iconSun').classList.toggle('hidden', next !== 'dark');
+        document.getElementById('iconMoon').classList.toggle('hidden', next === 'dark');
+      }
+    </script>
+  </body>
+</html>

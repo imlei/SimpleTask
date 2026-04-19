@@ -813,6 +813,13 @@ func Register(mux *http.ServeMux, s *Server) {
 	mux.HandleFunc("/api/payroll/earnings-codes", s.handleEarningsCodes)
 	mux.HandleFunc("/api/payroll/company-rules", s.handleCompanyRules)
 	mux.HandleFunc("/api/payroll/entries/", s.handleEntryEarnings)
+	mux.HandleFunc("/api/payroll/year-end/", s.handleYearEndReturnByID)
+	mux.HandleFunc("/api/payroll/year-end", s.handleYearEndReturns)
+	mux.HandleFunc("/api/payroll/roe/", s.handleROEByID)
+	mux.HandleFunc("/api/payroll/roe", s.handleROEs)
+	mux.HandleFunc("/api/payroll/year-end-review", s.handleYearEndReview)
+	mux.HandleFunc("/api/payroll/year-locks/", s.handleYearLockByYear)
+	mux.HandleFunc("/api/payroll/year-locks", s.handleYearLocks)
 
 	// Admin-only payroll settings (rates + plans)
 	mux.HandleFunc("/api/admin/payroll-settings/", s.handleAdminPayrollSettings)

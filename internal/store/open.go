@@ -240,6 +240,38 @@ func Open(dir string) (*sql.DB, error) {
 		_ = db.Close()
 		return nil, err
 	}
+	if err := ensurePayrollYearEndReturnsTable(db); err != nil {
+		_ = db.Close()
+		return nil, err
+	}
+	if err := ensurePayrollT4SlipsTable(db); err != nil {
+		_ = db.Close()
+		return nil, err
+	}
+	if err := ensurePayrollT4SummaryTable(db); err != nil {
+		_ = db.Close()
+		return nil, err
+	}
+	if err := ensurePayrollYearEndAuditLogsTable(db); err != nil {
+		_ = db.Close()
+		return nil, err
+	}
+	if err := ensureEmployeeROEColumns(db); err != nil {
+		_ = db.Close()
+		return nil, err
+	}
+	if err := ensurePayrollROETable(db); err != nil {
+		_ = db.Close()
+		return nil, err
+	}
+	if err := ensurePayrollROEAuditLogsTable(db); err != nil {
+		_ = db.Close()
+		return nil, err
+	}
+	if err := ensurePayrollYearLocksTable(db); err != nil {
+		_ = db.Close()
+		return nil, err
+	}
 	return db, nil
 }
 

@@ -226,6 +226,11 @@ type PayrollEmployee struct {
 	PaidYTDOtherPayroll bool `json:"paidYtdOtherPayroll"`
 	AutoVacation        bool `json:"autoVacation"`
 
+	// ROE / termination
+	TerminationDate  string `json:"terminationDate,omitempty"`
+	ROERecallDate    string `json:"roeRecallDate,omitempty"`
+	ROERecallUnknown bool   `json:"roeRecallUnknown,omitempty"`
+
 	CreatedAt string `json:"createdAt,omitempty"`
 	UpdatedAt string `json:"updatedAt,omitempty"`
 }
@@ -353,4 +358,385 @@ type BankAccount struct {
 	BankChequeNumber     string `json:"bankChequeNumber"`
 	MICRLineOverride     string `json:"micrLineOverride"`
 	DefaultChequeCurrency string `json:"defaultChequeCurrency"`
+}
+
+// ── Year-End Information Returns (T4 / T4 Summary) ───────────────────────────
+
+// YearEndReturnStatus tracks the lifecycle of a year-end return.
+type YearEndReturnStatus string
+
+const (
+	YearEndStatusDraft     YearEndReturnStatus = "draft"
+	YearEndStatusFinalized YearEndReturnStatus = "finalized"
+)
+
+// YearEndReturn is one annual filing for a single payroll account in a calendar year.
+// Scope: company_id + payroll_account_number + calendar_year is UNIQUE.
+type YearEndReturn struct {
+	ID                   string              `json:"id"`
+	CompanyID            string              `json:"companyId"`
+	PayrollAccountNumber string              `json:"payrollAccountNumber"` // BN+RP, e.g. 123456789RP0001
+	CalendarYear         int                 `json:"calendarYear"`
+	Status               YearEndReturnStatus `json:"status"` // draft | finalized
+	GeneratedAt          string              `json:"generatedAt"`
+	FinalizedAt          string              `json:"finalizedAt,omitempty"`
+	SourceHash           string              `json:"sourceHash"` // SHA-256 of contributing period IDs+dates
+	SlipCount            int                 `json:"slipCount,omitempty"`
+	CreatedAt            string              `json:"createdAt,omitempty"`
+	UpdatedAt            string              `json:"updatedAt,omitempty"`
+}
+
+// T4OtherInfo represents one entry in the "Other Information" section of a T4 slip.
+// Code is the two-digit CRA code (e.g. "30", "42"); Amount is the dollar value.
+type T4OtherInfo struct {
+	Code   string  `json:"code"`
+	Amount float64 `json:"amount"`
+}
+
+// T4Slip is an immutable snapshot of one employee's T4 data for a calendar year.
+// All monetary fields are populated from finalized payroll entries at draft-generation
+// time. After finalize, this record must not be mutated.
+type T4Slip struct {
+	ID                string `json:"id"`
+	YearEndReturnID   string `json:"yearEndReturnId"`
+	EmployeeID        string `json:"employeeId"`
+	CalendarYear      int    `json:"calendarYear"`
+
+	// Employee snapshot (captured at generation time)
+	EmployeeLegalName string `json:"employeeLegalName"`
+	EmployeeSINMasked string `json:"employeeSinMasked"` // ***-***-XXX; full SIN never stored in snapshot
+	EmployeeAddress   string `json:"employeeAddress"`
+	EmployeeProvince  string `json:"employeeProvince"` // Box 10: province of employment
+
+	// Box 14 – Employment income (gross pay from all finalized periods)
+	Box14EmploymentIncome float64 `json:"box14EmploymentIncome"`
+
+	// Box 16 – Employee's CPP contributions (province ≠ QC)
+	Box16CPPEmployee float64 `json:"box16CppEmployee"`
+
+	// Box 16A – Employee's CPP2 contributions (2024+, province ≠ QC)
+	Box16ACpp2Employee float64 `json:"box16ACpp2Employee"`
+
+	// Box 17 – Employee's QPP contributions (QC only) — reserved for future use
+	Box17QPPEmployee float64 `json:"box17QppEmployee"`
+
+	// Box 18 – Employee's EI premiums
+	Box18EIEmployee float64 `json:"box18EiEmployee"`
+
+	// Box 20 – RPP contributions (unsupported in Phase 1 — pending mapping)
+	Box20RPPContributions float64 `json:"box20RppContributions"`
+
+	// Box 22 – Income tax deducted (federal + provincial)
+	Box22IncomeTaxDeducted float64 `json:"box22IncomeTaxDeducted"`
+
+	// Box 24 – EI insurable earnings
+	Box24EIInsurableEarnings float64 `json:"box24EiInsurableEarnings"`
+
+	// Box 26 – CPP/QPP pensionable earnings
+	Box26CPPPensionableEarnings float64 `json:"box26CppPensionableEarnings"`
+
+	// Box 44 – Union dues (unsupported Phase 1 — pending mapping)
+	Box44UnionDues float64 `json:"box44UnionDues"`
+
+	// Box 45 – Dental benefit code (1–5); 0 = not set (required since 2023)
+	Box45DentalBenefitCode int `json:"box45DentalBenefitCode"`
+
+	// Box 46 – Charitable donations (unsupported Phase 1 — pending mapping)
+	Box46CharitableDonations float64 `json:"box46CharitableDonations"`
+
+	// Box 52 – Pension adjustment (unsupported Phase 1 — pending mapping)
+	Box52PensionAdjustment float64 `json:"box52PensionAdjustment"`
+
+	// Employer-side figures stored on the slip to support Summary aggregation
+	EmployerCPP  float64 `json:"employerCpp"`
+	EmployerCPP2 float64 `json:"employerCpp2"`
+	EmployerEI   float64 `json:"employerEi"`
+
+	// Other information codes (up to 6 per CRA spec)
+	OtherInfo []T4OtherInfo `json:"otherInfo"`
+
+	// Unsupported/pending-mapping fields are listed here so they are never silently dropped
+	UnsupportedFields []string `json:"unsupportedFields,omitempty"`
+
+	VersionNo int    `json:"versionNo"`
+	CreatedAt string `json:"createdAt,omitempty"`
+	UpdatedAt string `json:"updatedAt,omitempty"`
+}
+
+// T4Summary is the aggregate totals for all T4 slips under one YearEndReturn.
+// Totals are computed exclusively by summing T4Slip fields; they are never
+// independently calculated.
+type T4Summary struct {
+	ID              string `json:"id"`
+	YearEndReturnID string `json:"yearEndReturnId"`
+	SlipCount       int    `json:"slipCount"`
+
+	// Line 14 – Total employment income
+	TotalEmploymentIncome float64 `json:"totalEmploymentIncome"`
+
+	// Line 16 – Total employee CPP contributions
+	TotalCPPEmployee float64 `json:"totalCppEmployee"`
+
+	// Line 16A – Total employee CPP2 contributions
+	TotalCPP2Employee float64 `json:"totalCpp2Employee"`
+
+	// Line 17 – Total employee QPP contributions (Quebec)
+	TotalQPPEmployee float64 `json:"totalQppEmployee"`
+
+	// Line 18 – Total employee EI premiums
+	TotalEIEmployee float64 `json:"totalEiEmployee"`
+
+	// Line 22 – Total income tax deducted
+	TotalIncomeTaxDeducted float64 `json:"totalIncomeTaxDeducted"`
+
+	// Line 27 – Total employer CPP contributions
+	TotalCPPEmployer float64 `json:"totalCppEmployer"`
+
+	// Line 27A – Total employer CPP2 contributions
+	TotalCPP2Employer float64 `json:"totalCpp2Employer"`
+
+	// Line 19 – Total employer EI premiums
+	TotalEIEmployer float64 `json:"totalEiEmployer"`
+
+	// Line 52 – Total pension adjustments
+	TotalPensionAdjustments float64 `json:"totalPensionAdjustments"`
+
+	// Contact info (for CRA T4 Summary form)
+	ContactName  string `json:"contactName"`
+	ContactPhone string `json:"contactPhone"`
+
+	CreatedAt string `json:"createdAt,omitempty"`
+	UpdatedAt string `json:"updatedAt,omitempty"`
+}
+
+// YearEndAuditLog records every significant action on a YearEndReturn.
+type YearEndAuditLog struct {
+	ID              int    `json:"id"`
+	YearEndReturnID string `json:"yearEndReturnId"`
+	Action          string `json:"action"` // generated | regenerated | finalized | cancelled
+	ActorUsername   string `json:"actorUsername"`
+	Note            string `json:"note"`
+	CreatedAt       string `json:"createdAt"`
+}
+
+// T4ValidationError is a single validation issue blocking finalization.
+type T4ValidationError struct {
+	Scope   string `json:"scope"`   // "summary" | "slip:{employeeID}"
+	Code    string `json:"code"`    // machine-readable code
+	Message string `json:"message"` // human-readable description
+}
+
+// YearEndReturnDetail is the full payload returned for a single return (slips + summary + audit).
+type YearEndReturnDetail struct {
+	Return    YearEndReturn    `json:"return"`
+	Summary   T4Summary        `json:"summary"`
+	Slips     []T4Slip         `json:"slips"`
+	AuditLogs []YearEndAuditLog `json:"auditLogs"`
+	ValidationErrors []T4ValidationError `json:"validationErrors,omitempty"`
+}
+
+// ─── ROE (Record of Employment) ───────────────────────────────────────────────
+
+type ROEStatus string
+
+const (
+	ROEStatusDraft  ROEStatus = "draft"
+	ROEStatusIssued ROEStatus = "issued"
+)
+
+// ROEPeriodEntry is one row of Block 15B — insurable earnings/hours for a single pay period.
+type ROEPeriodEntry struct {
+	PeriodNo          int     `json:"periodNo"`          // 1 = most recent
+	PeriodID          string  `json:"periodId,omitempty"`
+	PeriodEndDate     string  `json:"periodEndDate"`     // YYYY-MM-DD
+	InsurableEarnings float64 `json:"insurableEarnings"` // capped to annual MEI
+	InsurableHours    float64 `json:"insurableHours"`
+	Approximated      bool    `json:"approximated,omitempty"` // true when no entry_earnings rows
+}
+
+// ROEOtherMoney is one row of Block 19.
+type ROEOtherMoney struct {
+	Type   string  `json:"type"`   // e.g. "StatutoryHoliday", "Bonus", "Commission"
+	Amount float64 `json:"amount"`
+}
+
+// ROE is the main Record of Employment record.
+type ROE struct {
+	ID        string    `json:"id"`        // ROE00001
+	CompanyID string    `json:"companyId"`
+	EmployeeID string   `json:"employeeId"`
+	SerialNumber string `json:"serialNumber"` // Service Canada serial
+	Status    ROEStatus `json:"status"`       // draft | issued
+
+	// Block 16 – reason for issuing
+	ReasonCode      string `json:"reasonCode"`
+	ReasonCodeOther string `json:"reasonCodeOther,omitempty"`
+
+	// Block 10 – first day worked
+	FirstDayWorked string `json:"firstDayWorked"` // YYYY-MM-DD
+
+	// Block 11 – last day for which paid (extended by pay-in-lieu)
+	LastDayPaid string `json:"lastDayPaid"` // YYYY-MM-DD
+
+	// Block 12 – final pay period ending date
+	FinalPayPeriodEnd string `json:"finalPayPeriodEnd"` // YYYY-MM-DD
+
+	// Block 13 – occupation
+	Occupation string `json:"occupation"`
+
+	// Block 14 – expected date of recall
+	ExpectedRecallDate string `json:"expectedRecallDate,omitempty"` // YYYY-MM-DD
+	RecallUnknown      bool   `json:"recallUnknown"`
+
+	// Block 15A – total insurable hours
+	TotalInsurableHours float64 `json:"totalInsurableHours"`
+
+	// Block 15B – per-period insurable earnings snapshot
+	InsurableEarningsPeriods []ROEPeriodEntry `json:"insurableEarningsPeriods"`
+
+	// Block 15C – total insurable earnings (sum of 15B)
+	TotalInsurableEarnings float64 `json:"totalInsurableEarnings"`
+
+	// Block 17A – vacation pay
+	VacationPay     float64 `json:"vacationPay"`
+	VacationPayType string  `json:"vacationPayType"` // "included" | "separate" | "deferred" | ""
+
+	// Block 18 – statutory holiday pay
+	StatutoryHolidayPay float64 `json:"statutoryHolidayPay"`
+
+	// Block 19 – other moneys
+	OtherMoneys []ROEOtherMoney `json:"otherMoneys,omitempty"`
+
+	// Block 20 – comments
+	Comments string `json:"comments"`
+
+	// Metadata
+	PayFrequency string `json:"payFrequency"`
+	SourceHash   string `json:"sourceHash"`
+	CreatedAt    string `json:"createdAt,omitempty"`
+	UpdatedAt    string `json:"updatedAt,omitempty"`
+	IssuedAt     string `json:"issuedAt,omitempty"`
+}
+
+// ROEValidationError is a single validation issue blocking issuance.
+type ROEValidationError struct {
+	Code    string `json:"code"`
+	Message string `json:"message"`
+}
+
+// ROEAuditLog records every significant action on a ROE.
+type ROEAuditLog struct {
+	ID            int    `json:"id"`
+	ROEID         string `json:"roeId"`
+	Action        string `json:"action"` // generated | regenerated | issued
+	ActorUsername string `json:"actorUsername"`
+	Note          string `json:"note"`
+	CreatedAt     string `json:"createdAt"`
+}
+
+// ROEDetail is the full payload for a single ROE.
+type ROEDetail struct {
+	ROE        ROE                  `json:"roe"`
+	Employee   PayrollEmployee      `json:"employee"`
+	Company    PayrollCompany       `json:"company"`
+	AuditLogs  []ROEAuditLog        `json:"auditLogs"`
+	Validation []ROEValidationError `json:"validationErrors,omitempty"`
+}
+
+// ─── Year-End Review ──────────────────────────────────────────────────────────
+
+type ReviewSeverity string
+
+const (
+	ReviewError   ReviewSeverity = "error"   // blocks T4 finalize
+	ReviewWarning ReviewSeverity = "warning" // should fix before filing
+	ReviewInfo    ReviewSeverity = "info"    // informational
+)
+
+// ReviewIssue is a single finding from the year-end review.
+type ReviewIssue struct {
+	Severity     ReviewSeverity `json:"severity"`
+	Code         string         `json:"code"`
+	Message      string         `json:"message"`
+	EmployeeID   string         `json:"employeeId,omitempty"`
+	EmployeeName string         `json:"employeeName,omitempty"`
+}
+
+// ReviewOpenPeriod describes a pay period that was not finalized within the review year.
+type ReviewOpenPeriod struct {
+	PeriodID    string `json:"periodId"`
+	PeriodStart string `json:"periodStart"`
+	PeriodEnd   string `json:"periodEnd"`
+	PayDate     string `json:"payDate"`
+	Status      string `json:"status"`
+}
+
+// ReviewEmployeeRow holds per-employee YTD totals for the review year.
+type ReviewEmployeeRow struct {
+	EmployeeID      string  `json:"employeeId"`
+	LegalName       string  `json:"legalName"`
+	Status          string  `json:"status"`
+	Province        string  `json:"province"`
+	SINMissing      bool    `json:"sinMissing"`
+	ProvinceMissing bool    `json:"provinceMissing"`
+	PeriodCount     int     `json:"periodCount"`
+	GrossPay        float64 `json:"grossPay"`
+	CPPEmployee     float64 `json:"cppEmployee"`
+	CPP2Employee    float64 `json:"cpp2Employee"`
+	EIEmployee      float64 `json:"eiEmployee"`
+	FederalTax      float64 `json:"federalTax"`
+	ProvincialTax   float64 `json:"provincialTax"`
+	CPPEmployer     float64 `json:"cppEmployer"`
+	EIEmployer      float64 `json:"eiEmployer"`
+}
+
+// PayrollYearLock records that a calendar year has been locked for a company
+// after the year-end task (T4 finalize + submit) is completed.
+type PayrollYearLock struct {
+	CompanyID string `json:"companyId"`
+	Year      int    `json:"year"`
+	LockedAt  string `json:"lockedAt"`
+	LockedBy  string `json:"lockedBy"`
+}
+
+// YearEndReviewReport is the full response from the year-end review endpoint.
+type YearEndReviewReport struct {
+	CompanyID    string `json:"companyId"`
+	CalendarYear int    `json:"calendarYear"`
+	GeneratedAt  string `json:"generatedAt"`
+
+	// Period stats
+	FinalizedPeriods int `json:"finalizedPeriods"`
+	OpenPeriods      int `json:"openPeriods"`
+	OpenPeriodsList  []ReviewOpenPeriod `json:"openPeriodsList,omitempty"`
+
+	// Expected periods (based on company pay frequency)
+	ExpectedPeriods int `json:"expectedPeriods"`
+
+	// Aggregate totals (finalized periods only)
+	TotalEmployees    int     `json:"totalEmployees"`
+	TotalGrossPay     float64 `json:"totalGrossPay"`
+	TotalCPPEmployee  float64 `json:"totalCppEmployee"`
+	TotalCPP2Employee float64 `json:"totalCpp2Employee"`
+	TotalEIEmployee   float64 `json:"totalEiEmployee"`
+	TotalFederalTax   float64 `json:"totalFederalTax"`
+	TotalProvincialTax float64 `json:"totalProvincialTax"`
+	TotalCPPEmployer  float64 `json:"totalCppEmployer"`
+	TotalEIEmployer   float64 `json:"totalEiEmployer"`
+
+	// CRA annual maxima (from rate settings)
+	CPPMaxEE    float64 `json:"cppMaxEe"`
+	CPP2MaxEE   float64 `json:"cpp2MaxEe"`
+	EIMaxEE     float64 `json:"eiMaxEe"`
+
+	// Per-employee breakdown
+	Employees []ReviewEmployeeRow `json:"employees"`
+
+	// Issues found
+	Issues []ReviewIssue `json:"issues"`
+
+	// Overall readiness
+	T4Ready      bool `json:"t4Ready"`      // no error-severity issues
+	HasT4Draft   bool `json:"hasT4Draft"`   // draft already generated
+	HasT4Final   bool `json:"hasT4Final"`   // already finalized
 }

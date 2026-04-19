@@ -36,7 +36,8 @@ func (s *Store) ListPayrollEmployees(companyID, statusFilter string) []models.Pa
 	             td1_federal, td1_provincial,
 	             paid_ytd_other_payroll, auto_vacation,
 	             created_at, updated_at,
-	             COALESCE(address,''), COALESCE(gender,''), COALESCE(marital_status,''), COALESCE(notes,'')
+	             COALESCE(address,''), COALESCE(gender,''), COALESCE(marital_status,''), COALESCE(notes,''),
+	             COALESCE(termination_date,''), COALESCE(roe_recall_date,''), COALESCE(roe_recall_unknown,0)
 	      FROM payroll_employees
 	      WHERE company_id = ?`
 	args := []any{companyID}
@@ -77,7 +78,8 @@ func (s *Store) GetPayrollEmployee(id string) (models.PayrollEmployee, error) {
 		       td1_federal, td1_provincial,
 		       paid_ytd_other_payroll, auto_vacation,
 		       created_at, updated_at,
-		       COALESCE(address,''), COALESCE(gender,''), COALESCE(marital_status,''), COALESCE(notes,'')
+		       COALESCE(address,''), COALESCE(gender,''), COALESCE(marital_status,''), COALESCE(notes,''),
+		       COALESCE(termination_date,''), COALESCE(roe_recall_date,''), COALESCE(roe_recall_unknown,0)
 		FROM payroll_employees WHERE id = ?`, id)
 
 	var sinEnc string
@@ -180,6 +182,7 @@ func (s *Store) UpdatePayrollEmployee(id string, patch models.PayrollEmployee) (
 		  td1_federal=?, td1_provincial=?,
 		  paid_ytd_other_payroll=?, auto_vacation=?,
 		  address=?, gender=?, marital_status=?, notes=?,
+		  termination_date=?, roe_recall_date=?, roe_recall_unknown=?,
 		  updated_at=?
 		WHERE id=?`,
 		patch.LegalName, patch.Nickname, patch.Email, patch.Mobile,
@@ -189,6 +192,7 @@ func (s *Store) UpdatePayrollEmployee(id string, patch models.PayrollEmployee) (
 		patch.TD1Federal, patch.TD1Provincial,
 		boolInt(patch.PaidYTDOtherPayroll), boolInt(patch.AutoVacation),
 		patch.Address, patch.Gender, patch.MaritalStatus, patch.Notes,
+		patch.TerminationDate, patch.ROERecallDate, boolInt(patch.ROERecallUnknown),
 		now, id,
 	)
 	if err != nil {
@@ -225,7 +229,7 @@ type scanFunc func(dest ...any) error
 func (s *Store) scanEmployee(scan scanFunc) (models.PayrollEmployee, string) {
 	var e models.PayrollEmployee
 	var sinEnc string
-	var paidYTD, autoVac int
+	var paidYTD, autoVac, roeRecallUnk int
 	_ = scan(
 		&e.ID, &e.CompanyID, &e.LegalName, &e.Nickname, &e.Email, &e.Mobile,
 		&e.MemberType, &e.Position, &e.Status, &e.Province, &sinEnc,
@@ -235,9 +239,11 @@ func (s *Store) scanEmployee(scan scanFunc) (models.PayrollEmployee, string) {
 		&paidYTD, &autoVac,
 		&e.CreatedAt, &e.UpdatedAt,
 		&e.Address, &e.Gender, &e.MaritalStatus, &e.Notes,
+		&e.TerminationDate, &e.ROERecallDate, &roeRecallUnk,
 	)
 	e.PaidYTDOtherPayroll = paidYTD != 0
 	e.AutoVacation = autoVac != 0
+	e.ROERecallUnknown = roeRecallUnk != 0
 	return e, sinEnc
 }
 
