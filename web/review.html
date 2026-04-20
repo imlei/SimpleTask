@@ -268,8 +268,9 @@
         </div>
 
         <div class="modal-action px-5 pb-4 gap-2">
-          <form method="dialog"><button class="btn btn-ghost btn-sm">Close</button></form>
-          <a id="detailEditLink" href="#" class="btn btn-outline btn-sm btn-primary">← Edit in Salaries</a>
+          <form method="dialog"><button class="btn btn-ghost btn-sm" id="detailCloseBtn">Close</button></form>
+          <button type="button" id="detailSaveBtn" class="btn btn-primary btn-sm hidden">Save</button>
+          <button type="button" id="detailEditBtn" class="btn btn-outline btn-sm btn-primary">Edit</button>
         </div>
       </div>
       <form method="dialog" class="modal-backdrop"><button>close</button></form>
@@ -308,9 +309,11 @@
       document.getElementById('backBrand').href     = withC('run-payroll.html');
       document.getElementById('backLink').href      = withP('salaries.html');
 
-      var allEntries   = [];
-      var periodStatus = '';
-      var periodInfo   = null;
+      var allEntries      = [];
+      var periodStatus    = '';
+      var periodInfo      = null;
+      var currentEntryIdx = -1;
+      var editMode        = false;
 
       if (!periodId) {
         document.getElementById('reviewTbody').innerHTML =
@@ -462,11 +465,14 @@
         var hours   = parseFloat(e.hours)           || 0;
         var rate    = parseFloat(e.payRate)         || 0;
 
+        currentEntryIdx = idx;
+        editMode = false;
+        document.getElementById('detailEditBtn').textContent = 'Edit';
+        document.getElementById('detailSaveBtn').classList.add('hidden');
         document.getElementById('detailInitials').textContent = initials || '?';
         document.getElementById('detailName').textContent     = name;
         document.getElementById('detailSub').textContent      = 'Basic Rate: $' + rate.toFixed(2) + '/hr' + (hours > 0 ? '  ·  Hours: ' + fmtH(hours) : '');
         document.getElementById('detailNetPay').textContent   = fmt(net);
-        document.getElementById('detailEditLink').href        = withP('salaries.html');
 
         // Net Pay bar
         renderNetPayBar(gross, net, fed, prov, ei, cpp);
@@ -520,14 +526,7 @@
         }).join('');
 
         // Deductions
-        document.getElementById('dDeductionsSection').innerHTML = [
-          ['Federal Tax', fmt(fed)],
-          ['Provincial Tax', fmt(prov)],
-          ['EI', fmt(ei)],
-          ['Canada Pension Plan', fmt(cpp)],
-        ].map(function(r) {
-          return '<div class="flex justify-between px-3 py-1.5 text-xs"><span class="text-base-content/70">' + r[0] + '</span><span class="font-mono text-error">' + r[1] + '</span></div>';
-        }).join('');
+        renderDeductions(fed, prov, ei, cpp);
       }
 
       function renderNetPayBar(gross, net, fed, prov, ei, cpp) {
@@ -555,6 +554,97 @@
       function detailRow(label, value) {
         return '<div class="flex justify-between"><span class="text-base-content/60">' + label + '</span><span class="font-mono">' + value + '</span></div>';
       }
+
+      function renderDeductions(fed, prov, ei, cpp) {
+        var rows = [
+          { label:'Federal Tax',       key:'fedTax',  value: fed  },
+          { label:'Provincial Tax',    key:'provTax', value: prov },
+          { label:'EI',                key:'eiVal',   value: ei   },
+          { label:'Canada Pension Plan', key:'cppVal', value: cpp },
+        ];
+        document.getElementById('dDeductionsSection').innerHTML = rows.map(function(r) {
+          var val = editMode
+            ? '<input id="dedit-' + r.key + '" type="number" min="0" step="0.01" value="' + (parseFloat(r.value)||0).toFixed(2) + '" class="input input-xs input-bordered w-24 font-mono text-right">'
+            : '<span class="font-mono text-error">' + fmt(r.value) + '</span>';
+          return '<div class="flex justify-between items-center px-3 py-1.5 text-xs"><span class="text-base-content/70">' + r.label + '</span>' + val + '</div>';
+        }).join('');
+      }
+
+      // ── Edit / Save ───────────────────────────────────────────────────────
+      document.getElementById('detailEditBtn').addEventListener('click', function() {
+        if (!editMode) {
+          editMode = true;
+          this.textContent = 'Cancel';
+          document.getElementById('detailSaveBtn').classList.remove('hidden');
+          var e = allEntries[currentEntryIdx];
+          if (e) {
+            var cpp = (parseFloat(e.cppEmployee)||0) + (parseFloat(e.cpp2Employee)||0);
+            renderDeductions(parseFloat(e.federalTax)||0, parseFloat(e.provincialTax)||0, parseFloat(e.eiEmployee)||0, cpp);
+          }
+        } else {
+          editMode = false;
+          this.textContent = 'Edit';
+          document.getElementById('detailSaveBtn').classList.add('hidden');
+          var e2 = allEntries[currentEntryIdx];
+          if (e2) {
+            var cpp2 = (parseFloat(e2.cppEmployee)||0) + (parseFloat(e2.cpp2Employee)||0);
+            renderDeductions(parseFloat(e2.federalTax)||0, parseFloat(e2.provincialTax)||0, parseFloat(e2.eiEmployee)||0, cpp2);
+          }
+        }
+      });
+
+      document.getElementById('detailSaveBtn').addEventListener('click', function() {
+        var e = allEntries[currentEntryIdx];
+        if (!e || !e.id) return;
+
+        var newFed  = parseFloat(document.getElementById('dedit-fedTax').value)  || 0;
+        var newProv = parseFloat(document.getElementById('dedit-provTax').value) || 0;
+        var newEI   = parseFloat(document.getElementById('dedit-eiVal').value)   || 0;
+        var newCPP  = parseFloat(document.getElementById('dedit-cppVal').value)  || 0;
+        var gross   = parseFloat(e.grossPay) || 0;
+        var totalDed = newFed + newProv + newEI + newCPP;
+        var newNet  = gross - totalDed;
+
+        var body = {
+          federalTax:    newFed,
+          provincialTax: newProv,
+          eiEmployee:    newEI,
+          cppEmployee:   newCPP,
+          totalDeductions: totalDed,
+          netPay:        newNet,
+        };
+
+        document.getElementById('detailSaveBtn').disabled = true;
+        fetch('/api/payroll/entries/' + encodeURIComponent(e.id), {
+          method: 'PATCH',
+          credentials: 'same-origin',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(body),
+        })
+        .then(function(r) { return r.ok ? r.json() : Promise.reject(r.status); })
+        .then(function(updated) {
+          Object.assign(e, updated);
+          allEntries[currentEntryIdx] = e;
+
+          editMode = false;
+          document.getElementById('detailEditBtn').textContent = 'Edit';
+          document.getElementById('detailSaveBtn').classList.add('hidden');
+          document.getElementById('detailSaveBtn').disabled = false;
+
+          document.getElementById('detailNetPay').textContent = fmt(parseFloat(e.netPay)||0);
+          document.getElementById('dNetPay2').textContent     = fmt(parseFloat(e.netPay)||0);
+          document.getElementById('dTotalDeductions').textContent = '-' + fmt(parseFloat(e.totalDeductions)||0);
+          renderDeductions(parseFloat(e.federalTax)||0, parseFloat(e.provincialTax)||0, parseFloat(e.eiEmployee)||0, (parseFloat(e.cppEmployee)||0)+(parseFloat(e.cpp2Employee)||0));
+          renderNetPayBar(gross, parseFloat(e.netPay)||0, parseFloat(e.federalTax)||0, parseFloat(e.provincialTax)||0, parseFloat(e.eiEmployee)||0, (parseFloat(e.cppEmployee)||0)+(parseFloat(e.cpp2Employee)||0));
+
+          renderSummaryTable(allEntries);
+          showAlert('Saved. Net Pay updated to ' + fmt(parseFloat(e.netPay)||0), false);
+        })
+        .catch(function(err) {
+          document.getElementById('detailSaveBtn').disabled = false;
+          showAlert('Save failed: ' + err, true);
+        });
+      });
 
       // ── Recalculate ───────────────────────────────────────────────────────
       document.getElementById('btnRecalc').addEventListener('click', function() {
