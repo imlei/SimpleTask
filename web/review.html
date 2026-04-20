@@ -605,18 +605,19 @@
         var totalDed = newFed + newProv + newEI + newCPP;
         var newNet  = gross - totalDed;
 
-        var body = {
-          federalTax:    newFed,
-          provincialTax: newProv,
-          eiEmployee:    newEI,
-          cppEmployee:   newCPP,
+        var body = Object.assign({}, e, {
+          federalTax:      newFed,
+          provincialTax:   newProv,
+          eiEmployee:      newEI,
+          cppEmployee:     newCPP,
+          cpp2Employee:    parseFloat(e.cpp2Employee) || 0,
           totalDeductions: totalDed,
-          netPay:        newNet,
-        };
+          netPay:          newNet,
+        });
 
         document.getElementById('detailSaveBtn').disabled = true;
-        fetch('/api/payroll/entries/' + encodeURIComponent(e.id), {
-          method: 'PATCH',
+        fetch('/api/payroll/periods/' + encodeURIComponent(periodId) + '/entries', {
+          method: 'POST',
           credentials: 'same-origin',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(body),
