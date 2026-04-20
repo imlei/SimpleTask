@@ -270,12 +270,14 @@ func (c *Config) HandleMe(w http.ResponseWriter, r *http.Request) {
 	}
 	username, role, ok := c.ValidSessionInfo(r)
 	if ok {
+		features := c.Store.GetUserFeatures(username)
 		writeJSON(w, http.StatusOK, map[string]any{
 			"authEnabled":   true,
 			"needsSetup":    false,
 			"authenticated": true,
 			"user":          username,
 			"role":          role,
+			"features":      features,
 		})
 		return
 	}
@@ -323,14 +325,53 @@ func (c *Config) HandleChangePassword(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, map[string]bool{"ok": true})
 }
 
-// HandleUsers GET/POST/DELETE/PUT /api/users — admin only
+// HandleUserFeatures GET/POST /api/users/features — sysadmin only
+func (c *Config) HandleUserFeatures(w http.ResponseWriter, r *http.Request) {
+	if c.Disabled || c.Store == nil {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "auth disabled"})
+		return
+	}
+	adminUser, role, ok := c.ValidSessionInfo(r)
+	if !ok || !isAdminRole(role) {
+		writeJSON(w, http.StatusForbidden, map[string]string{"error": "admin only"})
+		return
+	}
+	switch r.Method {
+	case http.MethodGet:
+		username := r.URL.Query().Get("username")
+		if username == "" {
+			writeJSON(w, http.StatusBadRequest, map[string]string{"error": "username required"})
+			return
+		}
+		writeJSON(w, http.StatusOK, c.Store.GetUserFeatures(username))
+	case http.MethodPost:
+		var body struct {
+			Username string `json:"username"`
+			Feature  string `json:"feature"`
+			Enabled  bool   `json:"enabled"`
+		}
+		if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+		if err := c.Store.SetUserFeature(body.Username, body.Feature, adminUser, body.Enabled); err != nil {
+			writeJSON(w, http.StatusBadRequest, map[string]string{"error": err.Error()})
+			return
+		}
+		writeJSON(w, http.StatusOK, map[string]bool{"ok": true})
+	default:
+		w.WriteHeader(http.StatusMethodNotAllowed)
+	}
+}
+
+// HandleUsers GET/POST/DELETE/PUT /api/users — sysadmin only
 func (c *Config) HandleUsers(w http.ResponseWriter, r *http.Request) {
 	if c.Disabled || c.Store == nil {
 		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "auth disabled"})
 		return
 	}
 	_, role, ok := c.ValidSessionInfo(r)
-	if !ok || role != "admin" {
+	if !ok || !isAdminRole(role) {
 		writeJSON(w, http.StatusForbidden, map[string]string{"error": "admin only"})
 		return
 	}
@@ -380,6 +421,7 @@ func (c *Config) HandleUsers(w http.ResponseWriter, r *http.Request) {
 		var body struct {
 			Username    string `json:"username"`
 			Role        string `json:"role,omitempty"`
+			Status      string `json:"status,omitempty"`
 			NewPassword string `json:"newPassword,omitempty"`
 		}
 		if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
@@ -388,6 +430,12 @@ func (c *Config) HandleUsers(w http.ResponseWriter, r *http.Request) {
 		}
 		if body.Role != "" {
 			if err := c.Store.SetUserRole(body.Username, body.Role); err != nil {
+				writeJSON(w, http.StatusBadRequest, map[string]string{"error": err.Error()})
+				return
+			}
+		}
+		if body.Status != "" {
+			if err := c.Store.SetUserStatus(body.Username, body.Status); err != nil {
 				writeJSON(w, http.StatusBadRequest, map[string]string{"error": err.Error()})
 				return
 			}
@@ -438,6 +486,7 @@ func Register(mux *http.ServeMux, c *Config) {
 	mux.HandleFunc("/api/logout", c.HandleLogout)
 	mux.HandleFunc("/api/me", c.HandleMe)
 	mux.HandleFunc("/api/auth/password", c.HandleChangePassword)
+	mux.HandleFunc("/api/users/features", c.HandleUserFeatures)
 	mux.HandleFunc("/api/users", c.HandleUsers)
 	mux.HandleFunc("/api/register", c.HandleRegister)
 }
@@ -492,26 +541,31 @@ func isPublicPath(c *Config, path string, r *http.Request) bool {
 	return false
 }
 
+func isAdminRole(role string) bool { return role == "admin" || role == "sysadmin" }
+func isProRole(role string) bool   { return role == "pro" || role == "user1" || role == "user2" }
+
 // isAllowedForRole reports whether the given role may access the given path.
 func isAllowedForRole(role, path string) bool {
-	switch role {
-	case "admin":
+	switch {
+	case isAdminRole(role):
 		return true
-	case "user2":
-		// Full app access, but no user management and no admin module
+	case isProRole(role):
+		// payroll + main app; no user-admin routes, no /admin/ pages, no viewer portal
 		if path == "/api/users" || strings.HasPrefix(path, "/api/users/") {
 			return false
 		}
 		if strings.HasPrefix(path, "/admin/") {
 			return false
 		}
+		if strings.HasPrefix(path, "/portal/") || strings.HasPrefix(path, "/payroll/portal/") {
+			return false
+		}
 		return true
-	case "user1":
-		// Payroll pages + payroll API only
-		if strings.HasPrefix(path, "/payroll/") {
+	case role == "viewer":
+		if strings.HasPrefix(path, "/portal/") || strings.HasPrefix(path, "/payroll/portal/") {
 			return true
 		}
-		if strings.HasPrefix(path, "/api/payroll/") {
+		if strings.HasPrefix(path, "/api/portal/") {
 			return true
 		}
 		switch path {
@@ -578,8 +632,10 @@ func Middleware(c *Config, next http.Handler) http.Handler {
 					writeJSON(w, http.StatusForbidden, map[string]string{"error": "access denied"})
 				} else if strings.HasPrefix(path, "/admin/") {
 					http.Redirect(w, r, "/admin/login.html", http.StatusFound)
-				} else if role == "user1" {
+				} else if isProRole(role) {
 					http.Redirect(w, r, "/payroll/dashboard.html", http.StatusFound)
+				} else if role == "viewer" {
+					http.Redirect(w, r, "/payroll/portal/", http.StatusFound)
 				} else {
 					http.Redirect(w, r, "/", http.StatusFound)
 				}

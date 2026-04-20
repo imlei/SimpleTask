@@ -11,14 +11,17 @@ import (
 	"path/filepath"
 	"strings"
 	"sync"
+	"time"
 
 	"golang.org/x/crypto/bcrypt"
 )
 
 // UserInfo is the safe-to-return user representation (no secrets)
 type UserInfo struct {
-	Username string `json:"username"`
-	Role     string `json:"role"`
+	Username string   `json:"username"`
+	Role     string   `json:"role"`
+	Status   string   `json:"status,omitempty"`
+	Features []string `json:"features,omitempty"`
 }
 
 type userRecord struct {
@@ -26,7 +29,14 @@ type userRecord struct {
 	hash     string
 	secret   string
 	role     string
+	status   string
 }
+
+// IsAdminRole returns true for both legacy "admin" and new "sysadmin" roles.
+func IsAdminRole(role string) bool { return role == "admin" || role == "sysadmin" }
+
+// IsProRole returns true for pro/user1/user2 roles.
+func IsProRole(role string) bool { return role == "pro" || role == "user1" || role == "user2" }
 
 // UserStore manages users in SQLite (app_user for admin id=1, app_sub_users for others)
 type UserStore struct {
@@ -85,12 +95,13 @@ func (u *UserStore) findByUsernameLocked(username string) (*userRecord, error) {
 		username,
 	).Scan(&rec.username, &rec.hash, &rec.secret, &rec.role)
 	if err == nil && rec.username != "" {
+		rec.status = "active"
 		return &rec, nil
 	}
 	err = u.db.QueryRow(
-		`SELECT username, password_hash, session_secret, role FROM app_sub_users WHERE username=?`,
+		`SELECT username, password_hash, session_secret, role, COALESCE(status,'active') FROM app_sub_users WHERE username=?`,
 		username,
-	).Scan(&rec.username, &rec.hash, &rec.secret, &rec.role)
+	).Scan(&rec.username, &rec.hash, &rec.secret, &rec.role, &rec.status)
 	if err == nil {
 		return &rec, nil
 	}
@@ -145,6 +156,7 @@ func (u *UserStore) CreateFirstUser(username, password string) error {
 }
 
 // VerifyPassword checks credentials and returns the UserInfo if valid.
+// Returns nil if user is inactive.
 func (u *UserStore) VerifyPassword(username, password string) (*UserInfo, bool) {
 	u.mu.Lock()
 	defer u.mu.Unlock()
@@ -152,10 +164,13 @@ func (u *UserStore) VerifyPassword(username, password string) (*UserInfo, bool) 
 	if err != nil || rec.hash == "" {
 		return nil, false
 	}
+	if rec.status == "inactive" {
+		return nil, false
+	}
 	if bcrypt.CompareHashAndPassword([]byte(rec.hash), []byte(password)) != nil {
 		return nil, false
 	}
-	return &UserInfo{Username: rec.username, Role: rec.role}, true
+	return &UserInfo{Username: rec.username, Role: rec.role, Status: rec.status}, true
 }
 
 // SessionKeyFor returns the HMAC key for the given username.
@@ -206,6 +221,91 @@ func (u *UserStore) GetRole(username string) string {
 		return ""
 	}
 	return rec.role
+}
+
+// SetUserStatus sets a sub-user's status to "active" or "inactive". Cannot change sysadmin.
+func (u *UserStore) SetUserStatus(username, status string) error {
+	u.mu.Lock()
+	defer u.mu.Unlock()
+	if status != "active" && status != "inactive" {
+		return errors.New("status must be 'active' or 'inactive'")
+	}
+	var adminName string
+	_ = u.db.QueryRow(`SELECT username FROM app_user WHERE id=1`).Scan(&adminName)
+	if username == adminName {
+		return errors.New("cannot change sysadmin status")
+	}
+	result, err := u.db.Exec(`UPDATE app_sub_users SET status=? WHERE username=?`, status, username)
+	if err != nil {
+		return err
+	}
+	n, _ := result.RowsAffected()
+	if n == 0 {
+		return errors.New("user not found")
+	}
+	return nil
+}
+
+// GetUserFeatures returns the list of enabled feature keys for a user.
+func (u *UserStore) GetUserFeatures(username string) []string {
+	u.mu.Lock()
+	defer u.mu.Unlock()
+	rows, err := u.db.Query(`SELECT feature FROM user_features WHERE username=? AND enabled=1 ORDER BY feature`, username)
+	if err != nil {
+		return []string{}
+	}
+	defer rows.Close()
+	var features []string
+	for rows.Next() {
+		var f string
+		if rows.Scan(&f) == nil {
+			features = append(features, f)
+		}
+	}
+	if features == nil {
+		return []string{}
+	}
+	return features
+}
+
+// SetUserFeature enables or disables a feature for a user.
+func (u *UserStore) SetUserFeature(username, feature, grantedBy string, enabled bool) error {
+	u.mu.Lock()
+	defer u.mu.Unlock()
+	now := time.Now().UTC().Format(time.RFC3339)
+	enabledInt := 0
+	if enabled {
+		enabledInt = 1
+	}
+	_, err := u.db.Exec(`
+		INSERT INTO user_features (username, feature, enabled, granted_by, granted_at)
+		VALUES (?, ?, ?, ?, ?)
+		ON CONFLICT(username, feature) DO UPDATE SET
+		  enabled=excluded.enabled, granted_by=excluded.granted_by, granted_at=excluded.granted_at`,
+		username, feature, enabledInt, grantedBy, now)
+	return err
+}
+
+// CreateViewerEmployee links a viewer account to an employee record.
+func (u *UserStore) CreateViewerEmployee(username, companyID, employeeID, invitedBy string) error {
+	u.mu.Lock()
+	defer u.mu.Unlock()
+	now := time.Now().UTC().Format(time.RFC3339)
+	_, err := u.db.Exec(`
+		INSERT INTO viewer_employees (username, company_id, employee_id, invited_by, created_at)
+		VALUES (?, ?, ?, ?, ?)
+		ON CONFLICT(username, company_id) DO UPDATE SET employee_id=excluded.employee_id, invited_by=excluded.invited_by`,
+		username, companyID, employeeID, invitedBy, now)
+	return err
+}
+
+// GetViewerEmployee returns the (companyID, employeeID) for a viewer user.
+func (u *UserStore) GetViewerEmployee(username string) (companyID, employeeID string, err error) {
+	u.mu.Lock()
+	defer u.mu.Unlock()
+	err = u.db.QueryRow(`SELECT company_id, employee_id FROM viewer_employees WHERE username=? LIMIT 1`, username).
+		Scan(&companyID, &employeeID)
+	return
 }
 
 // ChangePasswordFor changes the password for any user, requiring the old password.
@@ -273,16 +373,16 @@ func (u *UserStore) ListUsers() ([]UserInfo, error) {
 	var users []UserInfo
 	var name, role string
 	if err := u.db.QueryRow(`SELECT username, COALESCE(role,'admin') FROM app_user WHERE id=1`).Scan(&name, &role); err == nil && name != "" {
-		users = append(users, UserInfo{Username: name, Role: role})
+		users = append(users, UserInfo{Username: name, Role: role, Status: "active"})
 	}
-	rows, err := u.db.Query(`SELECT username, role FROM app_sub_users ORDER BY id`)
+	rows, err := u.db.Query(`SELECT username, role, COALESCE(status,'active') FROM app_sub_users ORDER BY id`)
 	if err != nil {
 		return users, nil
 	}
 	defer rows.Close()
 	for rows.Next() {
 		var info UserInfo
-		if err := rows.Scan(&info.Username, &info.Role); err != nil {
+		if err := rows.Scan(&info.Username, &info.Role, &info.Status); err != nil {
 			continue
 		}
 		users = append(users, info)
@@ -290,7 +390,7 @@ func (u *UserStore) ListUsers() ([]UserInfo, error) {
 	return users, nil
 }
 
-// CreateUser creates a new sub-user. Role must be "user1" or "user2".
+// CreateUser creates a new sub-user.
 func (u *UserStore) CreateUser(username, password, role string) error {
 	u.mu.Lock()
 	defer u.mu.Unlock()
@@ -298,8 +398,9 @@ func (u *UserStore) CreateUser(username, password, role string) error {
 	if username == "" {
 		return errors.New("username cannot be empty")
 	}
-	if role != "user1" && role != "user2" {
-		return errors.New("role must be user1 or user2")
+	validRoles := map[string]bool{"user1": true, "user2": true, "pro": true, "viewer": true, "sysadmin": true}
+	if !validRoles[role] {
+		return fmt.Errorf("invalid role %q", role)
 	}
 	var existing string
 	_ = u.db.QueryRow(`SELECT username FROM app_user WHERE username=?`, username).Scan(&existing)
@@ -349,12 +450,13 @@ func (u *UserStore) DeleteUser(username string) error {
 	return nil
 }
 
-// SetUserRole changes a sub-user's role. Cannot change admin's role.
+// SetUserRole changes a sub-user's role. Cannot change the sysadmin's role.
 func (u *UserStore) SetUserRole(username, role string) error {
 	u.mu.Lock()
 	defer u.mu.Unlock()
-	if role != "user1" && role != "user2" {
-		return errors.New("role must be user1 or user2")
+	validRoles := map[string]bool{"user1": true, "user2": true, "pro": true, "viewer": true}
+	if !validRoles[role] {
+		return fmt.Errorf("invalid role %q", role)
 	}
 	result, err := u.db.Exec(`UPDATE app_sub_users SET role=? WHERE username=?`, role, username)
 	if err != nil {

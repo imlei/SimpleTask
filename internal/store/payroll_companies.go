@@ -9,10 +9,13 @@ import (
 	"simpletask/internal/models"
 )
 
+// isAdminRole returns true for both legacy "admin" and new "sysadmin" roles.
+func isAdminRole(role string) bool { return role == "admin" || role == "sysadmin" }
+
 // canAccessCompany returns true when username may access/modify companyID.
 // Admin role bypasses the ownership check (they see all companies).
 func (s *Store) canAccessCompany(username, role, companyID string) (bool, error) {
-	if role == "admin" {
+	if isAdminRole(role) {
 		var exists int
 		err := s.db.QueryRow(`SELECT COUNT(*) FROM payroll_companies WHERE id=?`, companyID).Scan(&exists)
 		return exists > 0, err
@@ -35,7 +38,7 @@ func (s *Store) ListPayrollCompanies(username, role, statusFilter string) []mode
 	q := `SELECT id, name, legal_name, business_number, email, phone, address, city, province, postal_code, country, pay_frequency, status, created_at, updated_at
 	      FROM payroll_companies WHERE 1=1`
 	args := []any{}
-	if role != "admin" {
+	if !isAdminRole(role) {
 		q += ` AND owner_username = ?`
 		args = append(args, username)
 	}
@@ -92,7 +95,7 @@ func (s *Store) GetPayrollCompanyForUser(username, role, id string) (models.Payr
 	if err != nil {
 		return c, err
 	}
-	if role != "admin" && c.OwnerUsername != username {
+	if !isAdminRole(role) && c.OwnerUsername != username {
 		return models.PayrollCompany{}, ErrForbidden
 	}
 	return c, nil
@@ -135,7 +138,7 @@ func (s *Store) UpdatePayrollCompany(username, role, id string, patch models.Pay
 	if err != nil {
 		return existing, ErrNotFound
 	}
-	if role != "admin" && existing.OwnerUsername != username {
+	if !isAdminRole(role) && existing.OwnerUsername != username {
 		return models.PayrollCompany{}, ErrForbidden
 	}
 
@@ -173,7 +176,7 @@ func (s *Store) DeletePayrollCompany(username, role, id string) error {
 	if err != nil {
 		return ErrNotFound
 	}
-	if role != "admin" && owner != username {
+	if !isAdminRole(role) && owner != username {
 		return ErrForbidden
 	}
 
@@ -257,7 +260,7 @@ func (s *Store) CountPayrollCompanies(username, role string) int {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	var n int
-	if role == "admin" {
+	if isAdminRole(role) {
 		_ = s.db.QueryRow(`SELECT COUNT(*) FROM payroll_companies`).Scan(&n)
 	} else {
 		_ = s.db.QueryRow(`SELECT COUNT(*) FROM payroll_companies WHERE owner_username=?`, username).Scan(&n)

@@ -116,6 +116,18 @@ func Open(dir string) (*sql.DB, error) {
 		_ = db.Close()
 		return nil, err
 	}
+	if err := ensureSubUsersStatusColumn(db); err != nil {
+		_ = db.Close()
+		return nil, err
+	}
+	if err := ensureUserFeaturesTable(db); err != nil {
+		_ = db.Close()
+		return nil, err
+	}
+	if err := ensureViewerEmployeesTable(db); err != nil {
+		_ = db.Close()
+		return nil, err
+	}
 	if err := ensureInvoiceColumns(db); err != nil {
 		_ = db.Close()
 		return nil, err
@@ -949,6 +961,58 @@ CREATE TABLE IF NOT EXISTS app_sub_users (
   password_hash TEXT NOT NULL DEFAULT '',
   session_secret TEXT NOT NULL DEFAULT '',
   role TEXT NOT NULL DEFAULT 'user2'
+);`)
+	return err
+}
+
+func ensureSubUsersStatusColumn(db *sql.DB) error {
+	rows, err := db.Query(`PRAGMA table_info(app_sub_users)`)
+	if err != nil {
+		return err
+	}
+	existing := map[string]bool{}
+	for rows.Next() {
+		var cid int
+		var name, ctype string
+		var notnull int
+		var dflt sql.NullString
+		var pk int
+		if rows.Scan(&cid, &name, &ctype, &notnull, &dflt, &pk) == nil {
+			existing[name] = true
+		}
+	}
+	rows.Close()
+	if !existing["status"] {
+		_, err = db.Exec(`ALTER TABLE app_sub_users ADD COLUMN status TEXT NOT NULL DEFAULT 'active'`)
+		return err
+	}
+	return nil
+}
+
+func ensureUserFeaturesTable(db *sql.DB) error {
+	_, err := db.Exec(`
+CREATE TABLE IF NOT EXISTS user_features (
+  id         INTEGER PRIMARY KEY AUTOINCREMENT,
+  username   TEXT NOT NULL,
+  feature    TEXT NOT NULL,
+  enabled    INTEGER NOT NULL DEFAULT 1,
+  granted_by TEXT NOT NULL DEFAULT '',
+  granted_at TEXT NOT NULL DEFAULT '',
+  UNIQUE (username, feature)
+);`)
+	return err
+}
+
+func ensureViewerEmployeesTable(db *sql.DB) error {
+	_, err := db.Exec(`
+CREATE TABLE IF NOT EXISTS viewer_employees (
+  id          INTEGER PRIMARY KEY AUTOINCREMENT,
+  username    TEXT NOT NULL,
+  company_id  TEXT NOT NULL,
+  employee_id TEXT NOT NULL,
+  invited_by  TEXT NOT NULL DEFAULT '',
+  created_at  TEXT NOT NULL DEFAULT '',
+  UNIQUE (username, company_id)
 );`)
 	return err
 }

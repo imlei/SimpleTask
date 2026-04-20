@@ -70,8 +70,8 @@
               </svg>
             </div>
             <div>
-              <p class="text-xs text-base-content/50 uppercase tracking-wide font-medium">Level 2 — Full Access</p>
-              <p class="text-3xl font-bold text-success mt-0.5" id="stat-user2">—</p>
+              <p class="text-xs text-base-content/50 uppercase tracking-wide font-medium">Pro — Payroll</p>
+              <p class="text-3xl font-bold text-success mt-0.5" id="stat-pro">—</p>
             </div>
           </div>
 
@@ -82,8 +82,8 @@
               </svg>
             </div>
             <div>
-              <p class="text-xs text-base-content/50 uppercase tracking-wide font-medium">Level 1 — Payroll Only</p>
-              <p class="text-3xl font-bold text-warning mt-0.5" id="stat-user1">—</p>
+              <p class="text-xs text-base-content/50 uppercase tracking-wide font-medium">Viewer — Employee</p>
+              <p class="text-3xl font-bold text-warning mt-0.5" id="stat-viewer">—</p>
             </div>
           </div>
 
@@ -108,6 +108,7 @@
                   <th class="w-12"></th>
                   <th>Username</th>
                   <th>Role</th>
+                  <th>Status</th>
                   <th class="text-right pr-5">Actions</th>
                 </tr>
               </thead>
@@ -239,8 +240,8 @@
         <div class="form-control">
           <label class="label pb-1"><span class="label-text font-medium">Role</span></label>
           <select id="new-role" class="select select-bordered w-full">
-            <option value="user2">Level 2 — Full Access (all features)</option>
-            <option value="user1">Level 1 — Payroll Only</option>
+            <option value="pro">Pro — Payroll (accountant / bookkeeper)</option>
+            <option value="viewer">Viewer — Employee Portal (read-only)</option>
           </select>
         </div>
 
@@ -280,6 +281,45 @@
           <button type="button" id="btn-reset-cancel" class="btn btn-ghost">Cancel</button>
         </div>
       </form>
+    </div>
+    <form method="dialog" class="modal-backdrop"><button>close</button></form>
+  </dialog>
+
+  <!-- ─── Features Modal ───────────────────────────────────────────── -->
+  <dialog id="modal-features" class="modal">
+    <div class="modal-box max-w-md">
+      <h3 class="font-bold text-lg mb-1">Optional Modules</h3>
+      <p class="text-sm text-base-content/50 mb-5">
+        User: <strong id="features-target-name" class="text-base-content font-semibold"></strong>
+      </p>
+      <div class="space-y-3" id="features-list">
+        <label class="flex items-center gap-3 cursor-pointer">
+          <input type="checkbox" class="checkbox checkbox-primary checkbox-sm" data-feature="task" id="feat-task" />
+          <div>
+            <span class="text-sm font-medium">Task Module</span>
+            <p class="text-xs text-base-content/50">Project &amp; task management</p>
+          </div>
+        </label>
+        <label class="flex items-center gap-3 cursor-pointer">
+          <input type="checkbox" class="checkbox checkbox-primary checkbox-sm" data-feature="cheque_print" id="feat-cheque_print" />
+          <div>
+            <span class="text-sm font-medium">Cheque Print</span>
+            <p class="text-xs text-base-content/50">Print cheques from payroll</p>
+          </div>
+        </label>
+        <label class="flex items-center gap-3 cursor-pointer">
+          <input type="checkbox" class="checkbox checkbox-primary checkbox-sm" data-feature="invoice" id="feat-invoice" />
+          <div>
+            <span class="text-sm font-medium">Invoice Module</span>
+            <p class="text-xs text-base-content/50">Invoicing and billing</p>
+          </div>
+        </label>
+      </div>
+      <div id="features-error" class="alert alert-error text-sm py-2.5 hidden mt-4"></div>
+      <div class="modal-action pt-2">
+        <button type="button" id="btn-features-save" class="btn btn-primary">Save</button>
+        <button type="button" id="btn-features-cancel" class="btn btn-ghost">Cancel</button>
+      </div>
     </div>
     <form method="dialog" class="modal-backdrop"><button>close</button></form>
   </dialog>

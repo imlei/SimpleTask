@@ -98,7 +98,7 @@
       }
       regOk.textContent = "注册成功，正在跳转…";
       regOk.hidden = false;
-      setTimeout(() => redirectAfterLogin("user1"), 800);
+      setTimeout(() => redirectAfterLogin("pro"), 800);
     } catch (err) {
       regErr.textContent = err.message || "网络错误";
       regErr.hidden = false;
@@ -107,7 +107,9 @@
 })();
 
 function redirectAfterLogin(role) {
-  if (role === "user1") {
+  if (role === "viewer") {
+    window.location.href = "/payroll/portal/";
+  } else if (role === "pro" || role === "user1" || role === "user2") {
     window.location.href = "/payroll/dashboard.html";
   } else {
     window.location.href = "/";
