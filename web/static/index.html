@@ -40,7 +40,7 @@
     .td-date { font-family: monospace; font-size: 0.78rem; white-space: nowrap; }
 
     /* Dialogs */
-    dialog { border-radius: 1rem; box-shadow: 0 25px 50px -12px rgb(0 0 0 / 0.25); max-width: min(90vw, 520px); width: 100%; padding: 0; }
+    dialog { border-radius: 1rem; box-shadow: 0 25px 50px -12px rgb(0 0 0 / 0.25); max-width: min(90vw, 520px); width: 100%; padding: 0; margin: auto; }
     dialog::backdrop { background: rgba(0,0,0,0.55); }
     .dlg-head { background-color: oklch(var(--p)); color: oklch(var(--pc)); padding-left: 1.25rem; padding-right: 1.25rem; padding-top: 1rem; padding-bottom: 1rem; }
     .dlg-head h2 { font-size: 1rem; font-weight: 700; margin: 0; }
@@ -50,13 +50,20 @@
     }
     dialog form label input:not([type=checkbox]),
     dialog form label textarea {
-      display: block; width: 100%; margin-top: 0.25rem; border-radius: 0.375rem; border: 1px solid oklch(var(--b3)); font-size: 0.875rem; line-height: 1.25; padding: 0.5rem;
+      display: block; width: 100%; margin-top: 0.25rem; border-radius: 0.5rem;
+      border: 1px solid oklch(var(--bc) / 0.25); font-size: 0.875rem; line-height: 1.25;
+      padding: 0.5rem 0.75rem; background-color: oklch(var(--b1)); color: oklch(var(--bc));
+      transition: border-color 0.15s;
     }
-    dialog form label textarea { border-radius: 0.375rem; border: 1px solid oklch(var(--b3)); height: 5rem !important; }
-    dialog form label select { display: block; width: 100%; margin-top: 0.25rem; border-radius: 0.375rem; border: 1px solid oklch(var(--b3)); font-size: 0.875rem; }
+    dialog form label input:not([type=checkbox]):focus,
+    dialog form label textarea:focus {
+      outline: none; border-color: oklch(var(--p)); box-shadow: 0 0 0 2px oklch(var(--p) / 0.15);
+    }
+    dialog form label textarea { height: 5rem !important; resize: none; }
+    dialog form label select { display: block; width: 100%; margin-top: 0.25rem; border-radius: 0.5rem; border: 1px solid oklch(var(--bc) / 0.25); font-size: 0.875rem; background-color: oklch(var(--b1)); color: oklch(var(--bc)); }
     dialog form input[type=hidden] { display: none; }
-    .dlg-actions { display: flex; gap: 0.5rem; justify-content: flex-end; margin-top: 1.25rem; padding-top: 1rem; border-top: 1px solid oklch(var(--b3)); }
-    .dlg-task-wide { max-width: min(90vw, 560px); }
+    .dlg-actions { display: flex; gap: 0.5rem; justify-content: flex-end; margin-top: 1.25rem; padding-top: 1rem; border-top: 1px solid oklch(var(--bc) / 0.1); }
+    .dlg-task-wide { max-width: min(92vw, 660px); }
     .task-customer-row { display: flex; align-items: flex-end; gap: 0.5rem; margin-bottom: 0.75rem; }
     .task-customer-row label { margin-bottom: 0; }
     .task-no-edit-wrap { font-size: 0.875rem; margin-bottom: 0.75rem; color: oklch(var(--bc) / 0.6); }
