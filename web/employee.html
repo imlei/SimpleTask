@@ -439,7 +439,10 @@
       function withC(href) { return companyId ? href + (href.includes('?') ? '&' : '?') + 'company=' + encodeURIComponent(companyId) : href; }
       document.getElementById('nav-home').href         = companyId ? 'company.html?company=' + encodeURIComponent(companyId) : 'dashboard.html';
       document.getElementById('nav-runSide').href      = withC('run-payroll.html');
-      document.getElementById('nav-reports').href      = withC('reports/payrun.html');
+      document.getElementById('nav-payrun').href       = withC('reports/payrun.html');
+      document.getElementById('nav-remittance').href   = withC('reports/remittance.html');
+      document.getElementById('nav-payslips').href     = withC('reports/cheques-payslips.html');
+      document.getElementById('nav-accountant').href   = withC('reports/accountant/index.html');
       document.getElementById('nav-employees').href    = withC('employees.html');
       document.getElementById('nav-payrules').href     = withC('pay-rules.html');
       document.getElementById('nav-yearend-task').href = withC('year-end-task.html');
