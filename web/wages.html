@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Salaries — Payroll Works</title>
+    <title>Wages — Payroll Works</title>
     <script>(function(){var t=localStorage.getItem('pw-theme')||(window.matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');document.documentElement.setAttribute('data-theme',t);})();</script>
     <link href="/vendor/daisyui-themes.css" rel="stylesheet" />
     <link href="/vendor/daisyui-components.css" rel="stylesheet" />
@@ -85,15 +85,15 @@
 
         <!-- Hero -->
         <div class="mb-4">
-          <h1 class="text-xl font-bold">Employee Earnings</h1>
+          <h1 class="text-xl font-bold">Employee Wages</h1>
           <p class="text-sm text-base-content/60 mt-0.5" id="heroPeriod">Pay period · —</p>
         </div>
 
         <!-- Stepper -->
         <ul class="steps steps-horizontal w-full max-w-3xl mb-6 text-xs">
           <li class="step step-neutral">Select Pay Cycle</li>
-          <li class="step step-primary font-semibold">Salaries</li>
-          <li class="step">Wages</li>
+          <li class="step step-neutral">Salaries</li>
+          <li class="step step-primary font-semibold">Wages</li>
           <li class="step">Calculate</li>
           <li class="step">Review</li>
         </ul>
@@ -117,7 +117,7 @@
             </button>
             <button type="button" class="btn btn-sm btn-primary" id="btnCalculate">
               <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
-              Wages
+              Calculate
             </button>
           </div>
         </div>
@@ -155,9 +155,9 @@
 
         <!-- Footer nav -->
         <div class="flex justify-between mt-6">
-          <a id="backLink" href="run-payroll.html" class="btn btn-ghost btn-sm">← Select Pay Cycle</a>
+          <a id="backLink" href="salaries.html" class="btn btn-ghost btn-sm">← Salaries</a>
           <button type="button" class="btn btn-primary btn-sm" id="btnCalcFooter">
-            Wages →
+            Calculate →
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
           </button>
         </div>
@@ -265,17 +265,18 @@
       document.getElementById('nav-yearend-task').href = withC('year-end-task.html');
       document.getElementById('nav-roe').href          = withC('roe.html');
       document.getElementById('backBrand').href     = withC('run-payroll.html');
-      document.getElementById('backLink').href      = withC('run-payroll.html');
+      document.getElementById('backLink').href      = 'salaries.html?period=' + encodeURIComponent(periodId) +
+        (companyId ? '&company=' + encodeURIComponent(companyId) : '');
 
       // ── State ────────────────────────────────────────────────────────────
       var earningsCodes = [];   // all enabled codes for company
       var allEntries    = [];   // all loaded payroll entries
-      var entries       = [];   // salaried payroll entries shown on this step
+      var entries       = [];   // wage payroll entries shown on this step
       var selectedRows  = {};   // { idx: true }
 
       function setEntries(list) {
         allEntries = list || [];
-        entries = allEntries.filter(function(e) { return Number(e.salaryType || 0) === 0; });
+        entries = allEntries.filter(function(e) { return Number(e.salaryType || 0) === 1; });
         selectedRows = {};
       }
 
@@ -342,14 +343,14 @@
       function renderTable() {
         var tbody = document.getElementById('entriesTbody');
         if (!entries.length) {
-          tbody.innerHTML = '<tr><td colspan="9" class="text-center py-6 text-base-content/40">No salaried employees found for this pay period.</td></tr>';
+          tbody.innerHTML = '<tr><td colspan="9" class="text-center py-6 text-base-content/40">No wage employees found for this pay period.</td></tr>';
           updateTotal();
           refreshApproveBtn();
           return;
         }
 
         tbody.innerHTML = entries.map(function(e, i) {
-          var typeBadge = '<span class="badge badge-ghost badge-xs">Salary</span>';
+          var typeBadge = '<span class="badge badge-info badge-xs badge-outline">Wages</span>';
 
           var addlLines = e._addlLines || [];
           var addlTotal = addlLines.reduce(function(s, l) { return s + (parseFloat(l.amount) || 0); }, 0);
@@ -395,7 +396,10 @@
               '<td class="text-xs text-base-content/40 font-mono">' + (i + 1) + '</td>' +
               '<td class="font-medium text-sm">' + esc(e.employeeName || e.employeeId) + '</td>' +
               '<td>' + typeBadge + '</td>' +
-              '<td class="text-right text-xs text-base-content/40 font-mono">—</td>' +
+              '<td class="text-right">' +
+                '<input class="input input-xs text-right w-20 font-mono" type="number" min="0" step="0.01"' +
+                '  data-idx="' + i + '" data-field="hours" value="' + parseFloat(e.hours || 0).toFixed(2) + '" />' +
+              '</td>' +
               '<td class="text-right">' +
                 '<input class="input input-xs text-right w-24 font-mono" type="number" min="0" step="0.01"' +
                 '  data-idx="' + i + '" data-field="payRate" value="' + parseFloat(e.payRate || 0).toFixed(2) + '" />' +
@@ -417,6 +421,12 @@
             var field = inp.dataset.field;
             entries[idx][field] = parseFloat(inp.value) || 0;
             entries[idx]._dirty = true;
+            if (field === 'hours' || field === 'payRate') {
+              var newGross = Math.round(entries[idx].hours * entries[idx].payRate * 100) / 100;
+              entries[idx].grossPay = newGross;
+              var grossInput = document.getElementById('gross-' + idx);
+              if (grossInput) grossInput.value = newGross.toFixed(2);
+            }
             var row = document.getElementById('row-' + idx);
             if (row) row.classList.add('bg-warning/5');
             updateTotal();
@@ -536,14 +546,14 @@
           });
       }
 
-      function goWages() {
-        location.href = 'wages.html?period=' + encodeURIComponent(periodId) +
+      function goCalculate() {
+        location.href = 'calculate.html?period=' + encodeURIComponent(periodId) +
           (companyId ? '&company=' + encodeURIComponent(companyId) : '');
       }
 
       document.getElementById('btnSaveAll').addEventListener('click', function() { saveAll(null); });
-      document.getElementById('btnCalculate').addEventListener('click', function() { saveAll(goWages); });
-      document.getElementById('btnCalcFooter').addEventListener('click', function() { saveAll(goWages); });
+      document.getElementById('btnCalculate').addEventListener('click', function() { saveAll(goCalculate); });
+      document.getElementById('btnCalcFooter').addEventListener('click', function() { saveAll(goCalculate); });
 
       document.getElementById('btnApproveSelected').addEventListener('click', function() {
         var payload = [];

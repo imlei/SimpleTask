@@ -88,9 +88,10 @@
         </div>
 
         <!-- Stepper -->
-        <ul class="steps steps-horizontal w-full max-w-2xl mb-6 text-xs">
+        <ul class="steps steps-horizontal w-full max-w-3xl mb-6 text-xs">
           <li class="step step-neutral">Pay Cycle</li>
           <li class="step step-neutral">Salaries</li>
+          <li class="step step-neutral">Wages</li>
           <li class="step step-primary font-semibold">Calculate</li>
           <li class="step">Review</li>
           <li class="step">Payments</li>
@@ -203,9 +204,9 @@
 
         <!-- Footer actions -->
         <div class="flex items-center justify-between">
-          <a id="btnBack" href="salaries.html" class="btn btn-ghost btn-sm gap-1">
+          <a id="btnBack" href="wages.html" class="btn btn-ghost btn-sm gap-1">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
-            Salaries
+            Wages
           </a>
           <div class="flex items-center gap-2">
             <button type="button" class="btn btn-ghost btn-sm" id="btnSelectAll">Select all</button>
@@ -239,9 +240,13 @@
 
     <script>
       const p = new URLSearchParams(location.search);
+      const periodId = p.get('period') || '';
       const companyId = p.get('company') || p.get('company_id') || '';
 
       function withC(href) { return companyId ? href + (href.includes('?') ? '&' : '?') + 'company=' + encodeURIComponent(companyId) : href; }
+      function withP(href) {
+        return href + '?period=' + encodeURIComponent(periodId) + (companyId ? '&company=' + encodeURIComponent(companyId) : '');
+      }
 
       // Nav links
       document.getElementById('backBrand').href       = withC('run-payroll.html');
@@ -256,7 +261,7 @@
       document.getElementById('nav-payrules').href    = withC('pay-rules.html');
       document.getElementById('nav-yearend-task').href = withC('year-end-task.html');
       document.getElementById('nav-roe').href         = withC('roe.html');
-      document.getElementById('btnBack').href         = withC('salaries.html');
+      document.getElementById('btnBack').href         = periodId ? withP('wages.html') : withC('wages.html');
 
       // Load company name
       if (companyId) {
@@ -282,8 +287,25 @@
         document.getElementById('confirmModal').close();
       });
       document.getElementById('btnConfirm').addEventListener('click', function () {
-        document.getElementById('confirmModal').close();
-        window.location.href = withC('review.html');
+        if (!periodId) {
+          document.getElementById('confirmModal').close();
+          alert('No period selected.');
+          return;
+        }
+        document.getElementById('btnConfirm').disabled = true;
+        fetch('/api/payroll/periods/' + encodeURIComponent(periodId) + '/calculate', {
+          method: 'POST',
+          credentials: 'same-origin'
+        })
+          .then(r => r.ok ? r.json() : r.text().then(t => { throw new Error(t); }))
+          .then(() => {
+            document.getElementById('confirmModal').close();
+            window.location.href = withP('review.html');
+          })
+          .catch(err => {
+            document.getElementById('btnConfirm').disabled = false;
+            alert('Calculate failed: ' + err.message);
+          });
       });
 
       // Theme

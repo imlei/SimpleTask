@@ -259,6 +259,8 @@ type PayrollEntry struct {
 
 	// Employee name (joined, not stored)
 	EmployeeName string `json:"employeeName,omitempty"`
+	SalaryType   int    `json:"salaryType"`            // joined from employee: 0=Salaried 1=Time-Based
+	PayRateUnit  string `json:"payRateUnit,omitempty"` // joined from employee: Hourly | Annually | Monthly
 
 	// Earnings input
 	Hours   float64 `json:"hours"`

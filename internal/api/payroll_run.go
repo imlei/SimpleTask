@@ -144,17 +144,14 @@ func (s *Server) handlePeriodEntries(w http.ResponseWriter, r *http.Request, per
 		// Try array first
 		var bulk []models.PayrollEntry
 		if json.Unmarshal(body, &bulk) == nil && len(bulk) > 0 {
-			results := make([]models.PayrollEntry, 0, len(bulk))
 			for _, e := range bulk {
 				e.PeriodID = periodID
-				saved, err := s.Store.UpsertPayrollEntry(e)
-				if err != nil {
+				if _, err := s.Store.UpsertPayrollEntry(e); err != nil {
 					http.Error(w, err.Error(), http.StatusInternalServerError)
 					return
 				}
-				results = append(results, saved)
 			}
-			writeJSON(w, http.StatusOK, results)
+			writeJSON(w, http.StatusOK, s.Store.ListPayrollEntries(periodID))
 			return
 		}
 
@@ -363,17 +360,21 @@ func (s *Server) handleInitPeriodEntries(w http.ResponseWriter, r *http.Request)
 		}
 
 		e := models.PayrollEntry{
-			PeriodID:   periodID,
-			EmployeeID: emp.ID,
-			CompanyID:  p.CompanyID,
-			Hours:      roundHalf(hours),
-			PayRate:    rate,
-			GrossPay:   gross,
-			Status:     "draft",
+			PeriodID:    periodID,
+			EmployeeID:  emp.ID,
+			CompanyID:   p.CompanyID,
+			SalaryType:  emp.SalaryType,
+			PayRateUnit: emp.PayRateUnit,
+			Hours:       roundHalf(hours),
+			PayRate:     rate,
+			GrossPay:    gross,
+			Status:      "draft",
 		}
 		saved, err := s.Store.UpsertPayrollEntry(e)
 		if err == nil {
 			saved.EmployeeName = emp.LegalName
+			saved.SalaryType = emp.SalaryType
+			saved.PayRateUnit = emp.PayRateUnit
 			created = append(created, saved)
 		}
 	}

@@ -88,9 +88,10 @@
         </div>
 
         <!-- Stepper -->
-        <ul class="steps steps-horizontal w-full max-w-2xl mb-6 text-xs">
+        <ul class="steps steps-horizontal w-full max-w-3xl mb-6 text-xs">
           <li class="step step-neutral">Pay Cycle</li>
           <li class="step step-neutral">Salaries</li>
+          <li class="step step-neutral">Wages</li>
           <li class="step step-neutral">Calculate</li>
           <li class="step step-primary font-semibold">Review</li>
           <li class="step">Payments</li>
@@ -172,12 +173,12 @@
         <!-- Draft warning -->
         <div id="draftWarning" class="hidden alert alert-warning text-xs py-2 px-4 mt-3">
           <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-          Some entries are still in <strong>Draft</strong> — go back to Salaries, select those employees, click <strong>Approve Selected</strong>, then <strong>Calculate</strong>.
+          Some entries are still in <strong>Draft</strong> — go back to Salaries or Wages, select those employees, click <strong>Approve Selected</strong>, then <strong>Calculate</strong>.
         </div>
 
         <!-- Footer nav -->
         <div class="flex justify-between mt-2">
-          <a id="backLink" href="salaries.html" class="btn btn-ghost btn-sm">← Salaries</a>
+          <a id="backLink" href="calculate.html" class="btn btn-ghost btn-sm">← Calculate</a>
           <div class="flex gap-2">
             <button type="button" class="btn btn-outline btn-sm btn-error" id="btnRecalc">↺ Recalculate</button>
             <button type="button" class="btn btn-primary btn-sm btn-disabled" id="btnNext" disabled title="Calculate entries first">Payments →</button>
@@ -311,7 +312,7 @@
       document.getElementById('nav-yearend-task').href = withC('year-end-task.html');
       document.getElementById('nav-roe').href          = withC('roe.html');
       document.getElementById('backBrand').href     = withC('run-payroll.html');
-      document.getElementById('backLink').href      = withP('salaries.html');
+      document.getElementById('backLink').href      = withP('calculate.html');
 
       var allEntries      = [];
       var periodStatus    = '';
@@ -366,7 +367,7 @@
         });
         var tbody = document.getElementById('reviewTbody');
         if (!list.length) {
-          tbody.innerHTML = '<tr><td colspan="10" class="text-center py-6 text-base-content/40">No calculated entries yet. Go back to Salaries, approve employees, then Calculate.</td></tr>';
+          tbody.innerHTML = '<tr><td colspan="10" class="text-center py-6 text-base-content/40">No calculated entries yet. Go back to Salaries/Wages, approve employees, then Calculate.</td></tr>';
           return;
         }
 

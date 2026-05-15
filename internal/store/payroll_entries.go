@@ -215,7 +215,7 @@ func (s *Store) ListPayrollEntries(periodID string) []models.PayrollEntry {
 
 	rows, err := s.db.Query(`
 		SELECT e.id, e.period_id, e.employee_id, e.company_id,
-		       COALESCE(pe.legal_name,''),
+		       COALESCE(pe.legal_name,''), COALESCE(pe.salary_type,0), COALESCE(pe.pay_rate_unit,''),
 		       e.hours, e.pay_rate, e.gross_pay,
 		       e.cpp_ee, e.cpp2_ee, e.ei_ee, e.federal_tax, e.provincial_tax,
 		       e.total_deductions, e.net_pay,
@@ -237,7 +237,7 @@ func (s *Store) ListPayrollEntries(periodID string) []models.PayrollEntry {
 		var e models.PayrollEntry
 		if err := rows.Scan(
 			&e.ID, &e.PeriodID, &e.EmployeeID, &e.CompanyID,
-			&e.EmployeeName,
+			&e.EmployeeName, &e.SalaryType, &e.PayRateUnit,
 			&e.Hours, &e.PayRate, &e.GrossPay,
 			&e.CPPEmployee, &e.CPP2Employee, &e.EIEmployee, &e.FederalTax, &e.ProvincialTax,
 			&e.TotalDeductions, &e.NetPay,

@@ -151,6 +151,10 @@ function taskToPayload(t) {
   };
 }
 
+function taskItemCount(t) {
+  return Array.isArray(t && t.selectedPriceIds) ? t.selectedPriceIds.length : 0;
+}
+
 async function loadTasks() {
   try {
     tasksCache = asArray(await api("/api/tasks"));
@@ -192,6 +196,7 @@ function renderTasks() {
   for (const t of pageRows) {
     const tr = document.createElement("tr");
     const done = t.status === "Done" || t.status === "Invoiced";
+    const canEditItems = t.status === "Pending";
     const canDelete = t.status === "Pending";
     const cust = escapeHtml(t.customerName || "");
     const cn = escapeHtml(t.companyName || "");
@@ -211,11 +216,16 @@ function renderTasks() {
       <td>${escapeHtml(t.note || "")}</td>
       <td>
         <button type="button" class="btn btn-xs btn-ghost" data-act="edit">编辑</button>
+        <button type="button" class="btn btn-xs btn-primary btn-outline" data-act="items" ${canEditItems ? "" : "disabled"}>Items (${taskItemCount(t)})</button>
         <button type="button" class="btn btn-xs btn-success btn-outline" data-act="expense">Expense</button>
         <button type="button" class="btn btn-xs btn-ghost" data-act="done" ${done ? "disabled" : ""}>Completed</button>
         <button type="button" class="btn btn-xs btn-error btn-outline" data-act="del" ${canDelete ? "" : "disabled"}>删除</button>
       </td>`;
     tr.querySelector('[data-act="edit"]').addEventListener("click", () => openTaskDialog(t));
+    const btnItems = tr.querySelector('[data-act="items"]');
+    if (canEditItems) {
+      btnItems.addEventListener("click", () => openTaskItemsDialog(t));
+    }
     const btnDone = tr.querySelector('[data-act="done"]');
     if (!done) {
       btnDone.addEventListener("click", () => markTaskCompleted(t));
@@ -270,23 +280,21 @@ document.getElementById("btn-new-customer")?.addEventListener("click", () => {
 
 const dlgTask = $("#dlg-task");
 const formTask = $("#form-task");
+const dlgTaskItems = $("#dlg-task-items");
+const formTaskItems = $("#form-task-items");
 const taskPricePicks = $("#task-price-picks");
 /** 从 Invoices 打开任务编辑时为 true，可改 Done/Sent */
 let taskDialogInvoiceEdit = false;
+let taskItemsTask = null;
 
 function setTaskFormLocked(locked) {
   const hint = document.getElementById("task-lock-hint");
   const submit = document.getElementById("task-submit-btn");
-  const clearBtn = document.getElementById("task-price-clear");
   if (submit) submit.disabled = locked;
-  if (clearBtn) clearBtn.disabled = locked;
   if (hint) {
     hint.hidden = !locked;
     hint.textContent = "此任务在任务页已锁定。Done / Sent 请在 Invoices 中修改；Paid 不可修改。";
   }
-  document.querySelectorAll("#task-price-picks input[type=checkbox]").forEach((cb) => {
-    cb.disabled = locked;
-  });
   document.querySelectorAll("#form-task input, #form-task textarea, #form-task select").forEach((el) => {
     if (el.id === "task-id") return;
     if (el.type === "hidden") return;
@@ -301,9 +309,14 @@ dlgTask.addEventListener("close", () => {
   setTaskFormLocked(false);
 });
 
-taskPricePicks.addEventListener("change", () => applyTaskPriceSelection());
+dlgTaskItems?.addEventListener("close", () => {
+  taskItemsTask = null;
+  setTaskItemsFormLocked(false);
+});
 
-$("#task-price-clear").addEventListener("click", () => {
+taskPricePicks?.addEventListener("change", () => applyTaskPriceSelection());
+
+$("#task-price-clear")?.addEventListener("click", () => {
   taskPricePicks.querySelectorAll('input[type="checkbox"]').forEach((cb) => {
     cb.checked = false;
   });
@@ -358,23 +371,15 @@ function getSelectedPriceIds() {
   return out;
 }
 
-/** 根据当前勾选同步 Task / Price（勾选变化时调用；多币种时其余写在预览区） */
-function applyTaskPriceSelection() {
-  const ids = getSelectedPriceIds();
-  const preview = $("#task-price-preview");
+function summarizePriceSelection(ids) {
   if (ids.length === 0) {
-    $("#task-s1").value = "";
-    $("#task-p1").value = "";
-    preview.hidden = true;
-    preview.textContent = "";
-    return;
+    return { service1: "", price1: 0, previewText: "" };
   }
   const pc = asArray(pricesCache);
   const items = ids
     .map((id) => pc.find((x) => x.id === id))
     .filter(Boolean);
-  $("#task-s1").value = items.map((p) => p.serviceName).join("；");
-
+  const service1 = items.map((p) => p.serviceName).join("；");
   const byCur = {};
   const curOrder = [];
   for (const id of ids) {
@@ -388,21 +393,61 @@ function applyTaskPriceSelection() {
     byCur[c] += Number(p.amount);
   }
   if (curOrder.length === 0) {
-    $("#task-p1").value = "";
-    preview.hidden = true;
-    preview.textContent = "";
-  } else {
-    $("#task-p1").value = byCur[curOrder[0]];
-    if (curOrder.length > 1) {
-      preview.hidden = false;
-      preview.textContent =
-        "其他币种合计：" +
-        curOrder.slice(1).map((c) => `${c} ${byCur[c]}`).join("；");
-    } else {
-      preview.hidden = true;
-      preview.textContent = "";
-    }
+    return { service1, price1: 0, previewText: "" };
   }
+  const price1 = byCur[curOrder[0]];
+  const previewText =
+    curOrder.length > 1
+      ? "其他币种合计：" + curOrder.slice(1).map((c) => `${c} ${byCur[c]}`).join("；")
+      : "";
+  return { service1, price1, previewText };
+}
+
+/** 根据当前勾选同步 Task / Price 预览（勾选变化时调用；多币种时其余写在预览区） */
+function applyTaskPriceSelection() {
+  const ids = getSelectedPriceIds();
+  const preview = $("#task-price-preview");
+  const summary = summarizePriceSelection(ids);
+  if (preview) {
+    preview.hidden = !summary.previewText;
+    preview.textContent = summary.previewText;
+  }
+}
+
+function setTaskItemsFormLocked(locked) {
+  const submit = document.getElementById("task-items-submit-btn");
+  const clearBtn = document.getElementById("task-price-clear");
+  const hint = document.getElementById("task-items-lock-hint");
+  if (submit) submit.disabled = locked;
+  if (clearBtn) clearBtn.disabled = locked;
+  if (hint) {
+    hint.hidden = !locked;
+    hint.textContent = "此任务已锁定，只有 Pending 任务可以添加或修改 Items。";
+  }
+  document.querySelectorAll("#task-price-picks input[type=checkbox]").forEach((cb) => {
+    cb.disabled = locked;
+  });
+}
+
+async function openTaskItemsDialog(t) {
+  if (!t) return;
+  if (t.status === "Paid") {
+    alert("Paid 任务不可修改。");
+    return;
+  }
+  taskItemsTask = t;
+  await ensurePricesLoaded();
+  setTaskItemsFormLocked(false);
+  document.getElementById("task-items-task-id").value = t.id || "";
+  document.getElementById("dlg-task-items-title").textContent = `任务 Items - ${t.id || ""}`;
+  const summary = document.getElementById("task-items-summary");
+  if (summary) {
+    summary.textContent = `${t.companyName || ""}${t.service1 ? " / " + t.service1 : ""}`;
+  }
+  renderPriceCheckboxes(t.selectedPriceIds || []);
+  applyTaskPriceSelection();
+  dlgTaskItems.showModal();
+  setTaskItemsFormLocked(t.status !== "Pending");
 }
 
 async function markTaskCompleted(t) {
@@ -430,7 +475,6 @@ async function openTaskDialog(t, opts = {}) {
     !!(t && (t.status === "Done" || t.status === "Invoiced" || t.status === "Sent" || t.status === "Paid") && !taskDialogInvoiceEdit);
   lastOpenedTask = t || null;
   await ensureCustomersLoaded();
-  await ensurePricesLoaded();
   setTaskFormLocked(false);
   $("#dlg-task-title").textContent = t ? "编辑任务" : "新建任务";
   $("#task-id").value = t?.id || "";
@@ -447,12 +491,9 @@ async function openTaskDialog(t, opts = {}) {
   $("#task-status").value = t?.status || "Pending";
   $("#task-note").value = t?.note || "";
 
-  renderPriceCheckboxes(t?.selectedPriceIds || []);
   $("#task-s1").value = t?.service1 || "";
   $("#task-p1").value =
     t != null && t.price1 != null && !Number.isNaN(Number(t.price1)) ? t.price1 : "";
-  $("#task-price-preview").hidden = true;
-  $("#task-price-preview").textContent = "";
   dlgTask.showModal();
   setTaskFormLocked(locked);
 }
@@ -472,7 +513,7 @@ formTask.addEventListener("submit", async (e) => {
     service2: "",
     price1: parseFloat($("#task-p1").value) || 0,
     price2: 0,
-    selectedPriceIds: getSelectedPriceIds(),
+    selectedPriceIds: id && lastOpenedTask && Array.isArray(lastOpenedTask.selectedPriceIds) ? lastOpenedTask.selectedPriceIds : [],
     status: $("#task-status").value,
     note: $("#task-note").value.trim(),
   };
@@ -493,6 +534,31 @@ formTask.addEventListener("submit", async (e) => {
     await loadTasks();
   } catch (err) {
     alert("保存失败: " + err.message);
+  }
+});
+
+$("#task-items-cancel")?.addEventListener("click", () => dlgTaskItems.close());
+
+formTaskItems?.addEventListener("submit", async (e) => {
+  e.preventDefault();
+  if (!taskItemsTask) return;
+  const submitBtn = document.getElementById("task-items-submit-btn");
+  if (submitBtn && submitBtn.disabled) return;
+  const ids = getSelectedPriceIds();
+  const itemSummary = summarizePriceSelection(ids);
+  const payload = taskToPayload(taskItemsTask);
+  payload.selectedPriceIds = ids;
+  payload.service1 = itemSummary.service1;
+  payload.price1 = itemSummary.price1;
+  try {
+    await api(`/api/tasks/${encodeURIComponent(taskItemsTask.id)}`, {
+      method: "PUT",
+      body: JSON.stringify(payload),
+    });
+    dlgTaskItems.close();
+    await loadTasks();
+  } catch (err) {
+    alert("保存 Items 失败: " + err.message);
   }
 });
 
