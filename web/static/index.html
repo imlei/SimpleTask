@@ -63,6 +63,7 @@
     .price-pick-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.25rem; font-size: 0.875rem; font-weight: 500; }
     .price-pick-list { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 0.5rem; max-height: 7rem; overflow-y: auto; }
     .price-preview { margin-top: 0.5rem; font-size: 0.75rem; background-color: oklch(var(--b1)); border-radius: 0.375rem; padding: 0.5rem; border: 1px solid oklch(var(--b3)); }
+    .task-item-summary { font-size: 0.8rem; color: oklch(var(--bc) / 0.6); margin: 0 0 0.5rem; }
     .customer-inline-check { display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.75rem; }
     .customer-edit-display-hint, .customer-edit-title { font-size: 0.75rem; color: oklch(var(--bc) / 0.5); margin-bottom: 0.5rem; }
     .invoice-new-footer { display: flex; align-items: center; justify-content: space-between; margin-top: 0.75rem; }
@@ -208,7 +209,7 @@
               <th class="py-3">状态</th>
               <th class="py-3">完成日期</th>
               <th class="py-3">备注</th>
-              <th class="py-3 w-52"></th>
+              <th class="py-3 w-64"></th>
             </tr>
           </thead>
           <tbody id="tasks-body">
@@ -531,23 +532,37 @@
       </div>
       <label>Task Name <input id="task-company" required class="input input-bordered input-sm w-full mt-1" /></label>
       <label>日期 <input id="task-date" type="date" class="input input-bordered input-sm w-full mt-1" /></label>
-      <div class="price-pick-block">
-        <div class="price-pick-head">
-          <span>从价目表选择（可多选）</span>
-          <button type="button" class="btn btn-ghost btn-xs" id="task-price-clear">清空勾选</button>
-        </div>
-        <p class="hint">勾选后会自动填入 Task 与 Price；多种货币时，第一币种写入 Price，其余在下方说明。</p>
-        <div id="task-price-picks" class="price-pick-list" role="group" aria-label="价目表多选"></div>
-        <div id="task-price-preview" class="price-preview" hidden></div>
-      </div>
-      <label>Task <input id="task-s1" class="input input-bordered input-sm w-full mt-1" /></label>
-      <label>Price <input id="task-p1" type="number" step="0.01" min="0" class="input input-bordered input-sm w-full mt-1" /></label>
+      <input type="hidden" id="task-s1" />
+      <input type="hidden" id="task-p1" />
       <input type="hidden" id="task-status" value="Pending" />
       <label>备注 <input id="task-note" class="input input-bordered input-sm w-full mt-1" /></label>
+      <p id="task-item-hint" class="hint">保存任务后，在任务行点击 Items 添加价目 item。</p>
       <p id="task-lock-hint" class="hint" hidden></p>
       <div class="dlg-actions">
         <button type="button" id="task-cancel" class="btn btn-ghost btn-sm">取消</button>
         <button type="submit" class="btn btn-primary btn-sm" id="task-submit-btn">保存</button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog id="dlg-task-items" class="dlg-task-wide">
+    <div class="dlg-head"><h2 id="dlg-task-items-title">任务 Items</h2></div>
+    <form method="dialog" id="form-task-items" class="dlg-body">
+      <input type="hidden" id="task-items-task-id" />
+      <p id="task-items-summary" class="task-item-summary"></p>
+      <div class="price-pick-block">
+        <div class="price-pick-head">
+          <span>从价目表添加 item（可多选）</span>
+          <button type="button" class="btn btn-ghost btn-xs" id="task-price-clear">清空勾选</button>
+        </div>
+        <p class="hint">保存后会更新该任务的 Task 与 Price；多种货币时，第一币种写入 Price，其余在下方说明。</p>
+        <div id="task-price-picks" class="price-pick-list" role="group" aria-label="价目表多选"></div>
+        <div id="task-price-preview" class="price-preview" hidden></div>
+      </div>
+      <p id="task-items-lock-hint" class="hint" hidden></p>
+      <div class="dlg-actions">
+        <button type="button" id="task-items-cancel" class="btn btn-ghost btn-sm">取消</button>
+        <button type="submit" class="btn btn-primary btn-sm" id="task-items-submit-btn">保存 Items</button>
       </div>
     </form>
   </dialog>
